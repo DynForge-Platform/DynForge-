@@ -68,10 +68,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/wallet/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/mentors/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/mentors/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/verifications/**").hasRole("ADMIN")
                         .requestMatchers("/api/verifications/*/decision").hasRole("ADMIN")
+                        .requestMatchers("/api/bookings/*/resolve").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

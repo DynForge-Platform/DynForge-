@@ -39,6 +39,7 @@ export function ScheduleConsultation() {
   const [format, setFormat] = useState<'Online' | 'Offline'>('Online');
   const [selectedDay, setSelectedDay] = useState<number | null>(22);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<string>(mentor?.courses?.[0] ?? '');
 
   if (!mentor) return <div className="p-20 text-center">{T.mentorNotFound}</div>;
 
@@ -57,7 +58,7 @@ export function ScheduleConsultation() {
 
   const cont = () => {
     navigate(`/mentors/${mentor.id}/order`, {
-      state: { duration, mode, format, day: selectedDay, slot: selectedSlot, price },
+      state: { duration, mode, format, day: selectedDay, slot: selectedSlot, price, courseCode: selectedCourse, mentorId: mentor.id },
     });
   };
 
@@ -120,6 +121,28 @@ export function ScheduleConsultation() {
                   })}
                 </div>
               </div>
+
+              {mentor.courses && mentor.courses.length > 0 && (
+                <div>
+                  <p className="mb-2 text-sm text-muted-foreground">Course</p>
+                  <div className="flex flex-wrap gap-2">
+                    {mentor.courses.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setSelectedCourse(c)}
+                        className={cn(
+                          'rounded-lg border px-3 py-1.5 text-xs transition-colors',
+                          selectedCourse === c
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border hover:bg-accent'
+                        )}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-5 space-y-2 border-t border-border pt-4 text-sm">

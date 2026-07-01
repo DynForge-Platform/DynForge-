@@ -30,8 +30,8 @@ export function Header() {
     { to: '/about', label: T.about },
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success('Signed out successfully.');
     navigate('/');
   };

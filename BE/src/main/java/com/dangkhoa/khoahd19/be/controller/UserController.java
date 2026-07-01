@@ -1,6 +1,7 @@
 package com.dangkhoa.khoahd19.be.controller;
 
 import com.dangkhoa.khoahd19.be.mapper.UserMapper;
+import com.dangkhoa.khoahd19.be.model.dto.ApiResponse;
 import com.dangkhoa.khoahd19.be.model.dto.UserResponse;
 import com.dangkhoa.khoahd19.be.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ public class UserController {
     private final UserMapper userMapper;
 
     @GetMapping("/me")
-    public UserResponse me(@AuthenticationPrincipal UserPrincipal principal) {
-        return userMapper.toResponse(principal.getUser());
+    public ApiResponse<UserResponse> me(@AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(userMapper.toResponse(principal.getUser()));
     }
 }

@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Video, CheckCircle2, Eye, AlertTriangle } from 'lucide-react';
-import { teacherSessions, formatCurrency, TeacherSession } from '../../data/mockData';
+import { useState, useEffect, useCallback } from 'react';
+import { Video, CheckCircle2, Eye, AlertTriangle, Loader2 } from 'lucide-react';
+import { formatCurrency } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
@@ -12,58 +13,74 @@ import {
 } from '../../components/ui/dialog';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select';
-import { ImageWithFallback } from '../../components/figma/ImageWithFallback';
 import { StatusBadge, EmptyState } from '../../components/common';
 import { MeetRoomOverlay } from '../../components/MeetRoomOverlay';
 import { CalendarCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  getMyBookings, markTaught, mapStatusToDisplay,
+  type BookingResponse, type BookingStatus,
+} from '../../services/bookingService';
 
-const tabs = ['All', 'Pending', 'Upcoming', 'Completed', 'Cancelled'];
+const tabs = ['All', 'Pending Payment', 'In Escrow', 'Taught', 'Completed', 'Cancelled'];
 
-const declineReasons = [
-  'Schedule conflict',
-  'Outside my expertise',
-  'Unavailable at this time',
-  'Student requested wrong course',
-  'Other',
-];
+function mentorStatusTab(status: BookingStatus): string {
+  switch (status) {
+    case 'PENDING_PAYMENT': return 'Pending Payment';
+    case 'ESCROW_HELD':     return 'In Escrow';
+    case 'TAUGHT':          return 'Taught';
+    case 'COMPLETED':       return 'Completed';
+    case 'CANCELLED':       return 'Cancelled';
+    default:                return mapStatusToDisplay(status);
+  }
+}
 
 export function TeacherSessions() {
+  const { user } = useAuth();
   const [tab, setTab] = useState('All');
-  const filtered = tab === 'All' ? teacherSessions : teacherSessions.filter((s) => s.sessionStatus === tab);
+  const [bookings, setBookings] = useState<BookingResponse[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const [meetSession, setMeetSession] = useState<TeacherSession | null>(null);
-  const [viewSession, setViewSession] = useState<TeacherSession | null>(null);
-  const [acceptSession, setAcceptSession] = useState<TeacherSession | null>(null);
-  const [declineSession, setDeclineSession] = useState<TeacherSession | null>(null);
-  const [completeSession, setCompleteSession] = useState<TeacherSession | null>(null);
-  const [disputeSession, setDisputeSession] = useState<TeacherSession | null>(null);
+  const [meetBooking, setMeetBooking] = useState<BookingResponse | null>(null);
+  const [viewBooking, setViewBooking] = useState<BookingResponse | null>(null);
+  const [markDoneBooking, setMarkDoneBooking] = useState<BookingResponse | null>(null);
+  const [disputeBooking, setDisputeBooking] = useState<BookingResponse | null>(null);
 
-  const handleAccept = (e: React.FormEvent) => {
+  const fetchBookings = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const data = await getMyBookings();
+      setBookings(data);
+    } catch {
+      // keep empty
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+  const withTab = bookings.map((b) => ({ ...b, tabStatus: mentorStatusTab(b.status) }));
+  const filtered = tab === 'All' ? withTab : withTab.filter((b) => b.tabStatus === tab);
+
+  const handleMarkDone = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(`Session with ${acceptSession?.studentName} accepted.`);
-    setAcceptSession(null);
+    if (!markDoneBooking) return;
+    try {
+      await markTaught(markDoneBooking.id);
+      toast.success('Session marked as taught. Waiting for student confirmation.');
+      fetchBookings();
+      setMarkDoneBooking(null);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to mark session.');
+    }
   };
 
-  const handleDecline = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success(`Session with ${declineSession?.studentName} declined.`);
-    setDeclineSession(null);
-  };
-
-  const handleComplete = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success(`Session marked as completed. Escrow will be released to your wallet.`);
-    setCompleteSession(null);
-  };
-
-  const handleDispute = (e: React.FormEvent) => {
+  const handleDisputeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success('Your response has been submitted to GRADORA.');
-    setDisputeSession(null);
+    setDisputeBooking(null);
   };
 
   return (
@@ -71,7 +88,7 @@ export function TeacherSessions() {
       <div className="mb-6">
         <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>My Sessions</h1>
         <p className="mt-1 text-muted-foreground">
-          Manage student bookings — accept, join, and complete sessions.
+          Manage student bookings — join, mark as taught, and track completion.
         </p>
       </div>
 
@@ -82,70 +99,59 @@ export function TeacherSessions() {
           </TabsList>
         </Tabs>
 
-        {filtered.length ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+            <Loader2 className="size-5 animate-spin" /> Loading sessions…
+          </div>
+        ) : filtered.length ? (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student</TableHead>
                   <TableHead>Course</TableHead>
                   <TableHead>Date &amp; Time</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Format</TableHead>
-                  <TableHead>Payment</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <ImageWithFallback src={s.studentAvatar} alt={s.studentName} className="size-8 rounded-full object-cover" />
-                        <span style={{ fontWeight: 500 }}>{s.studentName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{s.course}</TableCell>
+                {filtered.map((b) => (
+                  <TableRow key={b.id}>
+                    <TableCell style={{ fontWeight: 500 }}>{b.courseCode}</TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {new Date(s.dateTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                      {new Date(b.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                       {' · '}
-                      {new Date(s.dateTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(b.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{s.durationMinutes} min</TableCell>
-                    <TableCell className="text-muted-foreground">{s.format}</TableCell>
-                    <TableCell><StatusBadge status={s.paymentStatus} /></TableCell>
-                    <TableCell><StatusBadge status={s.sessionStatus} /></TableCell>
+                    <TableCell className="text-muted-foreground">{b.durationMin} min</TableCell>
+                    <TableCell className="text-muted-foreground">{b.format.replace('_', '-')}</TableCell>
+                    <TableCell style={{ fontWeight: 600 }}>{formatCurrency(b.price)}</TableCell>
+                    <TableCell><StatusBadge status={b.tabStatus} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1.5">
-                        {s.sessionStatus === 'Pending' && (
+                        {b.status === 'ESCROW_HELD' && (
                           <>
-                            <Button size="sm" variant="outline" className="text-danger border-danger/30" onClick={() => setDeclineSession(s)}>
-                              Decline
-                            </Button>
-                            <Button size="sm" onClick={() => setAcceptSession(s)}>Accept</Button>
-                          </>
-                        )}
-                        {s.sessionStatus === 'Upcoming' && (
-                          <>
-                            <Button size="sm" variant="outline" onClick={() => setViewSession(s)}>
+                            <Button size="sm" variant="outline" onClick={() => setViewBooking(b)}>
                               <Eye className="size-3.5" />
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => setCompleteSession(s)}>
+                            <Button size="sm" variant="outline" onClick={() => setMarkDoneBooking(b)}>
                               Mark done
                             </Button>
-                            <Button size="sm" className="gap-1.5" onClick={() => setMeetSession(s)}>
+                            <Button size="sm" className="gap-1.5" onClick={() => setMeetBooking(b)}>
                               <Video className="size-3.5" /> Join
                             </Button>
                           </>
                         )}
-                        {s.sessionStatus === 'Completed' && (
-                          <Button size="sm" variant="outline" onClick={() => setViewSession(s)}>
+                        {(b.status === 'COMPLETED' || b.status === 'TAUGHT') && (
+                          <Button size="sm" variant="outline" onClick={() => setViewBooking(b)}>
                             <Eye className="size-3.5" /> View
                           </Button>
                         )}
-                        {s.sessionStatus === 'Cancelled' && (
-                          <Button size="sm" variant="outline" className="text-warning border-warning/30" onClick={() => setDisputeSession(s)}>
+                        {b.status === 'DISPUTED' && (
+                          <Button size="sm" variant="outline" className="text-warning border-warning/30" onClick={() => setDisputeBooking(b)}>
                             <AlertTriangle className="size-3.5" /> Respond
                           </Button>
                         )}
@@ -165,40 +171,37 @@ export function TeacherSessions() {
         )}
       </Card>
 
-      {/* ── Meet room ───────────────────────────────────────────── */}
-      {meetSession && (
+      {/* Meet room */}
+      {meetBooking && (
         <MeetRoomOverlay
-          course={meetSession.course}
-          partnerName={meetSession.studentName}
-          partnerAvatar={meetSession.studentAvatar}
+          course={meetBooking.courseCode}
+          partnerName="Student"
+          partnerAvatar=""
           partnerRole="Student"
-          durationMinutes={meetSession.durationMinutes}
-          onClose={() => setMeetSession(null)}
+          durationMinutes={meetBooking.durationMin}
+          onClose={() => setMeetBooking(null)}
         />
       )}
 
-      {/* ── View session detail ──────────────────────────────────── */}
-      {viewSession && (
-        <Dialog open onOpenChange={() => setViewSession(null)}>
+      {/* View detail */}
+      {viewBooking && (
+        <Dialog open onOpenChange={() => setViewBooking(null)}>
           <DialogContent className="max-w-md" aria-describedby={undefined}>
             <DialogHeader><DialogTitle>Session details</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <ImageWithFallback src={viewSession.studentAvatar} alt={viewSession.studentName} className="size-12 rounded-xl object-cover" />
+              <div className="flex items-center justify-between">
                 <div>
-                  <p style={{ fontWeight: 600 }}>{viewSession.studentName}</p>
-                  <p className="text-sm text-muted-foreground">{viewSession.course}</p>
+                  <p style={{ fontWeight: 600 }}>{viewBooking.courseCode}</p>
+                  <p className="text-sm text-muted-foreground">{viewBooking.format.replace('_', '-')}</p>
                 </div>
-                <div className="ml-auto"><StatusBadge status={viewSession.sessionStatus} /></div>
+                <StatusBadge status={mapStatusToDisplay(viewBooking.status)} />
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {[
-                  ['Date', new Date(viewSession.dateTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })],
-                  ['Time', new Date(viewSession.dateTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })],
-                  ['Duration', `${viewSession.durationMinutes} min`],
-                  ['Format', viewSession.format],
-                  ['Mode', viewSession.mode],
-                  ['Amount', formatCurrency(viewSession.amount)],
+                  ['Date', new Date(viewBooking.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })],
+                  ['Time', new Date(viewBooking.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })],
+                  ['Duration', `${viewBooking.durationMin} min`],
+                  ['Your payout', formatCurrency(Math.round(viewBooking.price * (1 - viewBooking.commissionRate)))],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-xl border border-border p-3">
                     <p className="text-muted-foreground">{label}</p>
@@ -208,101 +211,25 @@ export function TeacherSessions() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setViewSession(null)}>Close</Button>
+              <Button variant="outline" onClick={() => setViewBooking(null)}>Close</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
 
-      {/* ── Accept modal ─────────────────────────────────────────── */}
-      {acceptSession && (
-        <Dialog open onOpenChange={() => setAcceptSession(null)}>
-          <DialogContent className="max-w-md" aria-describedby={undefined}>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-success">
-                <CheckCircle2 className="size-5" /> Accept booking request
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAccept} className="space-y-4">
-              <div className="rounded-xl border border-border p-4 space-y-1">
-                <div className="flex items-center gap-3">
-                  <ImageWithFallback src={acceptSession.studentAvatar} alt={acceptSession.studentName} className="size-12 rounded-xl object-cover" />
-                  <div>
-                    <p style={{ fontWeight: 600 }}>{acceptSession.studentName}</p>
-                    <p className="text-sm text-muted-foreground">{acceptSession.course}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(acceptSession.dateTime).toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })}
-                      {' · '}
-                      {new Date(acceptSession.dateTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                      {' · '}{acceptSession.durationMinutes} min
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 rounded-xl bg-success/10 p-3 text-sm text-success">
-                <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
-                By accepting, you confirm you will be available at this time. The student will be notified and the session will move to Upcoming.
-              </div>
-              <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => setAcceptSession(null)}>Cancel</Button>
-                <Button type="submit" className="bg-success hover:bg-success/90">Confirm acceptance</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* ── Decline modal ─────────────────────────────────────────── */}
-      {declineSession && (
-        <Dialog open onOpenChange={() => setDeclineSession(null)}>
-          <DialogContent className="max-w-md" aria-describedby={undefined}>
-            <DialogHeader><DialogTitle>Decline booking request</DialogTitle></DialogHeader>
-            <form onSubmit={handleDecline} className="space-y-4">
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-accent/40 p-4">
-                <ImageWithFallback src={declineSession.studentAvatar} alt={declineSession.studentName} className="size-12 rounded-xl object-cover" />
-                <div>
-                  <p style={{ fontWeight: 600 }}>{declineSession.studentName}</p>
-                  <p className="text-sm text-muted-foreground">{declineSession.course} · {declineSession.durationMinutes} min</p>
-                </div>
-              </div>
-              <div>
-                <Label className="mb-1.5 block">Reason for declining</Label>
-                <Select>
-                  <SelectTrigger className="bg-input-background"><SelectValue placeholder="Select a reason" /></SelectTrigger>
-                  <SelectContent>
-                    {declineReasons.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="mb-1.5 block">Message to student <span className="text-muted-foreground">(optional)</span></Label>
-                <Textarea placeholder="Let the student know why and suggest alternatives..." rows={3} />
-              </div>
-              <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => setDeclineSession(null)}>Cancel</Button>
-                <Button type="submit" variant="destructive">Decline request</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* ── Mark completed modal ──────────────────────────────────── */}
-      {completeSession && (
-        <Dialog open onOpenChange={() => setCompleteSession(null)}>
+      {/* Mark done modal */}
+      {markDoneBooking && (
+        <Dialog open onOpenChange={() => setMarkDoneBooking(null)}>
           <DialogContent className="max-w-md" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <CheckCircle2 className="size-5 text-success" /> Mark session as completed
+                <CheckCircle2 className="size-5 text-success" /> Mark session as taught
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleComplete} className="space-y-4">
-              <div className="flex items-center gap-3 rounded-xl border border-border p-4">
-                <ImageWithFallback src={completeSession.studentAvatar} alt={completeSession.studentName} className="size-12 rounded-xl object-cover" />
-                <div>
-                  <p style={{ fontWeight: 600 }}>{completeSession.studentName}</p>
-                  <p className="text-sm text-muted-foreground">{completeSession.course} · {completeSession.durationMinutes} min</p>
-                </div>
+            <form onSubmit={handleMarkDone} className="space-y-4">
+              <div className="rounded-xl border border-border p-4">
+                <p style={{ fontWeight: 600 }}>{markDoneBooking.courseCode} · {markDoneBooking.durationMin} min</p>
+                <p className="text-sm text-muted-foreground">{new Date(markDoneBooking.startAt).toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })}</p>
               </div>
               <div>
                 <Label className="mb-1.5 block">Session notes <span className="text-muted-foreground">(optional)</span></Label>
@@ -310,10 +237,10 @@ export function TeacherSessions() {
               </div>
               <div className="flex items-start gap-2 rounded-xl bg-success/10 p-3 text-sm text-success">
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
-                Marking as completed will trigger escrow release. {formatCurrency(Math.round(completeSession.amount * 0.85))} will be credited to your wallet within 24 hours.
+                Marking as taught notifies the student to confirm. {formatCurrency(Math.round(markDoneBooking.price * (1 - markDoneBooking.commissionRate)))} will be credited once confirmed.
               </div>
               <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => setCompleteSession(null)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setMarkDoneBooking(null)}>Cancel</Button>
                 <Button type="submit">Confirm completion</Button>
               </DialogFooter>
             </form>
@@ -321,30 +248,26 @@ export function TeacherSessions() {
         </Dialog>
       )}
 
-      {/* ── Respond to dispute modal ──────────────────────────────── */}
-      {disputeSession && (
-        <Dialog open onOpenChange={() => setDisputeSession(null)}>
+      {/* Respond to dispute */}
+      {disputeBooking && (
+        <Dialog open onOpenChange={() => setDisputeBooking(null)}>
           <DialogContent className="max-w-md" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="size-5 text-warning" /> Respond to dispute
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleDispute} className="space-y-4">
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-accent/40 p-4">
-                <ImageWithFallback src={disputeSession.studentAvatar} alt={disputeSession.studentName} className="size-12 rounded-xl object-cover" />
-                <div>
-                  <p style={{ fontWeight: 600 }}>{disputeSession.studentName}</p>
-                  <p className="text-sm text-muted-foreground">{disputeSession.course}</p>
-                  <StatusBadge status={disputeSession.sessionStatus} />
-                </div>
+            <form onSubmit={handleDisputeSubmit} className="space-y-4">
+              <div className="rounded-xl border border-border bg-accent/40 p-4">
+                <p style={{ fontWeight: 600 }}>{disputeBooking.courseCode}</p>
+                <StatusBadge status={mapStatusToDisplay(disputeBooking.status)} />
               </div>
               <div>
                 <Label className="mb-1.5 block">Your response</Label>
                 <Textarea placeholder="Explain your side of the situation clearly and factually. GRADORA will review both sides fairly." rows={4} required />
               </div>
               <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => setDisputeSession(null)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setDisputeBooking(null)}>Cancel</Button>
                 <Button type="submit">Submit response</Button>
               </DialogFooter>
             </form>

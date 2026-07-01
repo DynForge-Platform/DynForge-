@@ -1,7 +1,8 @@
 package com.dangkhoa.khoahd19.be.model.dto;
 
 public record AuthResponse(
-        String token,
+        String accessToken,
+        String refreshToken,
         UserResponse user
 ) {
 }

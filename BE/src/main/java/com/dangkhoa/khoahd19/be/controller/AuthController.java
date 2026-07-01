@@ -1,7 +1,9 @@
 package com.dangkhoa.khoahd19.be.controller;
 
+import com.dangkhoa.khoahd19.be.model.dto.ApiResponse;
 import com.dangkhoa.khoahd19.be.model.dto.AuthResponse;
 import com.dangkhoa.khoahd19.be.model.dto.LoginRequest;
+import com.dangkhoa.khoahd19.be.model.dto.RefreshRequest;
 import com.dangkhoa.khoahd19.be.model.dto.RegisterRequest;
 import com.dangkhoa.khoahd19.be.service.AuthService;
 import jakarta.validation.Valid;
@@ -22,12 +24,23 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
-        return authService.register(request);
+    public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ApiResponse.ok("Account created successfully", authService.register(request));
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ApiResponse.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ApiResponse<AuthResponse> refresh(@Valid @RequestBody RefreshRequest request) {
+        return ApiResponse.ok(authService.refresh(request));
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@Valid @RequestBody RefreshRequest request) {
+        authService.logout(request);
     }
 }

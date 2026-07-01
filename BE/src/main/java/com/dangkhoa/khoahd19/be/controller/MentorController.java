@@ -1,5 +1,6 @@
 package com.dangkhoa.khoahd19.be.controller;
 
+import com.dangkhoa.khoahd19.be.model.dto.ApiResponse;
 import com.dangkhoa.khoahd19.be.model.dto.MentorProfileRequest;
 import com.dangkhoa.khoahd19.be.model.dto.MentorProfileResponse;
 import com.dangkhoa.khoahd19.be.security.UserPrincipal;
@@ -25,25 +26,25 @@ public class MentorController {
     private final MentorService mentorService;
 
     @GetMapping
-    public List<MentorProfileResponse> list(@RequestParam(required = false) String course) {
-        return mentorService.listMentors(course);
+    public ApiResponse<List<MentorProfileResponse>> list(@RequestParam(required = false) String course) {
+        return ApiResponse.ok(mentorService.listMentors(course));
     }
 
     @GetMapping("/me")
-    public MentorProfileResponse me(@AuthenticationPrincipal UserPrincipal principal) {
-        return mentorService.getOwnProfile(principal.getUser());
+    public ApiResponse<MentorProfileResponse> me(@AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(mentorService.getOwnProfile(principal.getUser()));
     }
 
     @PutMapping("/me")
-    public MentorProfileResponse updateMe(
+    public ApiResponse<MentorProfileResponse> updateMe(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody MentorProfileRequest request
     ) {
-        return mentorService.upsertOwnProfile(principal.getUser(), request);
+        return ApiResponse.ok("Profile updated", mentorService.upsertOwnProfile(principal.getUser(), request));
     }
 
     @GetMapping("/{id}")
-    public MentorProfileResponse getById(@PathVariable String id) {
-        return mentorService.getById(id);
+    public ApiResponse<MentorProfileResponse> getById(@PathVariable String id) {
+        return ApiResponse.ok(mentorService.getById(id));
     }
 }

@@ -1,7 +1,6 @@
 package com.dangkhoa.khoahd19.be.model.entity;
 
-import com.dangkhoa.khoahd19.be.model.enums.BookingFormat;
-import com.dangkhoa.khoahd19.be.model.enums.BookingStatus;
+import com.dangkhoa.khoahd19.be.model.enums.EscrowStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,41 +20,37 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document("bookings")
-public class Booking {
+@Document("escrow_transactions")
+public class EscrowTransaction {
 
     @Id
     private String id;
 
-    @Indexed
+    @Indexed(unique = true)
+    @Field(targetType = FieldType.OBJECT_ID)
+    private ObjectId bookingId;
+
     @Field(targetType = FieldType.OBJECT_ID)
     private ObjectId menteeId;
 
-    @Indexed
     @Field(targetType = FieldType.OBJECT_ID)
     private ObjectId mentorId;
 
-    private String courseCode;
+    /** Full amount paid by the mentee. */
+    private long totalAmount;
 
-    private BookingFormat format;
+    private double commissionRate;
 
-    private Instant startAt;
+    /** = round(totalAmount * commissionRate) — kept by the platform. */
+    private long commissionAmount;
 
-    private int durationMin;
-
-    private long price;
-
-    @Builder.Default
-    private double commissionRate = 0.15;
+    /** = totalAmount - commissionAmount — paid out to the mentor on release. */
+    private long mentorPayout;
 
     @Builder.Default
-    private BookingStatus status = BookingStatus.PENDING_PAYMENT;
+    private EscrowStatus status = EscrowStatus.HELD;
 
-    @Field(targetType = FieldType.OBJECT_ID)
-    private ObjectId escrowTxnId;
+    private Instant heldAt;
 
-    private Instant createdAt;
-
-    /** Set when the mentor marks the session as taught; used by the auto-confirm scheduler. */
-    private Instant taughtAt;
+    private Instant releasedAt;
 }
