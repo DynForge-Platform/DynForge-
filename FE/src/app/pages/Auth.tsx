@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { ShieldCheck, BadgeCheck, Star, Mail, GraduationCap, Users, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Star, Mail, GraduationCap, Users, LayoutDashboard, Loader2 } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -107,8 +107,11 @@ export function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
-  const { login } = useAuth();
+  const { login, loginWithCredentials } = useAuth();
   const { T } = useLanguage();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleQuickLogin = (role: AuthRole) => {
     login(role);
@@ -118,13 +121,22 @@ export function Login() {
       admin: '/admin/dashboard',
     };
     toast.success(`Signed in as ${role.charAt(0).toUpperCase() + role.slice(1)}. Welcome back!`);
-    // After login, go to the redirect URL if it exists (only for mentee role), else default dashboard
     navigate(redirectTo && role === 'mentee' ? redirectTo : defaultPaths[role]);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    handleQuickLogin('mentee');
+    if (!email || !password) { handleQuickLogin('mentee'); return; }
+    setLoading(true);
+    try {
+      await loginWithCredentials(email, password);
+      toast.success('Welcome back!');
+      navigate(redirectTo ?? '/dashboard');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Invalid email or password.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -145,13 +157,23 @@ export function Login() {
       <form className="space-y-4" onSubmit={submit}>
         <div>
           <Label htmlFor="email" className="mb-1.5 block">{T.email}</Label>
-          <Input id="email" type="email" placeholder="you@fpt.edu.vn" className="bg-input-background" />
+          <Input
+            id="email" type="email" placeholder="you@fpt.edu.vn"
+            className="bg-input-background"
+            value={email} onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
         <div>
           <Label htmlFor="password" className="mb-1.5 block">{T.password}</Label>
-          <Input id="password" type="password" placeholder="••••••••" className="bg-input-background" />
+          <Input
+            id="password" type="password" placeholder="••••••••"
+            className="bg-input-background"
+            value={password} onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
-        <Button type="submit" className="w-full" size="lg">{T.logIn}</Button>
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? <Loader2 className="size-4 animate-spin" /> : T.logIn}
+        </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
@@ -165,9 +187,13 @@ export function Login() {
 // ── Register (Join Now) ────────────────────────────────────────
 export function Register() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, registerWithCredentials } = useAuth();
   const { T } = useLanguage();
   const [role, setRole] = useState<'mentee' | 'mentor'>('mentee');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleQuickLogin = (r: AuthRole) => {
     login(r);
@@ -180,11 +206,24 @@ export function Register() {
     navigate(paths[r]);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(role);
-    toast.success('Account created! Welcome to GRADORA.');
-    navigate(role === 'mentor' ? '/mentor/dashboard' : '/dashboard');
+    if (!fullName || !email || !password) {
+      login(role);
+      toast.success('Account created! Welcome to GRADORA.');
+      navigate(role === 'mentor' ? '/mentor/dashboard' : '/dashboard');
+      return;
+    }
+    setLoading(true);
+    try {
+      await registerWithCredentials(fullName, email, password, role === 'mentor' ? 'MENTOR' : 'MENTEE');
+      toast.success('Account created! Welcome to GRADORA.');
+      navigate(role === 'mentor' ? '/mentor/dashboard' : '/dashboard');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -231,17 +270,22 @@ export function Register() {
       <form className="space-y-4" onSubmit={submit}>
         <div>
           <Label htmlFor="name" className="mb-1.5 block">{T.fullName}</Label>
-          <Input id="name" placeholder="Your full name" className="bg-input-background" required />
+          <Input id="name" placeholder="Your full name" className="bg-input-background"
+            value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </div>
         <div>
           <Label htmlFor="remail" className="mb-1.5 block">{T.email}</Label>
-          <Input id="remail" type="email" placeholder="you@fpt.edu.vn" className="bg-input-background" required />
+          <Input id="remail" type="email" placeholder="you@fpt.edu.vn" className="bg-input-background"
+            value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div>
           <Label htmlFor="rpassword" className="mb-1.5 block">{T.password}</Label>
-          <Input id="rpassword" type="password" placeholder="Create a strong password" className="bg-input-background" required />
+          <Input id="rpassword" type="password" placeholder="Create a strong password" className="bg-input-background"
+            value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
-        <Button type="submit" className="w-full" size="lg">{T.createAccount}</Button>
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? <Loader2 className="size-4 animate-spin" /> : T.createAccount}
+        </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">

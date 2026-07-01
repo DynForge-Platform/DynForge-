@@ -20,7 +20,8 @@ public class BookingMapper {
                 booking.getCommissionRate(),
                 booking.getStatus(),
                 booking.getEscrowTxnId() != null ? booking.getEscrowTxnId().toHexString() : null,
-                booking.getCreatedAt()
+                booking.getCreatedAt(),
+                booking.getTaughtAt()
         );
     }
 }

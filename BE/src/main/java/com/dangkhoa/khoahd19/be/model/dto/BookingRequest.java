@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 
 import java.time.Instant;
 
@@ -14,7 +13,6 @@ public record BookingRequest(
         @NotBlank String courseCode,
         @NotNull BookingFormat format,
         @NotNull @Future Instant startAt,
-        @Min(15) int durationMin,
-        @Positive long price
+        @Min(15) int durationMin
 ) {
 }

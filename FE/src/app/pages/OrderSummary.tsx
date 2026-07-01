@@ -8,6 +8,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { createBooking, payBooking } from '../services/bookingService';
+import { toast } from 'sonner';
 
 interface BookingState {
   duration: number;
@@ -16,6 +18,8 @@ interface BookingState {
   day: number;
   slot: string;
   price: number;
+  courseCode?: string;
+  mentorId?: string;
 }
 
 // All active vouchers the platform accepts (from both admin + mentor pools)
@@ -62,6 +66,7 @@ export function OrderSummary() {
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; data: typeof VALID_VOUCHERS[string] } | null>(null);
   const [voucherError, setVoucherError] = useState('');
   const [applying, setApplying] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   if (!mentor) return <div className="p-20 text-center">Mentor not found.</div>;
 
@@ -99,10 +104,49 @@ export function OrderSummary() {
     setVoucherError('');
   };
 
-  const confirm = () => {
-    navigate('/escrow', {
-      state: { mentor: mentor.name, amount: total, day: state.day, slot: state.slot, duration: state.duration },
-    });
+  const confirm = async () => {
+    // If user has a real JWT (id exists) and we have mentorId + courseCode, call the real API
+    if (user?.id && state.mentorId && state.courseCode) {
+      setPaying(true);
+      try {
+        // Build ISO datetime from selected day + slot
+        const year = 2026;
+        const month = 5; // June (0-indexed)
+        const [h, m] = state.slot.split(':').map(Number);
+        const startAt = new Date(year, month, state.day, h, m).toISOString();
+
+        const format = state.mode === 'Group' ? 'GROUP' : 'ONE_ON_ONE';
+        const booking = await createBooking({
+          mentorId: state.mentorId,
+          courseCode: state.courseCode,
+          format,
+          startAt,
+          durationMin: state.duration,
+        });
+
+        const paid = await payBooking(booking.id);
+
+        navigate('/escrow', {
+          state: {
+            mentor: mentor.name,
+            amount: paid.price,
+            day: state.day,
+            slot: state.slot,
+            duration: state.duration,
+            bookingId: paid.id,
+          },
+        });
+      } catch (err: any) {
+        toast.error(err?.response?.data?.message ?? 'Payment failed. Please check your wallet balance.');
+      } finally {
+        setPaying(false);
+      }
+    } else {
+      // Demo mode: navigate without real API call
+      navigate('/escrow', {
+        state: { mentor: mentor.name, amount: total, day: state.day, slot: state.slot, duration: state.duration },
+      });
+    }
   };
 
   return (
@@ -237,8 +281,8 @@ export function OrderSummary() {
               </div>
             </div>
 
-            <Button className="mt-6 w-full" size="lg" onClick={confirm}>
-              {T.confirmPay}
+            <Button className="mt-6 w-full" size="lg" onClick={confirm} disabled={paying}>
+              {paying ? <Loader2 className="size-4 animate-spin" /> : T.confirmPay}
             </Button>
             <Button variant="outline" className="mt-3 w-full" onClick={() => navigate(-1)}>
               {T.back}

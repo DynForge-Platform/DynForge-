@@ -1,5 +1,6 @@
 package com.dangkhoa.khoahd19.be.controller;
 
+import com.dangkhoa.khoahd19.be.model.dto.ApiResponse;
 import com.dangkhoa.khoahd19.be.model.dto.VerificationDecisionRequest;
 import com.dangkhoa.khoahd19.be.model.dto.VerificationRequestDto;
 import com.dangkhoa.khoahd19.be.model.dto.VerificationResponse;
@@ -30,24 +31,24 @@ public class VerificationController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public VerificationResponse submit(
+    public ApiResponse<VerificationResponse> submit(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody VerificationRequestDto dto
     ) {
-        return verificationService.submit(principal.getUser(), dto);
+        return ApiResponse.ok("Verification request submitted", verificationService.submit(principal.getUser(), dto));
     }
 
     @GetMapping
-    public List<VerificationResponse> list(@RequestParam(required = false) VerificationStatus status) {
-        return verificationService.list(status);
+    public ApiResponse<List<VerificationResponse>> list(@RequestParam(required = false) VerificationStatus status) {
+        return ApiResponse.ok(verificationService.list(status));
     }
 
     @PostMapping("/{id}/decision")
-    public VerificationResponse decide(
+    public ApiResponse<VerificationResponse> decide(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable String id,
             @Valid @RequestBody VerificationDecisionRequest decision
     ) {
-        return verificationService.decide(principal.getUser(), id, decision);
+        return ApiResponse.ok("Decision recorded", verificationService.decide(principal.getUser(), id, decision));
     }
 }

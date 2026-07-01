@@ -17,6 +17,7 @@ public record BookingResponse(
         double commissionRate,
         BookingStatus status,
         String escrowTxnId,
-        Instant createdAt
+        Instant createdAt,
+        Instant taughtAt
 ) {
 }

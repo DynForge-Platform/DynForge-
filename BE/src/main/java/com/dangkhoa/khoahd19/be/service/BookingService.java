@@ -6,7 +6,10 @@ import com.dangkhoa.khoahd19.be.mapper.BookingMapper;
 import com.dangkhoa.khoahd19.be.model.dto.BookingRequest;
 import com.dangkhoa.khoahd19.be.model.dto.BookingResponse;
 import com.dangkhoa.khoahd19.be.model.entity.Booking;
+import com.dangkhoa.khoahd19.be.model.entity.Course;
+import com.dangkhoa.khoahd19.be.model.entity.MentorProfile;
 import com.dangkhoa.khoahd19.be.model.entity.User;
+import com.dangkhoa.khoahd19.be.model.enums.BookingFormat;
 import com.dangkhoa.khoahd19.be.model.enums.BookingStatus;
 import com.dangkhoa.khoahd19.be.model.enums.Role;
 import com.dangkhoa.khoahd19.be.repository.BookingRepository;
@@ -38,9 +41,25 @@ public class BookingService {
         if (mentorUserId.toHexString().equals(mentee.getId())) {
             throw new BadRequestException("You cannot book a session with yourself");
         }
-        if (mentorRepository.findByUserId(mentorUserId).isEmpty()) {
-            throw new ResourceNotFoundException("Mentor not found: " + request.mentorId());
+
+        MentorProfile mentor = mentorRepository.findByUserId(mentorUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mentor not found: " + request.mentorId()));
+
+        if (!mentor.isVerified()) {
+            throw new BadRequestException("This mentor has not been verified yet");
         }
+
+        Course course = mentor.getCourses() == null ? null : mentor.getCourses().stream()
+                .filter(c -> c.getCode().equalsIgnoreCase(request.courseCode()))
+                .findFirst()
+                .orElse(null);
+
+        if (course == null) {
+            throw new BadRequestException(
+                    "Mentor does not teach course: " + request.courseCode());
+        }
+
+        long price = calculatePrice(course, request.format(), request.durationMin());
 
         Booking booking = Booking.builder()
                 .menteeId(new ObjectId(mentee.getId()))
@@ -49,7 +68,7 @@ public class BookingService {
                 .format(request.format())
                 .startAt(request.startAt())
                 .durationMin(request.durationMin())
-                .price(request.price())
+                .price(price)
                 .commissionRate(DEFAULT_COMMISSION_RATE)
                 .status(BookingStatus.PENDING_PAYMENT)
                 .createdAt(Instant.now())
@@ -72,19 +91,28 @@ public class BookingService {
     }
 
     public BookingResponse getById(User user, String id) {
-        Booking booking = findOwned(user, id);
-        return bookingMapper.toResponse(booking);
+        return bookingMapper.toResponse(findOwned(user, id));
     }
 
     public BookingResponse cancel(User user, String id) {
         Booking booking = findOwned(user, id);
 
-        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT && booking.getStatus() != BookingStatus.ESCROW_HELD) {
-            throw new BadRequestException("Booking in status " + booking.getStatus() + " cannot be cancelled");
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT
+                && booking.getStatus() != BookingStatus.ESCROW_HELD) {
+            throw new BadRequestException(
+                    "Booking in status " + booking.getStatus() + " cannot be cancelled");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
         return bookingMapper.toResponse(bookingRepository.save(booking));
+    }
+
+    // price = hourly_rate * durationMin / 60, rounded up to nearest unit
+    private long calculatePrice(Course course, BookingFormat format, int durationMin) {
+        long hourlyRate = format == BookingFormat.ONE_ON_ONE
+                ? course.getRatePrivate()
+                : course.getRateGroup();
+        return (long) Math.ceil((double) hourlyRate * durationMin / 60);
     }
 
     private Booking findOwned(User user, String id) {
