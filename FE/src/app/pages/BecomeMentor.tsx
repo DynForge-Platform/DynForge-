@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import {
   Wallet,
   ShieldCheck,
@@ -28,6 +29,17 @@ import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 export function BecomeMentor() {
   const navigate = useNavigate();
   const { T } = useLanguage();
+  const { user } = useAuth();
+
+  // Route "Apply now" based on auth state:
+  // - not logged in → register first
+  // - logged-in mentor → their verification page
+  // - logged-in mentee (or other) → the mentor application form (no re-registration needed)
+  const handleApply = () => {
+    if (!user) navigate('/register?apply=mentor');
+    else if (user.role === 'mentor') navigate('/mentor/verification');
+    else navigate('/become-a-mentor/apply');
+  };
 
   const benefits = [
     { icon: Wallet, title: T.benefitFlexible, desc: T.benefitFlexibleDesc },
@@ -70,7 +82,7 @@ export function BecomeMentor() {
             <p className="mt-5 max-w-xl text-muted-foreground" style={{ fontSize: '1.125rem' }}>
               {T.becomeMentorSubtitle}
             </p>
-            <Button size="lg" className="mt-7" onClick={() => navigate('/register')}>
+            <Button size="lg" className="mt-7" onClick={handleApply}>
               {T.applyNow}
             </Button>
           </div>
@@ -172,7 +184,7 @@ export function BecomeMentor() {
           ))}
         </Accordion>
         <div className="mt-10 text-center">
-          <Button size="lg" onClick={() => navigate('/register')}>{T.applyNow}</Button>
+          <Button size="lg" onClick={handleApply}>{T.applyNow}</Button>
         </div>
       </section>
     </div>

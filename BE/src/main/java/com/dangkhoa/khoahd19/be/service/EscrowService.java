@@ -78,6 +78,38 @@ public class EscrowService {
         return bookingMapper.toResponse(bookingRepository.save(booking));
     }
 
+    // ── accept request (mentor) ──────────────────────────────────────────────
+
+    public BookingResponse accept(User mentor, String bookingId) {
+        Booking booking = requireBooking(bookingId);
+
+        if (!booking.getMentorId().toHexString().equals(mentor.getId())) {
+            throw new BadRequestException("Only the mentor can accept this booking");
+        }
+        requireStatus(booking, BookingStatus.ESCROW_HELD);
+
+        booking.setStatus(BookingStatus.ACCEPTED);
+        booking.setAcceptedAt(Instant.now());
+        return bookingMapper.toResponse(bookingRepository.save(booking));
+    }
+
+    // ── decline request (mentor) → refund mentee ─────────────────────────────
+
+    public BookingResponse decline(User mentor, String bookingId) {
+        Booking booking = requireBooking(bookingId);
+
+        if (!booking.getMentorId().toHexString().equals(mentor.getId())) {
+            throw new BadRequestException("Only the mentor can decline this booking");
+        }
+        if (booking.getStatus() != BookingStatus.ESCROW_HELD
+                && booking.getStatus() != BookingStatus.ACCEPTED) {
+            throw new BadRequestException(
+                    "Only a paid, not-yet-taught booking can be declined (was " + booking.getStatus() + ")");
+        }
+
+        return refundEscrow(booking);
+    }
+
     // ── mark-taught (mentor) ─────────────────────────────────────────────────
 
     public BookingResponse markTaught(User mentor, String bookingId) {
@@ -86,7 +118,13 @@ public class EscrowService {
         if (!booking.getMentorId().toHexString().equals(mentor.getId())) {
             throw new BadRequestException("Only the mentor can mark this session as taught");
         }
-        requireStatus(booking, BookingStatus.ESCROW_HELD);
+        // Allow marking taught from ESCROW_HELD (implicit accept) or ACCEPTED
+        if (booking.getStatus() != BookingStatus.ESCROW_HELD
+                && booking.getStatus() != BookingStatus.ACCEPTED) {
+            throw new BadRequestException(
+                    "Booking must be in escrow or accepted before it can be marked taught (was "
+                            + booking.getStatus() + ")");
+        }
 
         booking.setStatus(BookingStatus.TAUGHT);
         booking.setTaughtAt(Instant.now());
@@ -108,15 +146,23 @@ public class EscrowService {
 
     // ── dispute (mentee) ─────────────────────────────────────────────────────
 
-    public BookingResponse dispute(User mentee, String bookingId) {
+    public BookingResponse dispute(User mentee, String bookingId, String issueType, String reason) {
         Booking booking = requireBooking(bookingId);
 
         if (!booking.getMenteeId().toHexString().equals(mentee.getId())) {
             throw new BadRequestException("Only the mentee can open a dispute");
         }
-        requireStatus(booking, BookingStatus.TAUGHT);
+        // A dispute can be raised on any paid session that isn't finished yet.
+        if (booking.getStatus() != BookingStatus.ESCROW_HELD
+                && booking.getStatus() != BookingStatus.ACCEPTED
+                && booking.getStatus() != BookingStatus.TAUGHT) {
+            throw new BadRequestException(
+                    "Only a paid, not-yet-completed session can be disputed (was " + booking.getStatus() + ")");
+        }
 
         booking.setStatus(BookingStatus.DISPUTED);
+        booking.setDisputeIssueType(issueType);
+        booking.setDisputeReason(reason);
         return bookingMapper.toResponse(bookingRepository.save(booking));
     }
 

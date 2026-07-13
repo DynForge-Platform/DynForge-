@@ -26,8 +26,12 @@ public class MentorController {
     private final MentorService mentorService;
 
     @GetMapping
-    public ApiResponse<List<MentorProfileResponse>> list(@RequestParam(required = false) String course) {
-        return ApiResponse.ok(mentorService.listMentors(course));
+    public ApiResponse<List<MentorProfileResponse>> list(
+            @RequestParam(required = false) String course,
+            @RequestParam(required = false) String format,
+            @RequestParam(required = false) Boolean verified
+    ) {
+        return ApiResponse.ok(mentorService.listMentors(course, format, verified));
     }
 
     @GetMapping("/me")

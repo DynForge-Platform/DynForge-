@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router';
 import { ShieldCheck, ChevronRight, Tag, CheckCircle2, X, Loader2 } from 'lucide-react';
-import { getMentor, formatCurrency } from '../data/mockData';
+import { getMentor, formatCurrency, type Mentor } from '../data/mockData';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -9,13 +9,18 @@ import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { createBooking, payBooking } from '../services/bookingService';
+import { isObjectId, getMentorById, backendToMentor } from '../services/mentorService';
 import { toast } from 'sonner';
 
 interface BookingState {
   duration: number;
   mode: string;
+  bookingFormat?: 'ONE_ON_ONE' | 'GROUP';
+  displayMode?: string;
   format: string;
   day: number;
+  month?: number;   // 0-indexed calendar month from ScheduleConsultation
+  year?: number;    // calendar year from ScheduleConsultation
   slot: string;
   price: number;
   courseCode?: string;
@@ -46,29 +51,53 @@ export function OrderSummary() {
   const location = useLocation();
   const { user } = useAuth();
   const { T } = useLanguage();
-  const mentor = getMentor(id);
 
-  // Guard: must be logged in to pay
-  if (!user) {
-    navigate(`/login?redirect=/mentors/${id}/order`);
-    return null;
-  }
-  const state = (location.state as BookingState) ?? {
-    duration: 60,
-    mode: '1-on-1',
-    format: 'Online',
-    day: 22,
-    slot: '09:00',
-    price: mentor ? mentor.hourlyRate : 0,
-  };
-
+  // All hooks BEFORE any conditional return
+  const [mentor, setMentor] = useState<Mentor | undefined>(() => getMentor(id));
+  const [mentorLoading, setMentorLoading] = useState(isObjectId(id ?? ''));
   const [voucherInput, setVoucherInput] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; data: typeof VALID_VOUCHERS[string] } | null>(null);
   const [voucherError, setVoucherError] = useState('');
   const [applying, setApplying] = useState(false);
   const [paying, setPaying] = useState(false);
 
+  // Fetch the real mentor from the backend when the id is an ObjectId.
+  useEffect(() => {
+    if (!id || !isObjectId(id)) return;
+    getMentorById(id)
+      .then((p) => setMentor(backendToMentor(p)))
+      .catch(() => { /* keep whatever is in state */ })
+      .finally(() => setMentorLoading(false));
+  }, [id]);
+
+  // Guard: must be logged in to pay
+  if (!user) {
+    navigate(`/login?redirect=/mentors/${id}/order`);
+    return null;
+  }
+
+  if (mentorLoading) {
+    return (
+      <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
+        <Loader2 className="size-5 animate-spin" /> Loading mentor…
+      </div>
+    );
+  }
+
   if (!mentor) return <div className="p-20 text-center">Mentor not found.</div>;
+
+  const now = new Date();
+  const state = (location.state as BookingState) ?? {
+    duration: 60,
+    mode: '1-on-1',
+    bookingFormat: 'ONE_ON_ONE' as const,
+    format: 'Online',
+    day: now.getDate() + 1,
+    month: now.getMonth(),
+    year: now.getFullYear(),
+    slot: '09:00',
+    price: mentor.hourlyRate,
+  };
 
   const sessionFee = state.price;
   const serviceFee = Math.round(sessionFee * 0.05);
@@ -105,17 +134,24 @@ export function OrderSummary() {
   };
 
   const confirm = async () => {
-    // If user has a real JWT (id exists) and we have mentorId + courseCode, call the real API
-    if (user?.id && state.mentorId && state.courseCode) {
+    // Guard: a real booking needs a real mentor (backend ObjectId). Demo/mock mentors
+    // have integer ids and cannot be booked with a real payment.
+    if (user?.id && state.mentorId && !isObjectId(state.mentorId)) {
+      toast.error('This is a demo mentor profile. Please pick a mentor from the live directory to book a real session.');
+      return;
+    }
+
+    // If user has a real JWT (id exists) and we have a real mentorId + courseCode, call the API
+    if (user?.id && state.mentorId && state.courseCode && isObjectId(state.mentorId)) {
       setPaying(true);
       try {
-        // Build ISO datetime from selected day + slot
-        const year = 2026;
-        const month = 5; // June (0-indexed)
+        // Build ISO datetime from selected day + slot using actual calendar month/year
+        const yr = state.year ?? now.getFullYear();
+        const mo = state.month ?? now.getMonth();
         const [h, m] = state.slot.split(':').map(Number);
-        const startAt = new Date(year, month, state.day, h, m).toISOString();
+        const startAt = new Date(yr, mo, state.day, h, m).toISOString();
 
-        const format = state.mode === 'Group' ? 'GROUP' : 'ONE_ON_ONE';
+        const format = state.bookingFormat ?? 'ONE_ON_ONE';
         const booking = await createBooking({
           mentorId: state.mentorId,
           courseCode: state.courseCode,
@@ -179,7 +215,7 @@ export function OrderSummary() {
             <h2 className="mb-4" style={{ fontSize: '1.25rem', fontWeight: 600 }}>{T.sessionDetails}</h2>
             <div className="grid gap-y-3 sm:grid-cols-2">
               <Detail label={T.sessionType} value={state.mode} />
-              <Detail label={T.date} value={`${state.day} June 2026`} />
+              <Detail label={T.date} value={new Date(state.year ?? now.getFullYear(), state.month ?? now.getMonth(), state.day).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} />
               <Detail label={T.time} value={state.slot} />
               <Detail label={T.duration} value={`${state.duration} min`} />
               <Detail label={T.format} value={state.format} />

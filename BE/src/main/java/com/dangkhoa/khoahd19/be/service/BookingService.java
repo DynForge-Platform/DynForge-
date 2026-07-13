@@ -5,14 +5,18 @@ import com.dangkhoa.khoahd19.be.exception.ResourceNotFoundException;
 import com.dangkhoa.khoahd19.be.mapper.BookingMapper;
 import com.dangkhoa.khoahd19.be.model.dto.BookingRequest;
 import com.dangkhoa.khoahd19.be.model.dto.BookingResponse;
+import com.dangkhoa.khoahd19.be.model.dto.MentorEarningsResponse;
 import com.dangkhoa.khoahd19.be.model.entity.Booking;
 import com.dangkhoa.khoahd19.be.model.entity.Course;
+import com.dangkhoa.khoahd19.be.model.entity.EscrowTransaction;
 import com.dangkhoa.khoahd19.be.model.entity.MentorProfile;
 import com.dangkhoa.khoahd19.be.model.entity.User;
 import com.dangkhoa.khoahd19.be.model.enums.BookingFormat;
 import com.dangkhoa.khoahd19.be.model.enums.BookingStatus;
+import com.dangkhoa.khoahd19.be.model.enums.EscrowStatus;
 import com.dangkhoa.khoahd19.be.model.enums.Role;
 import com.dangkhoa.khoahd19.be.repository.BookingRepository;
+import com.dangkhoa.khoahd19.be.repository.EscrowTransactionRepository;
 import com.dangkhoa.khoahd19.be.repository.MentorRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
@@ -21,9 +25,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -31,11 +37,18 @@ public class BookingService {
 
     private static final double DEFAULT_COMMISSION_RATE = 0.15;
 
+    private static final Set<BookingStatus> UPCOMING_STATUSES =
+            EnumSet.of(BookingStatus.ESCROW_HELD, BookingStatus.ACCEPTED, BookingStatus.TAUGHT);
+
     private final BookingRepository bookingRepository;
     private final MentorRepository mentorRepository;
+    private final EscrowTransactionRepository escrowRepository;
     private final BookingMapper bookingMapper;
 
     public BookingResponse create(User mentee, BookingRequest request) {
+        if (!ObjectId.isValid(request.mentorId())) {
+            throw new BadRequestException("Invalid mentor id: " + request.mentorId());
+        }
         ObjectId mentorUserId = new ObjectId(request.mentorId());
 
         if (mentorUserId.toHexString().equals(mentee.getId())) {
@@ -88,6 +101,53 @@ public class BookingService {
                 .sorted(Comparator.comparing(Booking::getStartAt).reversed())
                 .map(bookingMapper::toResponse)
                 .toList();
+    }
+
+    /** Mentor schedule: only bookings where the user is the mentor, upcoming first. */
+    public List<BookingResponse> listMentorSchedule(User mentor) {
+        return bookingRepository.findByMentorId(new ObjectId(mentor.getId())).stream()
+                .sorted(Comparator.comparing(Booking::getStartAt))
+                .map(bookingMapper::toResponse)
+                .toList();
+    }
+
+    /** Aggregated earnings snapshot for the mentor console. */
+    public MentorEarningsResponse getMentorEarnings(User mentor) {
+        ObjectId mentorId = new ObjectId(mentor.getId());
+
+        List<EscrowTransaction> escrows = escrowRepository.findByMentorId(mentorId);
+
+        long pendingClearance = escrows.stream()
+                .filter(e -> e.getStatus() == EscrowStatus.HELD)
+                .mapToLong(EscrowTransaction::getMentorPayout)
+                .sum();
+
+        long totalEarned = escrows.stream()
+                .filter(e -> e.getStatus() == EscrowStatus.RELEASED)
+                .mapToLong(EscrowTransaction::getMentorPayout)
+                .sum();
+
+        long totalCommissionPaid = escrows.stream()
+                .filter(e -> e.getStatus() == EscrowStatus.RELEASED)
+                .mapToLong(EscrowTransaction::getCommissionAmount)
+                .sum();
+
+        List<Booking> mentorBookings = bookingRepository.findByMentorId(mentorId);
+        long completedSessions = mentorBookings.stream()
+                .filter(b -> b.getStatus() == BookingStatus.COMPLETED)
+                .count();
+        long upcomingSessions = mentorBookings.stream()
+                .filter(b -> UPCOMING_STATUSES.contains(b.getStatus()))
+                .count();
+
+        return new MentorEarningsResponse(
+                mentor.getWalletBalance(),
+                pendingClearance,
+                totalEarned,
+                totalCommissionPaid,
+                completedSessions,
+                upcomingSessions
+        );
     }
 
     public BookingResponse getById(User user, String id) {

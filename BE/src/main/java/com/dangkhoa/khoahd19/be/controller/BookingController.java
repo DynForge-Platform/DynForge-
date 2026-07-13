@@ -3,6 +3,8 @@ package com.dangkhoa.khoahd19.be.controller;
 import com.dangkhoa.khoahd19.be.model.dto.ApiResponse;
 import com.dangkhoa.khoahd19.be.model.dto.BookingRequest;
 import com.dangkhoa.khoahd19.be.model.dto.BookingResponse;
+import com.dangkhoa.khoahd19.be.model.dto.DisputeRequest;
+import com.dangkhoa.khoahd19.be.model.dto.MentorEarningsResponse;
 import com.dangkhoa.khoahd19.be.model.dto.ResolveRequest;
 import com.dangkhoa.khoahd19.be.security.UserPrincipal;
 import com.dangkhoa.khoahd19.be.service.BookingService;
@@ -44,6 +46,16 @@ public class BookingController {
         return ApiResponse.ok(bookingService.listMine(principal.getUser()));
     }
 
+    @GetMapping("/mentor")
+    public ApiResponse<List<BookingResponse>> mentorSchedule(@AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(bookingService.listMentorSchedule(principal.getUser()));
+    }
+
+    @GetMapping("/earnings")
+    public ApiResponse<MentorEarningsResponse> earnings(@AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(bookingService.getMentorEarnings(principal.getUser()));
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<BookingResponse> getById(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -68,6 +80,22 @@ public class BookingController {
         return ApiResponse.ok("Booking cancelled", bookingService.cancel(principal.getUser(), id));
     }
 
+    @PatchMapping("/{id}/accept")
+    public ApiResponse<BookingResponse> accept(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String id
+    ) {
+        return ApiResponse.ok("Booking accepted", escrowService.accept(principal.getUser(), id));
+    }
+
+    @PatchMapping("/{id}/decline")
+    public ApiResponse<BookingResponse> decline(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String id
+    ) {
+        return ApiResponse.ok("Booking declined and refunded", escrowService.decline(principal.getUser(), id));
+    }
+
     @PatchMapping("/{id}/mark-taught")
     public ApiResponse<BookingResponse> markTaught(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -87,9 +115,11 @@ public class BookingController {
     @PatchMapping("/{id}/dispute")
     public ApiResponse<BookingResponse> dispute(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String id
+            @PathVariable String id,
+            @Valid @RequestBody DisputeRequest request
     ) {
-        return ApiResponse.ok("Dispute opened", escrowService.dispute(principal.getUser(), id));
+        return ApiResponse.ok("Dispute opened",
+                escrowService.dispute(principal.getUser(), id, request.issueType(), request.reason()));
     }
 
     @PatchMapping("/{id}/resolve")

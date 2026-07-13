@@ -5,7 +5,7 @@ import {
   CalendarClock, CheckCircle2, Clock, Wallet,
   Video, Mic, MicOff, VideoOff, PhoneOff, MessageSquare,
   Users, MonitorUp, Star, AlertTriangle, ShieldCheck,
-  Loader2,
+  Loader2, Sparkles,
 } from 'lucide-react';
 import { formatCurrency } from '../data/mockData';
 import { Card } from '../components/ui/card';
@@ -30,6 +30,9 @@ import {
   getMyBookings, confirmBooking, disputeBooking,
   mapStatusToDisplay, type BookingResponse, type BookingStatus,
 } from '../services/bookingService';
+import { createReview } from '../services/reviewService';
+import { askSession } from '../services/aiService';
+import { MeetRoomOverlay } from '../components/MeetRoomOverlay';
 
 const issueTypes = [
   'Session not attended',
@@ -39,82 +42,6 @@ const issueTypes = [
   'Mentor misconduct',
   'Other',
 ];
-
-// ── Meet room ─────────────────────────────────────────────────
-function MeetRoom({ booking, onClose }: { booking: BookingResponse; onClose: () => void }) {
-  const [mic, setMic] = useState(true);
-  const [cam, setCam] = useState(true);
-  const [elapsed, setElapsed] = useState('00:00');
-
-  useState(() => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      const s = Math.floor((Date.now() - start) / 1000);
-      const m = Math.floor(s / 60).toString().padStart(2, '0');
-      const sec = (s % 60).toString().padStart(2, '0');
-      setElapsed(`${m}:${sec}`);
-    }, 1000);
-    return () => clearInterval(id);
-  });
-
-  const end = () => {
-    toast.success('Session ended. Please mark it as completed.');
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#0f1117]">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-white text-xs" style={{ fontWeight: 700 }}>G</span>
-          <div>
-            <p className="text-sm text-white" style={{ fontWeight: 600 }}>{booking.courseCode}</p>
-            <p className="text-xs text-white/50">Booking #{booking.id.slice(-6)}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 rounded-full bg-danger/20 px-3 py-1 text-xs text-red-400">
-            <span className="size-1.5 rounded-full bg-red-400 animate-pulse" />
-            LIVE · {elapsed}
-          </span>
-        </div>
-      </div>
-      <div className="flex flex-1 gap-3 px-6 pb-4 min-h-0">
-        <div className="relative flex-1 overflow-hidden rounded-2xl bg-[#1c1f2e] flex items-center justify-center">
-          <div className="text-white/30 text-sm">Mentor camera</div>
-        </div>
-        <div className="relative w-48 overflow-hidden rounded-2xl bg-[#1c1f2e] self-end">
-          <div className="flex aspect-video items-center justify-center">
-            {cam
-              ? <div className="flex size-14 items-center justify-center rounded-full bg-primary/30 text-white text-2xl" style={{ fontWeight: 700 }}>Y</div>
-              : <VideoOff className="size-8 text-white/30" />}
-          </div>
-          <div className="absolute bottom-2 left-2 text-xs text-white/60">You</div>
-        </div>
-      </div>
-      <div className="flex items-center justify-center gap-3 pb-8">
-        <ControlBtn icon={mic ? Mic : MicOff} active={mic} onClick={() => setMic(!mic)} label={mic ? 'Mute' : 'Unmute'} />
-        <ControlBtn icon={cam ? Video : VideoOff} active={cam} onClick={() => setCam(!cam)} label={cam ? 'Stop video' : 'Start video'} />
-        <ControlBtn icon={MessageSquare} onClick={() => toast.info('Chat — coming soon.')} label="Chat" />
-        <ControlBtn icon={Users} onClick={() => toast.info('Participants.')} label="Participants" />
-        <ControlBtn icon={MonitorUp} onClick={() => toast.info('Screen share — coming soon.')} label="Share screen" />
-        <button onClick={end} className="flex flex-col items-center gap-1 rounded-2xl bg-danger px-6 py-3 text-white transition-opacity hover:opacity-90">
-          <PhoneOff className="size-5" />
-          <span className="text-xs" style={{ fontWeight: 500 }}>End</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ControlBtn({ icon: Icon, active = true, onClick, label }: { icon: React.ElementType; active?: boolean; onClick: () => void; label: string }) {
-  return (
-    <button onClick={onClick} className={cn('flex flex-col items-center gap-1 rounded-2xl px-5 py-3 transition-colors', active ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-white/5 text-white/40 hover:bg-white/10')}>
-      <Icon className="size-5" />
-      <span className="text-xs" style={{ fontWeight: 500 }}>{label}</span>
-    </button>
-  );
-}
 
 // ── Confirm modal ──────────────────────────────────────────────
 function ConfirmModal({ booking, onClose, onConfirmed }: { booking: BookingResponse; onClose: () => void; onConfirmed: () => void }) {
@@ -163,12 +90,15 @@ function ConfirmModal({ booking, onClose, onConfirmed }: { booking: BookingRespo
 // ── Dispute modal ──────────────────────────────────────────────
 function DisputeModal({ booking, onClose, onDisputed }: { booking: BookingResponse; onClose: () => void; onDisputed: () => void }) {
   const [loading, setLoading] = useState(false);
+  const [issueType, setIssueType] = useState(issueTypes[0]);
+  const [reason, setReason] = useState('');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!reason.trim()) { toast.error('Please describe the problem.'); return; }
     setLoading(true);
     try {
-      await disputeBooking(booking.id);
+      await disputeBooking(booking.id, issueType, reason.trim());
       toast.success('Dispute opened. GRADORA will review within 48 hours.');
       onDisputed();
       onClose();
@@ -191,7 +121,7 @@ function DisputeModal({ booking, onClose, onDisputed }: { booking: BookingRespon
           <form onSubmit={submit} className="space-y-4">
             <div>
               <Label className="mb-1.5 block">Issue type</Label>
-              <Select>
+              <Select value={issueType} onValueChange={setIssueType}>
                 <SelectTrigger className="bg-input-background"><SelectValue placeholder="Select issue type" /></SelectTrigger>
                 <SelectContent>
                   {issueTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
@@ -200,7 +130,7 @@ function DisputeModal({ booking, onClose, onDisputed }: { booking: BookingRespon
             </div>
             <div>
               <Label className="mb-1.5 block">Describe the problem</Label>
-              <Textarea placeholder="Please describe what happened in detail..." rows={4} required />
+              <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Please describe what happened in detail..." rows={4} required />
             </div>
             <div className="flex items-start gap-2 rounded-xl bg-accent/60 p-3 text-sm text-muted-foreground">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
@@ -214,6 +144,142 @@ function DisputeModal({ booking, onClose, onDisputed }: { booking: BookingRespon
             </DialogFooter>
           </form>
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Review modal ───────────────────────────────────────────────
+function ReviewModal({ booking, onClose, onReviewed }: { booking: BookingResponse; onClose: () => void; onReviewed: () => void }) {
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (rating < 1) { toast.error('Please select a star rating.'); return; }
+    setLoading(true);
+    try {
+      await createReview(booking.id, rating, comment.trim() || undefined);
+      toast.success('Thanks! Your review has been posted.');
+      onReviewed();
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not submit review.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-md" aria-describedby={undefined}>
+        <DialogHeader><DialogTitle>Rate your session</DialogTitle></DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="rounded-xl border border-border p-4">
+            <p style={{ fontWeight: 600 }}>{booking.courseCode}</p>
+            <p className="text-sm text-muted-foreground">
+              {new Date(booking.startAt).toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })} · {booking.durationMin} min
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onMouseEnter={() => setHover(n)}
+                  onMouseLeave={() => setHover(0)}
+                  onClick={() => setRating(n)}
+                  className="p-1"
+                  aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                >
+                  <Star
+                    className={cn('size-8 transition-colors', (hover || rating) >= n ? 'fill-warning text-warning' : 'text-muted-foreground/40')}
+                  />
+                </button>
+              ))}
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {rating ? `${rating} / 5` : 'Tap a star to rate'}
+            </span>
+          </div>
+          <div>
+            <Label className="mb-1.5 block">Comment <span className="text-muted-foreground">(optional)</span></Label>
+            <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Share how the session went…" rows={3} />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'Submit review'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── AI ask (post-session tutor) modal ──────────────────────────
+function AskModal({ booking, onClose }: { booking: BookingResponse; onClose: () => void }) {
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const send = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = input.trim();
+    if (!q || loading) return;
+    setMessages((m) => [...m, { role: 'user', text: q }]);
+    setInput('');
+    setLoading(true);
+    try {
+      const res = await askSession(booking.id, q);
+      setMessages((m) => [...m, { role: 'ai', text: res.answer }]);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Không hỏi được. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-1.5">
+            <Sparkles className="size-4 text-primary" /> AI hỏi bài — {booking.courseCode}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[45vh] space-y-3 overflow-y-auto">
+          {messages.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Hỏi lại bất kỳ điều gì về buổi học này. AI trả lời bám sát nội dung buổi học; nếu cần kèm sâu hơn sẽ gợi ý đặt thêm buổi.
+            </p>
+          )}
+          {messages.map((m, i) => (
+            <div key={i} className={cn('rounded-xl p-3 text-sm', m.role === 'user' ? 'ml-8 bg-primary/10' : 'mr-8 bg-accent/60')}>
+              <p className="whitespace-pre-wrap">{m.text}</p>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Đang trả lời…
+            </div>
+          )}
+        </div>
+        <form onSubmit={send} className="flex gap-2">
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder="Nhập câu hỏi… (VD: Giải thích lại phần đạo hàm)"
+            rows={2}
+            className="bg-input-background"
+          />
+          <Button type="submit" disabled={loading || !input.trim()} className="shrink-0 self-end">Gửi</Button>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -248,9 +314,15 @@ function ViewModal({ booking, onClose }: { booking: BookingResponse; onClose: ()
             ))}
           </div>
           {booking.status === 'ESCROW_HELD' && (
+            <div className="flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-sm text-warning">
+              <Clock className="mt-0.5 size-4 shrink-0" />
+              Payment is held safely in escrow. Waiting for the mentor to accept — you'll be able to join once they do.
+            </div>
+          )}
+          {booking.status === 'ACCEPTED' && (
             <div className="flex items-start gap-2 rounded-xl bg-success/10 p-3 text-sm text-success">
               <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              Payment is securely held in escrow and will be released after session confirmation.
+              The mentor has accepted. You can join the session from your sessions list at the scheduled time.
             </div>
           )}
         </div>
@@ -285,6 +357,8 @@ export function StudentDashboard() {
   const [viewBooking, setViewBooking] = useState<BookingResponse | null>(null);
   const [confirmBookingItem, setConfirmBookingItem] = useState<BookingResponse | null>(null);
   const [disputeBookingItem, setDisputeBookingItem] = useState<BookingResponse | null>(null);
+  const [reviewBookingItem, setReviewBookingItem] = useState<BookingResponse | null>(null);
+  const [askBookingItem, setAskBookingItem] = useState<BookingResponse | null>(null);
 
   const fetchBookings = useCallback(async () => {
     if (!user?.id) return;
@@ -292,8 +366,9 @@ export function StudentDashboard() {
     try {
       const data = await getMyBookings();
       setBookings(data);
-    } catch {
-      // fallback: keep empty
+    } catch (err: any) {
+      console.error('fetchBookings error:', err);
+      toast.error(err?.response?.data?.message ?? 'Failed to load sessions. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -301,26 +376,35 @@ export function StudentDashboard() {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  const displayedBookings = bookings.map((b) => ({ ...b, displayStatus: mapStatusToDisplay(b.status) }));
-  const filtered = tab === 'All' ? displayedBookings : displayedBookings.filter((b) => b.displayStatus === tab);
+  const displayedBookings = bookings.map((b) => ({
+    ...b,
+    displayStatus: mapStatusToDisplay(b.status),
+    // ACCEPTED sits in the "In Escrow" tab (paid & upcoming) but keeps its own badge.
+    tabStatus: b.status === 'ACCEPTED' ? 'In Escrow' : mapStatusToDisplay(b.status),
+  }));
+  const filtered = tab === 'All' ? displayedBookings : displayedBookings.filter((b) => b.tabStatus === tab);
 
-  const upcoming = bookings.filter((b) => b.status === 'ESCROW_HELD').length;
+  const upcoming = bookings.filter((b) => b.status === 'ESCROW_HELD' || b.status === 'ACCEPTED').length;
   const completed = bookings.filter((b) => b.status === 'COMPLETED').length;
   const totalHours = bookings.filter((b) => b.status === 'COMPLETED').reduce((sum, b) => sum + b.durationMin / 60, 0);
   const totalSpent = bookings.filter((b) => b.status !== 'CANCELLED' && b.status !== 'PENDING_PAYMENT').reduce((sum, b) => sum + b.price, 0);
 
   function handleAction(b: BookingResponse) {
     switch (b.status) {
-      case 'ESCROW_HELD': setMeetBooking(b); break;
+      // Paid but the mentor hasn't accepted yet — can't join, just view details.
+      case 'ESCROW_HELD': setViewBooking(b); break;
+      // Mentor accepted — now the mentee can join the session.
+      case 'ACCEPTED': setMeetBooking(b); break;
       case 'TAUGHT': setConfirmBookingItem(b); break;
-      case 'COMPLETED': setViewBooking(b); break;
+      case 'COMPLETED': setReviewBookingItem(b); break;
       default: setViewBooking(b);
     }
   }
 
   function actionLabel(status: BookingStatus) {
     switch (status) {
-      case 'ESCROW_HELD': return T.join ?? 'Join';
+      case 'ESCROW_HELD': return 'Awaiting mentor';
+      case 'ACCEPTED': return T.join ?? 'Join';
       case 'TAUGHT': return 'Confirm';
       case 'COMPLETED': return T.review ?? 'Review';
       default: return T.view ?? 'View';
@@ -328,7 +412,7 @@ export function StudentDashboard() {
   }
 
   function actionVariant(status: BookingStatus): 'default' | 'outline' | 'destructive' {
-    if (status === 'ESCROW_HELD') return 'default';
+    if (status === 'ACCEPTED') return 'default';
     if (status === 'TAUGHT') return 'default';
     return 'outline';
   }
@@ -395,11 +479,17 @@ export function StudentDashboard() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1.5">
                         <Button size="sm" variant={actionVariant(b.status)} onClick={() => handleAction(b)}
-                          className={b.status === 'ESCROW_HELD' ? 'gap-1.5' : ''}>
-                          {b.status === 'ESCROW_HELD' && <Video className="size-3.5" />}
+                          className={b.status === 'ACCEPTED' ? 'gap-1.5' : ''}>
+                          {b.status === 'ACCEPTED' && <Video className="size-3.5" />}
                           {actionLabel(b.status)}
                         </Button>
-                        {b.status === 'TAUGHT' && (
+                        {(b.status === 'TAUGHT' || b.status === 'COMPLETED') && (
+                          <Button size="sm" variant="outline" className="gap-1 text-primary border-primary/30"
+                            onClick={() => setAskBookingItem(b)}>
+                            <Sparkles className="size-3.5" /> AI hỏi bài
+                          </Button>
+                        )}
+                        {(b.status === 'ESCROW_HELD' || b.status === 'ACCEPTED' || b.status === 'TAUGHT') && (
                           <Button size="sm" variant="outline" className="text-danger border-danger/30"
                             onClick={() => setDisputeBookingItem(b)}>
                             Dispute
@@ -421,7 +511,16 @@ export function StudentDashboard() {
         )}
       </Card>
 
-      {meetBooking && <MeetRoom booking={meetBooking} onClose={() => setMeetBooking(null)} />}
+      {meetBooking && (
+        <MeetRoomOverlay
+          bookingId={meetBooking.id}
+          course={meetBooking.courseCode}
+          partnerName={meetBooking.mentorName ?? 'Mentor'}
+          durationMinutes={meetBooking.durationMin}
+          displayName={user?.name}
+          onClose={() => setMeetBooking(null)}
+        />
+      )}
       {viewBooking && <ViewModal booking={viewBooking} onClose={() => setViewBooking(null)} />}
       {confirmBookingItem && (
         <ConfirmModal
@@ -436,6 +535,16 @@ export function StudentDashboard() {
           onClose={() => setDisputeBookingItem(null)}
           onDisputed={fetchBookings}
         />
+      )}
+      {reviewBookingItem && (
+        <ReviewModal
+          booking={reviewBookingItem}
+          onClose={() => setReviewBookingItem(null)}
+          onReviewed={fetchBookings}
+        />
+      )}
+      {askBookingItem && (
+        <AskModal booking={askBookingItem} onClose={() => setAskBookingItem(null)} />
       )}
     </div>
   );

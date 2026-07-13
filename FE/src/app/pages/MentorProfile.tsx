@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router';
+import { useState, useEffect } from 'react';
 import { buttonVariants } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -16,21 +17,46 @@ import {
   ShieldCheck,
   Video,
   MapPin,
+  Loader2,
 } from 'lucide-react';
-import { getMentor, reviews, formatCurrency } from '../data/mockData';
+import { getMentor, reviews as mockReviews, formatCurrency, type Mentor, type Review } from '../data/mockData';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { StarRating, VerifiedBadge, SectionHeading } from '../components/common';
 import { ReviewCard } from '../components/cards';
+import { getMentorById, isObjectId, backendToMentor } from '../services/mentorService';
+import { listMentorReviews, backendToReview } from '../services/reviewService';
 
 export function MentorProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { T } = useLanguage();
-  const mentor = getMentor(id);
+
+  const [mentor, setMentor] = useState<Mentor | undefined>(() => getMentor(id));
+  const [profileLoading, setProfileLoading] = useState(isObjectId(id ?? ''));
+  // Backend mentors show live reviews; demo (mock) mentors keep the sample reviews.
+  const [reviews, setReviews] = useState<Review[]>(isObjectId(id ?? '') ? [] : mockReviews);
+  // The mentor's userId (for messaging) — only known for backend mentors.
+  const [mentorUserId, setMentorUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id || !isObjectId(id)) return;
+    getMentorById(id)
+      .then((profile) => {
+        setMentor(backendToMentor(profile));
+        setMentorUserId(profile.userId);
+        return listMentorReviews(profile.userId);
+      })
+      .then((list) => { if (list) setReviews(list.map(backendToReview)); })
+      .catch(() => { /* keep whatever is in state */ })
+      .finally(() => setProfileLoading(false));
+  }, [id]);
+
+  const messageDest = mentorUserId ? `/messages/${mentorUserId}` : '/messages';
+  const openMessages = () => { if (requireAuth(messageDest)) navigate(messageDest); };
 
   const helpAreas = [
     { icon: BookOpen, title: T.helpCourseTutoring, desc: T.helpCourseTutoringDesc },
@@ -49,6 +75,14 @@ export function MentorProfile() {
     }
     return true;
   };
+
+  if (profileLoading) {
+    return (
+      <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
+        <Loader2 className="size-5 animate-spin" /> Loading mentor profile…
+      </div>
+    );
+  }
 
   if (!mentor) {
     return (
@@ -88,7 +122,7 @@ export function MentorProfile() {
                     <Button onClick={() => requireAuth(`/mentors/${mentor.id}/schedule`) && navigate(`/mentors/${mentor.id}/schedule`)}>
                       <Calendar className="size-4" /> {T.bookSession}
                     </Button>
-                    <Button variant="outline" onClick={() => requireAuth('/messages') && navigate('/messages')}>
+                    <Button variant="outline" onClick={openMessages}>
                       <MessageSquare className="size-4" /> {T.messageMentor}
                     </Button>
                   </div>
@@ -144,11 +178,17 @@ export function MentorProfile() {
             {/* Reviews */}
             <div>
               <SectionHeading title={T.studentReviews} subtitle={`${mentor.reviewsCount} verified reviews · ${mentor.rating.toFixed(1)} ${T.verifiedAvg}`} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                {reviews.map((r) => (
-                  <ReviewCard key={r.id} review={r} />
-                ))}
-              </div>
+              {reviews.length ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {reviews.map((r) => (
+                    <ReviewCard key={r.id} review={r} />
+                  ))}
+                </div>
+              ) : (
+                <Card className="border-border p-8 text-center text-muted-foreground">
+                  No reviews yet — be the first to book and review this mentor.
+                </Card>
+              )}
             </div>
           </div>
 
@@ -181,7 +221,7 @@ export function MentorProfile() {
               <Button className="mt-6 w-full" size="lg" onClick={() => requireAuth(`/mentors/${mentor.id}/schedule`) && navigate(`/mentors/${mentor.id}/schedule`)}>
                 {T.bookSession}
               </Button>
-              <Button variant="outline" className="mt-3 w-full" onClick={() => requireAuth('/messages') && navigate('/messages')}>
+              <Button variant="outline" className="mt-3 w-full" onClick={openMessages}>
                 <MessageSquare className="size-4" /> {T.messageMentor}
               </Button>
 

@@ -7,8 +7,10 @@ import com.dangkhoa.khoahd19.be.model.dto.MentorProfileResponse;
 import com.dangkhoa.khoahd19.be.model.entity.MentorProfile;
 import com.dangkhoa.khoahd19.be.model.entity.User;
 import com.dangkhoa.khoahd19.be.model.enums.Role;
+import com.dangkhoa.khoahd19.be.model.enums.VerificationStatus;
 import com.dangkhoa.khoahd19.be.repository.MentorRepository;
 import com.dangkhoa.khoahd19.be.repository.UserRepository;
+import com.dangkhoa.khoahd19.be.repository.VerificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
@@ -22,16 +24,30 @@ public class MentorService {
 
     private final MentorRepository mentorRepository;
     private final UserRepository userRepository;
+    private final VerificationRepository verificationRepository;
     private final MentorMapper mentorMapper;
 
-    public List<MentorProfileResponse> listMentors(String courseCode) {
+    public List<MentorProfileResponse> listMentors(String courseCode, String format, Boolean verified) {
+        boolean isVerified = verified == null || verified;
+
         List<MentorProfile> profiles = (courseCode == null || courseCode.isBlank())
-                ? mentorRepository.findByVerifiedTrue()
-                : mentorRepository.findByVerifiedTrueAndCourses_Code(courseCode);
+                ? mentorRepository.findByVerified(isVerified)
+                : mentorRepository.findByVerifiedAndCourses_Code(isVerified, courseCode);
+
+        if (format != null && !format.isBlank()) {
+            profiles = profiles.stream()
+                    .filter(p -> p.getFormats() != null && p.getFormats().contains(format))
+                    .toList();
+        }
 
         return profiles.stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    /** All mentor profiles (verified + unverified) — for admin management. */
+    public List<MentorProfileResponse> listAllMentors() {
+        return mentorRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     public MentorProfileResponse getById(String id) {
@@ -48,14 +64,24 @@ public class MentorService {
 
     public MentorProfileResponse upsertOwnProfile(User user, MentorProfileRequest request) {
         ObjectId userId = new ObjectId(user.getId());
+        // A new profile inherits verified=true if the mentor already has an approved verification.
         MentorProfile profile = mentorRepository.findByUserId(userId)
-                .orElseGet(() -> MentorProfile.builder().userId(userId).verified(false).build());
+                .orElseGet(() -> MentorProfile.builder()
+                        .userId(userId)
+                        .verified(hasApprovedVerification(userId))
+                        .build());
 
         profile.setTitle(request.title());
         profile.setBio(request.bio());
+        profile.setMajor(request.major());
+        profile.setUniversity(request.university());
+        profile.setTeachingRole(request.teachingRole());
         profile.setCourses(request.courses());
         profile.setSkills(request.skills());
         profile.setLanguages(request.languages());
+        if (request.formats() != null && !request.formats().isEmpty()) {
+            profile.setFormats(request.formats());
+        }
         profile.setAvailability(request.availability());
 
         profile = mentorRepository.save(profile);
@@ -67,6 +93,11 @@ public class MentorService {
         }
 
         return mentorMapper.toResponse(profile, user);
+    }
+
+    private boolean hasApprovedVerification(ObjectId userId) {
+        return verificationRepository.findByUserId(userId).stream()
+                .anyMatch(v -> v.getStatus() == VerificationStatus.APPROVED);
     }
 
     private MentorProfileResponse toResponse(MentorProfile profile) {

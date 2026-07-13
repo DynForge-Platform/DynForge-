@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { mentors } from '../../data/mockData';
+import { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Textarea } from '../../components/ui/textarea';
+import { Label } from '../../components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../../components/ui/table';
@@ -9,28 +10,55 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '../../components/ui/dialog';
 import { ImageWithFallback } from '../../components/figma/ImageWithFallback';
-import { VerifiedBadge, StatusBadge } from '../../components/common';
+import { StatusBadge } from '../../components/common';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const apps = mentors.map((m, i) => ({
-  ...m,
-  submitted: `2026-06-${String(10 + i).padStart(2, '0')}`,
-  interviewStatus: i < 3 ? 'Completed' : i === 3 ? 'Scheduled' : 'Pending',
-  docs: ['Transcript', 'University ID'],
-}));
+import {
+  listVerifications,
+  decideVerification,
+  type VerificationItem,
+} from '../../services/verificationService';
 
 export function AdminVerification() {
-  const [selected, setSelected] = useState<typeof apps[0] | null>(null);
+  const [items, setItems] = useState<VerificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<VerificationItem | null>(null);
+  const [rejectNote, setRejectNote] = useState('');
+  const [deciding, setDeciding] = useState(false);
 
-  const approve = () => {
+  useEffect(() => {
+    listVerifications()
+      .then(setItems)
+      .catch(() => toast.error('Failed to load verification requests.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleDecide = async (status: 'APPROVED' | 'REJECTED') => {
     if (!selected) return;
-    toast.success(`${selected.name} approved as a verified mentor.`);
-    setSelected(null);
+    if (status === 'REJECTED' && !rejectNote.trim()) {
+      toast.error('Please enter a rejection reason.');
+      return;
+    }
+    setDeciding(true);
+    try {
+      const updated = await decideVerification(selected.id, status, rejectNote.trim() || undefined);
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+      toast.success(status === 'APPROVED'
+        ? `${selected.userName ?? 'Mentor'} approved successfully.`
+        : `${selected.userName ?? 'Mentor'}'s application rejected.`);
+      setSelected(null);
+      setRejectNote('');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Action failed. Please try again.');
+    } finally {
+      setDeciding(false);
+    }
   };
-  const reject = () => {
-    if (!selected) return;
-    toast.error(`${selected.name}'s application rejected.`);
-    setSelected(null);
+
+  const statusLabel = (s: string) => {
+    if (s === 'APPROVED') return 'Approved';
+    if (s === 'REJECTED') return 'Rejected';
+    return 'Pending';
   };
 
   return (
@@ -41,92 +69,122 @@ export function AdminVerification() {
       </div>
 
       <Card className="border-border p-6">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Applicant</TableHead>
-                <TableHead>University</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Documents</TableHead>
-                <TableHead>Interview</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {apps.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <ImageWithFallback src={a.avatar} alt={a.name} className="size-9 rounded-xl object-cover" />
-                      <div>
-                        <p style={{ fontWeight: 500 }}>{a.name}</p>
-                        <p className="text-sm text-muted-foreground">{a.major}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{a.university}</TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap">
-                    {new Date(a.submitted).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-muted-foreground">{a.docs.join(', ')}</span>
-                  </TableCell>
-                  <TableCell><StatusBadge status={a.interviewStatus} /></TableCell>
-                  <TableCell><VerifiedBadge verified={a.verified} /></TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => setSelected(a)}>Review</Button>
-                  </TableCell>
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+            <Loader2 className="size-5 animate-spin" /> Loading applications…
+          </div>
+        ) : items.length === 0 ? (
+          <p className="py-12 text-center text-muted-foreground">No verification requests yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Applicant</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Transcript</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <ImageWithFallback
+                          src={item.avatarUrl ?? ''}
+                          alt={item.userName ?? item.userId}
+                          className="size-9 rounded-xl object-cover"
+                        />
+                        <div>
+                          <p style={{ fontWeight: 500 }}>{item.userName ?? item.userId}</p>
+                          <p className="text-xs text-muted-foreground">{item.userId.slice(0, 8)}…</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell style={{ fontWeight: 500 }}>{item.course}</TableCell>
+                    <TableCell>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary" style={{ fontWeight: 600 }}>
+                        {item.claimedGrade}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {item.transcriptUrl
+                        ? <span className="text-primary underline cursor-pointer">{item.transcriptUrl}</span>
+                        : '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                      {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </TableCell>
+                    <TableCell><StatusBadge status={statusLabel(item.status)} /></TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setSelected(item); setRejectNote(item.note ?? ''); }}
+                        disabled={item.status !== 'PENDING'}
+                      >
+                        {item.status === 'PENDING' ? 'Review' : 'Reviewed'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </Card>
 
-      {/* Detail dialog */}
       {selected && (
-        <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+        <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setRejectNote(''); }}>
           <DialogContent className="max-w-lg" aria-describedby={undefined}>
             <DialogHeader>
-              <DialogTitle>Review: {selected.name}</DialogTitle>
+              <DialogTitle>Review: {selected.userName ?? selected.userId}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <ImageWithFallback src={selected.avatar} alt={selected.name} className="size-14 rounded-xl object-cover" />
+                <ImageWithFallback
+                  src={selected.avatarUrl ?? ''}
+                  alt={selected.userName ?? ''}
+                  className="size-14 rounded-xl object-cover"
+                />
                 <div>
-                  <p style={{ fontWeight: 600 }}>{selected.name}</p>
-                  <p className="text-sm text-muted-foreground">{selected.role} · {selected.university}</p>
-                  <p className="text-sm text-muted-foreground">{selected.major}</p>
+                  <p style={{ fontWeight: 600 }}>{selected.userName ?? selected.userId}</p>
+                  <p className="text-sm text-muted-foreground">Applied for: <strong>{selected.course}</strong></p>
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground">Courses</p>
-                  <p style={{ fontWeight: 500 }}>{selected.courses.map((c) => c.code).join(', ')}</p>
+                  <p className="text-muted-foreground">Claimed grade</p>
+                  <p style={{ fontWeight: 600 }}>{selected.claimedGrade}</p>
                 </div>
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground">Interview</p>
-                  <StatusBadge status={selected.interviewStatus} />
+                  <p className="text-muted-foreground">Transcript</p>
+                  <p style={{ fontWeight: 500 }} className="truncate">{selected.transcriptUrl ?? '—'}</p>
                 </div>
               </div>
-              <div>
-                <p className="mb-2 text-sm text-muted-foreground">Submitted documents</p>
-                <div className="flex flex-wrap gap-2">
-                  {selected.docs.map((d) => (
-                    <Button key={d} variant="outline" size="sm">{d}</Button>
-                  ))}
-                </div>
+
+              <div className="space-y-1.5">
+                <Label>Rejection note (required when rejecting)</Label>
+                <Textarea
+                  value={rejectNote}
+                  onChange={(e) => setRejectNote(e.target.value)}
+                  placeholder="Explain why the application is rejected…"
+                  rows={3}
+                />
               </div>
             </div>
-            <DialogFooter className="gap-3">
-              <Button variant="destructive" onClick={reject}>Reject</Button>
-              <Button variant="outline" onClick={() => { toast.info('More info requested.'); setSelected(null); }}>
-                Request more info
+
+            <DialogFooter className="gap-2">
+              <Button variant="destructive" onClick={() => handleDecide('REJECTED')} disabled={deciding}>
+                {deciding ? <Loader2 className="size-4 animate-spin" /> : 'Reject'}
               </Button>
-              <Button onClick={approve} disabled={selected.verified}>
-                {selected.verified ? 'Already approved' : 'Approve'}
+              <Button onClick={() => handleDecide('APPROVED')} disabled={deciding}>
+                {deciding ? <Loader2 className="size-4 animate-spin" /> : 'Approve'}
               </Button>
             </DialogFooter>
           </DialogContent>

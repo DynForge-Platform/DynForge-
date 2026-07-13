@@ -56,6 +56,14 @@ public class Booking {
 
     private Instant createdAt;
 
+    /** Set when the mentor accepts the booking request. */
+    private Instant acceptedAt;
+
     /** Set when the mentor marks the session as taught; used by the auto-confirm scheduler. */
     private Instant taughtAt;
+
+    /** Category + description supplied by the mentee when opening a dispute. */
+    private String disputeIssueType;
+
+    private String disputeReason;
 }

@@ -6,6 +6,7 @@ import com.dangkhoa.khoahd19.be.mapper.VerificationMapper;
 import com.dangkhoa.khoahd19.be.model.dto.VerificationDecisionRequest;
 import com.dangkhoa.khoahd19.be.model.dto.VerificationRequestDto;
 import com.dangkhoa.khoahd19.be.model.dto.VerificationResponse;
+import com.dangkhoa.khoahd19.be.model.entity.MentorProfile;
 import com.dangkhoa.khoahd19.be.model.entity.User;
 import com.dangkhoa.khoahd19.be.model.entity.VerificationRequest;
 import com.dangkhoa.khoahd19.be.model.enums.VerificationStatus;
@@ -39,6 +40,11 @@ public class VerificationService {
         return verificationMapper.toResponse(verificationRepository.save(request));
     }
 
+    public List<VerificationResponse> getMine(User user) {
+        return verificationRepository.findByUserId(new ObjectId(user.getId()))
+                .stream().map(verificationMapper::toResponse).toList();
+    }
+
     public List<VerificationResponse> list(VerificationStatus status) {
         List<VerificationRequest> requests = status == null
                 ? verificationRepository.findAll()
@@ -62,10 +68,13 @@ public class VerificationService {
         request = verificationRepository.save(request);
 
         if (decision.status() == VerificationStatus.APPROVED) {
-            mentorRepository.findByUserId(request.getUserId()).ifPresent(profile -> {
-                profile.setVerified(true);
-                mentorRepository.save(profile);
-            });
+            // Upsert: create a minimal profile if the mentor hasn't set one up yet,
+            // so approval always results in a verified, listable mentor.
+            ObjectId mentorUserId = request.getUserId();
+            MentorProfile profile = mentorRepository.findByUserId(mentorUserId)
+                    .orElseGet(() -> MentorProfile.builder().userId(mentorUserId).build());
+            profile.setVerified(true);
+            mentorRepository.save(profile);
         }
 
         return verificationMapper.toResponse(request);

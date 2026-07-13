@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { ChevronLeft, ChevronRight, ShieldCheck, Video, MapPin } from 'lucide-react';
-import { getMentor, formatCurrency } from '../data/mockData';
+import { ChevronLeft, ChevronRight, ShieldCheck, Video, MapPin, Loader2 } from 'lucide-react';
+import { getMentor, formatCurrency, type Mentor } from '../data/mockData';
 import { Button, buttonVariants } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Card } from '../components/ui/card';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { cn } from '../components/ui/utils';
+import { getMentorById, isObjectId, backendToMentor } from '../services/mentorService';
 
 const durations = [30, 45, 60, 90];
 const customDurations = [120, 180, 240];
@@ -18,47 +19,110 @@ export function ScheduleConsultation() {
   const { user } = useAuth();
   const { T } = useLanguage();
 
-  const learningModes = [T.oneOnOne, T.group, T.custom];
-  const slotGroups = {
-    [T.morning]: ['08:00', '09:00', '10:00', '11:00'],
-    [T.afternoon]: ['13:00', '14:00', '15:00', '16:00'],
-    [T.evening]: ['18:00', '19:00', '20:00'],
-  };
-  const mentor = getMentor(id);
-
-  // Redirect to login if not authenticated
-  if (!user) {
-    navigate(`/login?redirect=/mentors/${id}/schedule`);
-    return null;
-  }
-
+  // ── All hooks MUST be declared before any conditional return ──
   const [monthOffset, setMonthOffset] = useState(0);
   const [duration, setDuration] = useState(60);
   const [showCustom, setShowCustom] = useState(false);
-  const [mode, setMode] = useState('1-on-1');
-  const [format, setFormat] = useState<'Online' | 'Offline'>('Online');
-  const [selectedDay, setSelectedDay] = useState<number | null>(22);
+  // bookingFormat is the enum value sent to the backend; mode is the display label
+  const [bookingFormat, setBookingFormat] = useState<'ONE_ON_ONE' | 'GROUP'>('ONE_ON_ONE');
+  const [displayMode, setDisplayMode] = useState<string>('');        // set after T is available
+  const [sessionFormat, setSessionFormat] = useState<'Online' | 'Offline'>('Online');
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<string>(mentor?.courses?.[0] ?? '');
+  const [selectedCourse, setSelectedCourse] = useState<string>('');  // stores course.code
+  // Real mentor userId fetched from backend (null = demo mode)
+  const [realMentorUserId, setRealMentorUserId] = useState<string | null>(null);
+  // Backend mentor profile (populated when id is a valid ObjectId)
+  const [backendMentor, setBackendMentor] = useState<Mentor | undefined>(undefined);
+  const [mentorLoading, setMentorLoading] = useState(isObjectId(id ?? ''));
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!user) navigate(`/login?redirect=/mentors/${id}/schedule`);
+  }, [user, navigate, id]);
+
+  // Initialise displayMode from T once translations load
+  useEffect(() => {
+    if (!displayMode && T.oneOnOne) setDisplayMode(T.oneOnOne);
+  }, [T.oneOnOne, displayMode]);
+
+  // Fetch backend mentor when id is a real ObjectId
+  useEffect(() => {
+    if (!id || !isObjectId(id)) return;
+    setMentorLoading(true);
+    getMentorById(id)
+      .then((profile) => {
+        setRealMentorUserId(profile.userId);
+        setBackendMentor(backendToMentor(profile));
+      })
+      .catch(() => { /* fall back to mockData mentor */ })
+      .finally(() => setMentorLoading(false));
+  }, [id]);
+
+  // The mentor to display: backend profile (real) → mockData (demo) → undefined (not found)
+  const mentor: Mentor | undefined = backendMentor ?? getMentor(id);
+
+  // Pre-select the first course once mentor data is available
+  useEffect(() => {
+    if (mentor?.courses?.[0]?.code && !selectedCourse) {
+      setSelectedCourse(mentor.courses[0].code);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mentor?.id]);
+
+  if (!user) return null;
+
+  if (mentorLoading) {
+    return (
+      <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
+        <Loader2 className="size-5 animate-spin" /> Loading mentor profile…
+      </div>
+    );
+  }
 
   if (!mentor) return <div className="p-20 text-center">{T.mentorNotFound}</div>;
 
-  const base = new Date(2026, 5 + monthOffset, 1);
+  const learningModes: { label: string; format: 'ONE_ON_ONE' | 'GROUP' }[] = [
+    { label: T.oneOnOne, format: 'ONE_ON_ONE' },
+    { label: T.group,    format: 'GROUP' },
+    { label: T.custom,   format: 'ONE_ON_ONE' },   // Custom → same rate logic as 1-on-1
+  ];
+
+  const slotGroups = {
+    [T.morning]:   ['08:00', '09:00', '10:00', '11:00'],
+    [T.afternoon]: ['13:00', '14:00', '15:00', '16:00'],
+    [T.evening]:   ['18:00', '19:00', '20:00'],
+  };
+
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const monthLabel = base.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
   const firstWeekday = new Date(base.getFullYear(), base.getMonth(), 1).getDay();
-  const today = 20;
+  // Only mark past days in the current calendar month; all days in future months are available
+  const todayDay = monthOffset === 0 ? now.getDate() : 0;
 
-  // Rate changes based on learning mode
-  const activeRate =
-    mode === 'Group' ? mentor.groupRate
-    : mode === 'Custom' ? Math.round((mentor.hourlyRate + mentor.groupRate) / 2)
-    : mentor.hourlyRate;
+  // Use the correct hourly rate for the selected format
+  const activeRate = bookingFormat === 'GROUP' ? mentor.groupRate : mentor.hourlyRate;
   const price = Math.round((activeRate * duration) / 60);
 
   const cont = () => {
+    // mentorId: use real backend userId if available, fall back to mock id (demo mode)
+    const mentorId = realMentorUserId ?? mentor.id;
     navigate(`/mentors/${mentor.id}/order`, {
-      state: { duration, mode, format, day: selectedDay, slot: selectedSlot, price, courseCode: selectedCourse, mentorId: mentor.id },
+      state: {
+        duration,
+        displayMode,
+        bookingFormat,          // 'ONE_ON_ONE' | 'GROUP' — sent directly to backend
+        sessionFormat,
+        day: selectedDay,
+        month: base.getMonth(),     // 0-indexed — actual selected calendar month
+        year: base.getFullYear(),   // actual selected calendar year
+        slot: selectedSlot,
+        price,
+        courseCode: selectedCourse,
+        mentorId,
+      },
     });
   };
 
@@ -82,24 +146,28 @@ export function ScheduleConsultation() {
             </div>
 
             <div className="mt-5 space-y-4">
+              {/* Learning mode */}
               <div>
                 <p className="mb-2 text-sm text-muted-foreground">{T.learningMode}</p>
                 <div className="flex flex-wrap gap-2">
-                  {learningModes.map((m) => (
+                  {learningModes.map(({ label, format }) => (
                     <button
-                      key={m}
-                      onClick={() => setMode(m)}
+                      key={label}
+                      onClick={() => { setDisplayMode(label); setBookingFormat(format); }}
                       className={cn(
                         'rounded-lg border px-3 py-1.5 text-sm transition-colors',
-                        mode === m ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:bg-accent'
+                        displayMode === label
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border hover:bg-accent'
                       )}
                     >
-                      {m}
+                      {label}
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* Session format (Online / Offline) */}
               <div>
                 <p className="mb-2 text-sm text-muted-foreground">{T.format}</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -109,10 +177,12 @@ export function ScheduleConsultation() {
                     return (
                       <button
                         key={f}
-                        onClick={() => setFormat(f)}
+                        onClick={() => setSessionFormat(f)}
                         className={cn(
                           'flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
-                          format === f ? 'border-primary bg-accent text-primary' : 'border-border hover:bg-accent'
+                          sessionFormat === f
+                            ? 'border-primary bg-accent text-primary'
+                            : 'border-border hover:bg-accent'
                         )}
                       >
                         <Icon className="size-4" /> {label}
@@ -122,22 +192,23 @@ export function ScheduleConsultation() {
                 </div>
               </div>
 
+              {/* Course selector */}
               {mentor.courses && mentor.courses.length > 0 && (
                 <div>
                   <p className="mb-2 text-sm text-muted-foreground">Course</p>
                   <div className="flex flex-wrap gap-2">
                     {mentor.courses.map((c) => (
                       <button
-                        key={c}
-                        onClick={() => setSelectedCourse(c)}
+                        key={c.code}
+                        onClick={() => setSelectedCourse(c.code)}
                         className={cn(
                           'rounded-lg border px-3 py-1.5 text-xs transition-colors',
-                          selectedCourse === c
+                          selectedCourse === c.code
                             ? 'border-primary bg-primary text-primary-foreground'
                             : 'border-border hover:bg-accent'
                         )}
                       >
-                        {c}
+                        {c.name}
                       </button>
                     ))}
                   </div>
@@ -146,31 +217,31 @@ export function ScheduleConsultation() {
             </div>
 
             <div className="mt-5 space-y-2 border-t border-border pt-4 text-sm">
-              <SummaryRow label={T.sessionType} value={mode} />
+              <SummaryRow label={T.sessionType} value={displayMode} />
               <SummaryRow label={T.duration} value={duration >= 120 ? `${duration / 60}h (${duration} min)` : `${duration} min`} />
               <SummaryRow
                 label={T.date}
                 value={selectedDay ? `${selectedDay} ${base.toLocaleDateString('en-US', { month: 'short' })}` : '—'}
               />
               <SummaryRow label={T.time} value={selectedSlot ?? '—'} />
+              {selectedCourse && <SummaryRow label="Course" value={selectedCourse} />}
             </div>
 
             <div className="mt-4 border-t border-border pt-4">
-              {/* Rate reference */}
               <div className="mb-3 rounded-xl bg-accent/60 px-3 py-2 text-xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className={cn('text-muted-foreground', mode === 'Group' && 'text-primary font-semibold')}>
+                  <span className={cn('text-muted-foreground', bookingFormat === 'GROUP' && 'text-primary font-semibold')}>
                     {T.groupRate}
                   </span>
-                  <span className={cn('font-semibold', mode === 'Group' ? 'text-primary' : 'text-muted-foreground')}>
+                  <span className={cn('font-semibold', bookingFormat === 'GROUP' ? 'text-primary' : 'text-muted-foreground')}>
                     {formatCurrency(mentor.groupRate)}/hr
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={cn('text-muted-foreground', mode === '1-on-1' && 'text-primary font-semibold')}>
+                  <span className={cn('text-muted-foreground', bookingFormat === 'ONE_ON_ONE' && 'text-primary font-semibold')}>
                     {T.oneOnOneRate}
                   </span>
-                  <span className={cn('font-semibold', mode === '1-on-1' ? 'text-primary' : 'text-muted-foreground')}>
+                  <span className={cn('font-semibold', bookingFormat === 'ONE_ON_ONE' ? 'text-primary' : 'text-muted-foreground')}>
                     {formatCurrency(mentor.hourlyRate)}/hr
                   </span>
                 </div>
@@ -179,7 +250,7 @@ export function ScheduleConsultation() {
                 <div>
                   <span className="text-muted-foreground">{T.total}</span>
                   <span className="ml-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary" style={{ fontWeight: 500 }}>
-                    {mode} · {duration} {T.minLabel}
+                    {displayMode} · {duration} {T.minLabel}
                   </span>
                 </div>
                 <span style={{ fontWeight: 700, fontSize: '1.125rem' }}>{formatCurrency(price)}</span>
@@ -208,7 +279,6 @@ export function ScheduleConsultation() {
                   {d} {T.minLabel}
                 </button>
               ))}
-              {/* Custom toggle button */}
               <button
                 onClick={() => setShowCustom((v) => !v)}
                 className={cn(
@@ -223,7 +293,6 @@ export function ScheduleConsultation() {
               </button>
             </div>
 
-            {/* Custom duration options — 2h / 3h / 4h */}
             {showCustom && (
               <div className="mt-4 rounded-xl border border-primary/20 bg-accent/50 p-4">
                 <p className="mb-3 text-xs text-muted-foreground" style={{ fontWeight: 500 }}>
@@ -273,8 +342,8 @@ export function ScheduleConsultation() {
               {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const day = i + 1;
-                const past = monthOffset === 0 && day < today;
-                const unavailable = past || day % 7 === 0; // mute Sundays + past
+                const past = day < todayDay;
+                const unavailable = past || day % 7 === 0;
                 const selected = selectedDay === day && monthOffset === 0;
                 return (
                   <button
@@ -301,29 +370,29 @@ export function ScheduleConsultation() {
             {selectedDay ? (
               <div className="space-y-5">
                 {Object.entries(slotGroups).map(([group, slots]) => {
-                  const groupLabel = group === 'Morning' ? T.morning : group === 'Afternoon' ? T.afternoon : T.evening;
+                  const groupLabel = group === T.morning ? T.morning : group === T.afternoon ? T.afternoon : T.evening;
                   return (
-                  <div key={group}>
-                    <p className="mb-2 text-sm text-muted-foreground">{groupLabel}</p>
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                      {slots.map((slot) => {
-                        const selected = selectedSlot === slot;
-                        return (
-                          <button
-                            key={slot}
-                            onClick={() => setSelectedSlot(slot)}
-                            className={cn(
-                              'rounded-lg border py-2.5 text-sm transition-colors',
-                              selected ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary hover:text-primary'
-                            )}
-                            style={{ fontWeight: 500 }}
-                          >
-                            {slot}
-                          </button>
-                        );
-                      })}
+                    <div key={group}>
+                      <p className="mb-2 text-sm text-muted-foreground">{groupLabel}</p>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {slots.map((slot) => {
+                          const sel = selectedSlot === slot;
+                          return (
+                            <button
+                              key={slot}
+                              onClick={() => setSelectedSlot(slot)}
+                              className={cn(
+                                'rounded-lg border py-2.5 text-sm transition-colors',
+                                sel ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary hover:text-primary'
+                              )}
+                              style={{ fontWeight: 500 }}
+                            >
+                              {slot}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
                   );
                 })}
               </div>
@@ -336,7 +405,11 @@ export function ScheduleConsultation() {
             <Link to={`/mentors/${mentor.id}`} className={buttonVariants({ variant: 'ghost' })}>
               {T.backToProfile}
             </Link>
-            <Button size="lg" disabled={!selectedDay || !selectedSlot} onClick={cont}>
+            <Button
+              size="lg"
+              disabled={!selectedDay || !selectedSlot || !selectedCourse}
+              onClick={cont}
+            >
               {T.continueToOrder}
             </Button>
           </div>

@@ -1,15 +1,17 @@
-import { Outlet, NavLink, Link, ScrollRestoration } from 'react-router';
+import { Outlet, NavLink, useNavigate, ScrollRestoration } from 'react-router';
 import {
   CalendarCheck, Wallet, AlertTriangle, User, Settings,
   LayoutDashboard, ShieldCheck, Calendar, Clock, TrendingUp,
   BadgeCheck, Users, FileText, BarChart3, CreditCard,
-  LogOut, BookMarked, MessageSquare, Tag,
+  LogOut, BookMarked, MessageSquare, Tag, Video,
 } from 'lucide-react';
 import { Logo } from '../Logo';
 import { cn } from '../ui/utils';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
 
 type Role = 'student' | 'teacher' | 'admin';
 
@@ -54,26 +56,12 @@ const adminNav: NavItem[] = [
   { to: '/admin/payouts',             labelKey: 'payoutsRefunds',      icon: Wallet },
   { to: '/admin/vouchers',            labelKey: 'adminVouchers',       icon: Tag },
   { to: '/admin/disputes',            labelKey: 'adminDisputes',       icon: AlertTriangle },
+  { to: '/admin/recordings',          labelKey: 'recordings',          icon: Video },
   { to: '/admin/resources',           labelKey: 'adminResources',      icon: BookMarked },
   { to: '/admin/reports',             labelKey: 'reports',             icon: BarChart3 },
   { to: '/admin/settings',            labelKey: 'settings',            icon: Settings },
   { to: '/admin/audit-logs',          labelKey: 'auditLogs',           icon: FileText },
 ];
-
-const roleAvatars: Record<Role, { userLabel: string; avatar: string }> = {
-  student: {
-    userLabel: 'Trang Do',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
-  },
-  teacher: {
-    userLabel: 'Nguyễn Thị Linh',
-    avatar: 'https://images.unsplash.com/photo-1531427888099-b3ecff6e1a6f?auto=format&fit=crop&w=80&q=80',
-  },
-  admin: {
-    userLabel: 'Admin · GRADORA',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80',
-  },
-};
 
 const roleNavMap: Record<Role, NavItem[]> = {
   student: studentNav,
@@ -81,10 +69,27 @@ const roleNavMap: Record<Role, NavItem[]> = {
   admin: adminNav,
 };
 
+// Fallback avatar per role when the logged-in user has none.
+const fallbackAvatar: Record<Role, string> = {
+  student: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
+  teacher: 'https://images.unsplash.com/photo-1531427888099-b3ecff6e1a6f?auto=format&fit=crop&w=80&q=80',
+  admin: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80',
+};
+
 export function DashboardLayout({ role = 'student' }: { role?: Role }) {
   const { T } = useLanguage();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const nav = roleNavMap[role];
-  const meta = roleAvatars[role];
+
+  const userLabel = user?.name ?? 'Guest';
+  const avatar = user?.avatar || fallbackAvatar[role];
+
+  const handleLogout = async () => {
+    await logout();
+    toast.success('Signed out successfully.');
+    navigate('/');
+  };
 
   const portalLabel =
     role === 'teacher' ? T.mentorPortal
@@ -125,13 +130,13 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
           })}
         </nav>
 
-        <Link
-          to="/login"
+        <button
+          onClick={handleLogout}
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
           style={{ fontWeight: 500 }}
         >
           <LogOut className="size-4.5" /> {T.logOut}
-        </Link>
+        </button>
       </aside>
 
       {/* Main area */}
@@ -143,11 +148,11 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
           <div className="flex items-center gap-3">
             <LanguageSwitcher />
             <span className="hidden text-sm sm:inline" style={{ fontWeight: 500 }}>
-              {meta.userLabel}
+              {userLabel}
             </span>
             <ImageWithFallback
-              src={meta.avatar}
-              alt={meta.userLabel}
+              src={avatar}
+              alt={userLabel}
               className="size-9 rounded-full object-cover"
             />
           </div>

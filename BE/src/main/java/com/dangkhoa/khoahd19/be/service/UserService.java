@@ -1,0 +1,51 @@
+package com.dangkhoa.khoahd19.be.service;
+
+import com.dangkhoa.khoahd19.be.exception.BadRequestException;
+import com.dangkhoa.khoahd19.be.mapper.UserMapper;
+import com.dangkhoa.khoahd19.be.model.dto.ChangePasswordRequest;
+import com.dangkhoa.khoahd19.be.model.dto.UpdateProfileRequest;
+import com.dangkhoa.khoahd19.be.model.dto.UserResponse;
+import com.dangkhoa.khoahd19.be.model.entity.User;
+import com.dangkhoa.khoahd19.be.repository.RefreshTokenRepository;
+import com.dangkhoa.khoahd19.be.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.bson.types.ObjectId;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
+
+    public UserResponse updateProfile(User user, UpdateProfileRequest request) {
+        user.setFullName(request.fullName());
+        user.setPhone(request.phone());
+        user.setStudentId(request.studentId());
+        user.setMajor(request.major());
+        user.setYear(request.year());
+        if (request.avatarUrl() != null) {
+            user.setAvatarUrl(request.avatarUrl());
+        }
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    public void changePassword(User user, ChangePasswordRequest request) {
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("New password must be different from the current one");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        // Force re-login on all other devices
+        refreshTokenRepository.deleteByUserId(new ObjectId(user.getId()));
+    }
+}

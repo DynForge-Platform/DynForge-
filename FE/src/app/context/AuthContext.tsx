@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { loginApi, registerApi, logoutApi, type AuthTokens } from '../services/authService';
+import { loginApi, registerApi, logoutApi, googleLoginApi, type AuthTokens } from '../services/authService';
+import { getMe } from '../services/userService';
 
 export type AuthRole = 'mentee' | 'mentor' | 'admin';
 
@@ -15,9 +16,11 @@ export interface AuthUser {
 interface AuthCtx {
   user: AuthUser | null;
   login: (role: AuthRole) => void;
-  loginWithCredentials: (email: string, password: string) => Promise<void>;
-  registerWithCredentials: (fullName: string, email: string, password: string, role: 'MENTEE' | 'MENTOR') => Promise<void>;
+  loginWithCredentials: (email: string, password: string) => Promise<AuthUser>;
+  loginWithGoogle: (idToken: string) => Promise<AuthUser>;
+  registerWithCredentials: (fullName: string, email: string, password: string, role: 'MENTEE' | 'MENTOR') => Promise<AuthUser>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 // Quick-access demo profiles (no real JWT)
@@ -94,8 +97,10 @@ const AuthContext = createContext<AuthCtx>({
   user: null,
   login: () => {},
   loginWithCredentials: async () => {},
+  loginWithGoogle: async () => {},
   registerWithCredentials: async () => {},
   logout: async () => {},
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -109,13 +114,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(ROLE_KEY, role);
   };
 
-  const loginWithCredentials = async (email: string, password: string) => {
+  const loginWithCredentials = async (email: string, password: string): Promise<AuthUser> => {
     const tokens = await loginApi(email, password);
     storeTokens(tokens);
     const u = buildUserFromTokens(tokens);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     localStorage.removeItem(ROLE_KEY);
     setUser(u);
+    return u;
+  };
+
+  const loginWithGoogle = async (idToken: string): Promise<AuthUser> => {
+    const tokens = await googleLoginApi(idToken);
+    storeTokens(tokens);
+    const u = buildUserFromTokens(tokens);
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
+    localStorage.removeItem(ROLE_KEY);
+    setUser(u);
+    return u;
   };
 
   const registerWithCredentials = async (
@@ -123,13 +139,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     role: 'MENTEE' | 'MENTOR'
-  ) => {
+  ): Promise<AuthUser> => {
     const tokens = await registerApi(fullName, email, password, role);
     storeTokens(tokens);
     const u = buildUserFromTokens(tokens);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     localStorage.removeItem(ROLE_KEY);
     setUser(u);
+    return u;
   };
 
   const logout = async () => {
@@ -141,8 +158,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  // Re-fetch the current user (e.g. after a profile update) and refresh header/avatar.
+  const refreshUser = async () => {
+    try {
+      const me = await getMe();
+      const role = roleFromBackend(me.roles);
+      const u: AuthUser = {
+        id: me.id,
+        role,
+        name: me.fullName,
+        email: me.email,
+        avatar: me.avatarUrl ?? demoProfiles[role].avatar,
+        dashboardPath: dashboardPath(role),
+      };
+      localStorage.setItem(USER_KEY, JSON.stringify(u));
+      setUser(u);
+    } catch { /* keep current user on failure */ }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, loginWithCredentials, registerWithCredentials, logout }}>
+    <AuthContext.Provider value={{ user, login, loginWithCredentials, loginWithGoogle, registerWithCredentials, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

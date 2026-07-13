@@ -76,6 +76,7 @@ export interface Resource {
   university: string;
   subject: string;
   level: string;
+  url?: string;
 }
 
 export interface Transaction {

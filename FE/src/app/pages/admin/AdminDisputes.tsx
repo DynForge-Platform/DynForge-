@@ -1,47 +1,57 @@
-import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { disputes, formatCurrency, sessions } from '../../data/mockData';
+import { useState, useEffect } from 'react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
+import { formatCurrency } from '../../data/mockData';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '../../components/ui/dialog';
-import { Textarea } from '../../components/ui/textarea';
-import { Label } from '../../components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../../components/ui/table';
 import { KpiCard } from '../../components/cards';
 import { StatusBadge, EmptyState } from '../../components/common';
 import { toast } from 'sonner';
-
-function priorityColor(status: string) {
-  if (status === 'Open') return 'bg-danger/10 text-danger border-danger/20';
-  if (status === 'Under Review') return 'bg-warning/10 text-warning border-warning/20';
-  return 'bg-muted text-muted-foreground';
-}
-
-function priority(status: string) {
-  if (status === 'Open') return 'High';
-  if (status === 'Under Review') return 'Medium';
-  return 'Low';
-}
+import {
+  listAdminDisputes, resolveDispute,
+  type AdminDispute,
+} from '../../services/adminService';
 
 export function AdminDisputes() {
-  const [selected, setSelected] = useState<typeof disputes[0] | null>(null);
+  const [disputes, setDisputes] = useState<AdminDispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<AdminDispute | null>(null);
+  const [acting, setActing] = useState(false);
 
-  const counts = {
-    Open: disputes.filter((d) => d.status === 'Open').length,
-    'Under Review': disputes.filter((d) => d.status === 'Under Review').length,
-    Resolved: disputes.filter((d) => d.status === 'Resolved').length,
-    Refunded: disputes.filter((d) => d.status === 'Refunded').length,
+  const openReview = (d: AdminDispute) => {
+    setSelected(d);
   };
 
-  const decide = (verdict: string) => {
+  const fetchDisputes = () => {
+    setLoading(true);
+    listAdminDisputes()
+      .then(setDisputes)
+      .catch(() => toast.error('Failed to load disputes.'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchDisputes(); }, []);
+
+  const decide = async (releaseToMentor: boolean) => {
     if (!selected) return;
-    toast.success(`${selected.id} marked as ${verdict}.`);
-    setSelected(null);
+    setActing(true);
+    try {
+      await resolveDispute(selected.bookingId, releaseToMentor);
+      toast.success(releaseToMentor
+        ? 'Dispute resolved — payment released to mentor.'
+        : 'Dispute resolved — student refunded.');
+      setSelected(null);
+      fetchDisputes();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not resolve dispute.');
+    } finally {
+      setActing(false);
+    }
   };
 
   return (
@@ -51,100 +61,100 @@ export function AdminDisputes() {
         <p className="mt-1 text-muted-foreground">Review and resolve student–mentor disputes fairly.</p>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Open" value={String(counts.Open)} icon={AlertTriangle} tone="warning" />
-        <KpiCard label="Under Review" value={String(counts['Under Review'])} icon={AlertTriangle} />
-        <KpiCard label="Resolved" value={String(counts.Resolved)} icon={AlertTriangle} tone="success" />
-        <KpiCard label="Refunded" value={String(counts.Refunded)} icon={AlertTriangle} tone="success" />
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <KpiCard label="Open disputes" value={String(disputes.length)} icon={AlertTriangle} tone="warning" />
+        <KpiCard label="Total value" value={formatCurrency(disputes.reduce((s, d) => s + d.price, 0))} icon={AlertTriangle} />
+        <KpiCard label="Mentors involved" value={String(new Set(disputes.map((d) => d.mentorId)).size)} icon={AlertTriangle} />
       </div>
 
       <Card className="border-border p-6">
-        {disputes.length ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+            <Loader2 className="size-5 animate-spin" /> Loading disputes…
+          </div>
+        ) : disputes.length ? (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Case ID</TableHead>
+                  <TableHead>Booking</TableHead>
                   <TableHead>Student</TableHead>
                   <TableHead>Mentor</TableHead>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Issue</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {disputes.map((d) => {
-                  const session = sessions.find((s) => s.id === d.sessionId);
-                  return (
-                    <TableRow key={d.id}>
-                      <TableCell>
-                        <Badge className={`border ${priorityColor(d.status)}`}>{priority(d.status)}</Badge>
-                      </TableCell>
-                      <TableCell style={{ fontWeight: 500 }}>{d.id}</TableCell>
-                      <TableCell className="text-muted-foreground">Trang Do</TableCell>
-                      <TableCell className="text-muted-foreground">{d.mentor}</TableCell>
-                      <TableCell className="text-muted-foreground">{d.course}</TableCell>
-                      <TableCell className="max-w-[180px] truncate text-muted-foreground">{d.issueType}</TableCell>
-                      <TableCell><StatusBadge status={d.status} /></TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => setSelected(d)}>Review</Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {disputes.map((d) => (
+                  <TableRow key={d.bookingId}>
+                    <TableCell style={{ fontWeight: 500 }}>{d.bookingId.slice(0, 8)}…</TableCell>
+                    <TableCell className="text-muted-foreground">{d.menteeName ?? d.menteeId.slice(0, 8)}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.mentorName ?? d.mentorId.slice(0, 8)}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.courseCode}</TableCell>
+                    <TableCell className="max-w-[200px] text-muted-foreground">
+                      <span className="line-clamp-2" title={d.reason ?? ''}>{d.issueType ?? d.reason ?? '—'}</span>
+                    </TableCell>
+                    <TableCell style={{ fontWeight: 600 }}>{formatCurrency(d.price)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm" onClick={() => openReview(d)}>Review</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
         ) : (
-          <EmptyState
-            icon={AlertTriangle}
-            title="No disputes"
-            description="All disputes have been resolved."
-          />
+          <EmptyState icon={AlertTriangle} title="No disputes" description="All disputes have been resolved." />
         )}
       </Card>
 
       {/* Admin decision dialog */}
       {selected && (
-        <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+        <Dialog open onOpenChange={() => { if (!acting) setSelected(null); }}>
           <DialogContent className="max-w-lg" aria-describedby={undefined}>
             <DialogHeader>
-              <DialogTitle>Admin review — {selected.id}</DialogTitle>
+              <DialogTitle>Resolve dispute — {selected.bookingId.slice(0, 8)}…</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground">Mentor</p>
-                  <p style={{ fontWeight: 500 }}>{selected.mentor}</p>
+                  <p className="text-muted-foreground">Student</p>
+                  <p style={{ fontWeight: 500 }}>{selected.menteeName ?? selected.menteeId}</p>
                 </div>
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground">Issue type</p>
-                  <p style={{ fontWeight: 500 }}>{selected.issueType}</p>
+                  <p className="text-muted-foreground">Mentor</p>
+                  <p style={{ fontWeight: 500 }}>{selected.mentorName ?? selected.mentorId}</p>
+                </div>
+                <div className="rounded-xl border border-border p-3">
+                  <p className="text-muted-foreground">Course</p>
+                  <p style={{ fontWeight: 500 }}>{selected.courseCode}</p>
+                </div>
+                <div className="rounded-xl border border-border p-3">
+                  <p className="text-muted-foreground">Amount in escrow</p>
+                  <p style={{ fontWeight: 500 }}>{formatCurrency(selected.price)}</p>
                 </div>
               </div>
               <div className="rounded-xl border border-border p-3">
+                <p className="text-muted-foreground">Issue type</p>
+                <p style={{ fontWeight: 500 }}>{selected.issueType ?? '—'}</p>
+              </div>
+              <div className="rounded-xl border border-border p-3">
                 <p className="text-muted-foreground mb-1">Student's reason</p>
-                <p>{selected.reason}</p>
+                <p className="whitespace-pre-wrap">{selected.reason ?? 'No reason provided.'}</p>
               </div>
-              {selected.adminNote && (
-                <div className="rounded-xl bg-primary/10 p-3">
-                  <p className="text-primary" style={{ fontWeight: 500 }}>Previous admin note</p>
-                  <p className="text-muted-foreground">{selected.adminNote}</p>
-                </div>
-              )}
-              <div>
-                <Label className="mb-1.5 block">Decision note</Label>
-                <Textarea placeholder="Write your decision / resolution note..." rows={3} />
-              </div>
+              <p className="rounded-xl bg-warning/10 p-3 text-warning">
+                Choose an outcome: refund the student, or release the escrow to the mentor.
+              </p>
             </div>
             <DialogFooter className="gap-2">
-              <Button variant="destructive" onClick={() => decide('Rejected')}>Reject claim</Button>
-              <Button variant="outline" onClick={() => decide('Refunded')} className="text-success border-success/30">
-                Issue refund
+              <Button variant="outline" className="text-success border-success/30" disabled={acting} onClick={() => decide(false)}>
+                {acting ? <Loader2 className="size-4 animate-spin" /> : 'Refund student'}
               </Button>
-              <Button onClick={() => decide('Resolved')}>Mark resolved</Button>
+              <Button disabled={acting} onClick={() => decide(true)}>
+                {acting ? <Loader2 className="size-4 animate-spin" /> : 'Release to mentor'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

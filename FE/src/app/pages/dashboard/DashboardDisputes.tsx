@@ -1,16 +1,11 @@
-import { useState } from 'react';
-import { AlertTriangle, Clock, CheckCircle2, RefreshCcw, Plus, MessageSquare } from 'lucide-react';
-import { disputes, sessions, formatCurrency } from '../../data/mockData';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { AlertTriangle, RefreshCcw, Plus, Loader2, ShieldCheck } from 'lucide-react';
+import { formatCurrency } from '../../data/mockData';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '../../components/ui/dialog';
-import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import {
@@ -22,6 +17,9 @@ import {
 import { KpiCard } from '../../components/cards';
 import { StatusBadge, EmptyState } from '../../components/common';
 import { toast } from 'sonner';
+import {
+  getMyBookings, disputeBooking, mapStatusToDisplay, type BookingResponse,
+} from '../../services/bookingService';
 
 const issueTypes = [
   'Session not attended',
@@ -33,20 +31,60 @@ const issueTypes = [
 ];
 
 export function DashboardDisputes() {
+  const [bookings, setBookings] = useState<BookingResponse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<typeof disputes[0] | null>(null);
+  const [selectedBookingId, setSelectedBookingId] = useState('');
+  const [issueType, setIssueType] = useState(issueTypes[0]);
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchBookings = useCallback(async () => {
+    setLoading(true);
+    try {
+      setBookings(await getMyBookings());
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to load disputes.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+  // The mentee's dispute cases = bookings that are disputed or refunded.
+  const disputes = useMemo(
+    () => bookings.filter((b) => b.status === 'DISPUTED' || b.status === 'REFUNDED'),
+    [bookings],
+  );
+  // Any paid, not-yet-completed session can be disputed.
+  const disputable = useMemo(
+    () => bookings.filter((b) => b.status === 'ESCROW_HELD' || b.status === 'ACCEPTED' || b.status === 'TAUGHT'),
+    [bookings],
+  );
 
   const counts = {
-    Open: disputes.filter((d) => d.status === 'Open').length,
-    'Under Review': disputes.filter((d) => d.status === 'Under Review').length,
-    Resolved: disputes.filter((d) => d.status === 'Resolved').length,
-    Refunded: disputes.filter((d) => d.status === 'Refunded').length,
+    open: disputes.filter((d) => d.status === 'DISPUTED').length,
+    refunded: disputes.filter((d) => d.status === 'REFUNDED').length,
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setOpen(false);
-    toast.success('Dispute submitted. GRADORA will review it within 48 hours.');
+    if (!selectedBookingId) { toast.error('Please select a session.'); return; }
+    if (!reason.trim()) { toast.error('Please describe the problem.'); return; }
+    setSubmitting(true);
+    try {
+      await disputeBooking(selectedBookingId, issueType, reason.trim());
+      toast.success('Dispute submitted. GRADORA will review it within 48 hours.');
+      setOpen(false);
+      setSelectedBookingId('');
+      setReason('');
+      fetchBookings();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not open dispute.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -58,48 +96,47 @@ export function DashboardDisputes() {
             Open and track support requests for sessions, refunds, or mentor issues.
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={() => setOpen(true)} disabled={disputable.length === 0}>
           <Plus className="size-4" /> Open New Dispute
         </Button>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Open" value={String(counts.Open)} icon={AlertTriangle} tone="warning" />
-        <KpiCard label="Under Review" value={String(counts['Under Review'])} icon={Clock} />
-        <KpiCard label="Resolved" value={String(counts.Resolved)} icon={CheckCircle2} tone="success" />
-        <KpiCard label="Refunded" value={String(counts.Refunded)} icon={RefreshCcw} tone="success" />
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <KpiCard label="Open" value={String(counts.open)} icon={AlertTriangle} tone="warning" />
+        <KpiCard label="Refunded" value={String(counts.refunded)} icon={RefreshCcw} tone="success" />
+        <KpiCard label="Total value" value={formatCurrency(disputes.reduce((s, d) => s + d.price, 0))} icon={ShieldCheck} />
       </div>
 
       <Card className="border-border p-6">
         <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>My disputes</h2>
-        {disputes.length ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+            <Loader2 className="size-5 animate-spin" /> Loading disputes…
+          </div>
+        ) : disputes.length ? (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Case ID</TableHead>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Mentor</TableHead>
-                  <TableHead>Issue Type</TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Issue</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {disputes.map((d) => (
                   <TableRow key={d.id}>
-                    <TableCell style={{ fontWeight: 500 }}>{d.id}</TableCell>
-                    <TableCell className="text-muted-foreground">{d.course}</TableCell>
-                    <TableCell style={{ fontWeight: 500 }}>{d.mentor}</TableCell>
-                    <TableCell className="text-muted-foreground">{d.issueType}</TableCell>
-                    <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {new Date(d.createdDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    <TableCell style={{ fontWeight: 500 }}>{d.courseCode}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.disputeIssueType ?? '—'}</TableCell>
+                    <TableCell className="max-w-[280px] text-muted-foreground">
+                      {d.disputeReason
+                        ? <span className="line-clamp-2" title={d.disputeReason}>{d.disputeReason}</span>
+                        : '—'}
                     </TableCell>
-                    <TableCell><StatusBadge status={d.status} /></TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => setSelected(d)}>View</Button>
-                    </TableCell>
+                    <TableCell style={{ fontWeight: 600 }}>{formatCurrency(d.price)}</TableCell>
+                    <TableCell><StatusBadge status={mapStatusToDisplay(d.status)} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -109,8 +146,8 @@ export function DashboardDisputes() {
           <EmptyState
             icon={AlertTriangle}
             title="No disputes yet"
-            description="When something goes wrong, you can open a dispute and GRADORA will review it fairly."
-            action={<Button onClick={() => setOpen(true)}>Open a Dispute</Button>}
+            description="When something goes wrong with a taught session, you can open a dispute and GRADORA will review it fairly."
+            action={disputable.length > 0 ? <Button onClick={() => setOpen(true)}>Open a Dispute</Button> : undefined}
           />
         )}
       </Card>
@@ -118,18 +155,16 @@ export function DashboardDisputes() {
       {/* New dispute dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Open a new dispute</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Open a new dispute</DialogTitle></DialogHeader>
           <form className="space-y-4" onSubmit={submit}>
             <div>
               <Label className="mb-1.5 block">Related session</Label>
-              <Select>
+              <Select value={selectedBookingId} onValueChange={setSelectedBookingId}>
                 <SelectTrigger><SelectValue placeholder="Select a session" /></SelectTrigger>
                 <SelectContent>
-                  {sessions.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.mentorName} — {s.course}
+                  {disputable.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.courseCode} — {new Date(b.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} · {formatCurrency(b.price)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -137,7 +172,7 @@ export function DashboardDisputes() {
             </div>
             <div>
               <Label className="mb-1.5 block">Issue type</Label>
-              <Select>
+              <Select value={issueType} onValueChange={setIssueType}>
                 <SelectTrigger><SelectValue placeholder="Select issue type" /></SelectTrigger>
                 <SelectContent>
                   {issueTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
@@ -146,50 +181,21 @@ export function DashboardDisputes() {
             </div>
             <div>
               <Label className="mb-1.5 block">Describe the problem</Label>
-              <Textarea placeholder="Please describe what happened in detail..." rows={4} />
+              <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Please describe what happened in detail…" rows={4} />
+            </div>
+            <div className="flex items-start gap-2 rounded-xl bg-accent/60 p-3 text-sm text-muted-foreground">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
+              Opening a dispute pauses the payout. GRADORA reviews all disputes fairly within 48 hours.
             </div>
             <DialogFooter className="gap-3">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit">Submit Dispute</Button>
+              <Button type="submit" variant="destructive" disabled={submitting}>
+                {submitting ? <Loader2 className="size-4 animate-spin" /> : 'Submit Dispute'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Dispute detail dialog */}
-      {selected && (
-        <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-          <DialogContent className="max-w-lg" aria-describedby={undefined}>
-            <DialogHeader>
-              <DialogTitle>{selected.id} — {selected.issueType}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <StatusBadge status={selected.status} />
-                <span className="text-sm text-muted-foreground">
-                  Opened {new Date(selected.createdDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                </span>
-              </div>
-              <div className="rounded-xl border border-border p-4">
-                <p className="text-sm text-muted-foreground">Your reason</p>
-                <p className="mt-1">{selected.reason}</p>
-              </div>
-              {selected.adminNote && (
-                <div className="flex items-start gap-2 rounded-xl bg-primary/10 p-4">
-                  <MessageSquare className="mt-0.5 size-4 shrink-0 text-primary" />
-                  <div>
-                    <p className="text-sm text-primary" style={{ fontWeight: 600 }}>Admin note</p>
-                    <p className="text-sm text-muted-foreground">{selected.adminNote}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { Search, BookMarked } from 'lucide-react';
+import { Search, BookMarked, Loader2 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Label } from '../components/ui/label';
@@ -8,7 +8,8 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Button } from '../components/ui/button';
 import { ResourceCard } from '../components/cards';
 import { EmptyState } from '../components/common';
-import { resources, universities } from '../data/mockData';
+import { universities, type Resource } from '../data/mockData';
+import { listResources } from '../services/resourceService';
 
 const types = ['Article', 'PDF Guide', 'Video', 'Template'] as const;
 const levelKeys = ['Undergraduate', 'Graduate', 'Postgraduate'] as const;
@@ -19,6 +20,15 @@ export function Resources() {
   const [type, setType] = useState<string[]>([]);
   const [level, setLevel] = useState<string[]>([]);
   const [uni, setUni] = useState<string[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listResources()
+      .then(setResources)
+      .catch(() => setResources([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Localised display labels for filter options
   const typeLabels: Record<string, string> = {
@@ -40,7 +50,7 @@ export function Resources() {
       const matchesUni = !uni.length || uni.includes(r.university);
       return matchesQuery && matchesType && matchesLevel && matchesUni;
     });
-  }, [query, type, level, uni]);
+  }, [resources, query, type, level, uni]);
 
   const reset = () => { setType([]); setLevel([]); setUni([]); setQuery(''); };
 
@@ -76,7 +86,11 @@ export function Resources() {
 
         <div>
           <p className="mb-4 text-sm text-muted-foreground">{T.resourcesFound(filtered.length)}</p>
-          {filtered.length ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+              <Loader2 className="size-5 animate-spin" /> Loading resources…
+            </div>
+          ) : filtered.length ? (
             <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((r) => (
                 <ResourceCard key={r.id} resource={r} />

@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { Search, SlidersHorizontal, UserSearch } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { Link } from 'react-router';
+import { Search, SlidersHorizontal, UserSearch, Loader2, Sparkles } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Label } from '../components/ui/label';
@@ -15,8 +16,11 @@ import {
 import { Card } from '../components/ui/card';
 import { MentorCard } from '../components/MentorCard';
 import { EmptyState } from '../components/common';
-import { mentors, majors, formatCurrency } from '../data/mockData';
+import { majors, formatCurrency, type Mentor } from '../data/mockData';
 import { useLanguage } from '../context/LanguageContext';
+import { listMentors, backendToMentor } from '../services/mentorService';
+import { mentorMatch, type MentorMatchResult } from '../services/aiService';
+import { toast } from 'sonner';
 
 const roles = ['Senior Student', 'Alumni Mentor', 'Lecturer', 'Research Advisor'];
 
@@ -26,8 +30,33 @@ export function MentorListing() {
   const [sort, setSort] = useState('rating');
   const [selectedMajors, setSelectedMajors] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-  const [maxPrice, setMaxPrice] = useState(120000);
+  const [maxPrice, setMaxPrice] = useState(150000);
   const [minRating, setMinRating] = useState('0');
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<MentorMatchResult | null>(null);
+
+  const runAdvisor = async () => {
+    if (!aiQuery.trim()) return;
+    setAiLoading(true);
+    try {
+      setAiResult(await mentorMatch(aiQuery.trim()));
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Không tư vấn được. Vui lòng thử lại.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Only real (verified) mentors from the backend — no mock fallback.
+    listMentors()
+      .then((profiles) => setMentors(profiles.map(backendToMentor)))
+      .catch(() => setMentors([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const toggle = (arr: string[], setArr: (v: string[]) => void, v: string) =>
     setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -55,7 +84,7 @@ export function MentorListing() {
       return 0;
     });
     return list;
-  }, [query, selectedMajors, selectedRoles, maxPrice, minRating, sort]);
+  }, [mentors, query, selectedMajors, selectedRoles, maxPrice, minRating, sort]);
 
   const reset = () => {
     setSelectedMajors([]);
@@ -153,6 +182,48 @@ export function MentorListing() {
 
         {/* Results */}
         <div>
+          {/* AI mentor advisor */}
+          <Card className="mb-6 border-primary/30 bg-primary/5 p-5">
+            <p className="mb-2 flex items-center gap-1.5 text-primary" style={{ fontWeight: 600 }}>
+              <Sparkles className="size-4" /> Tư vấn chọn gia sư bằng AI
+            </p>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Mô tả nhu cầu của bạn, AI sẽ gợi ý gia sư phù hợp nhất từ danh sách thật.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                value={aiQuery}
+                onChange={(e) => setAiQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') runAdvisor(); }}
+                placeholder="VD: Mình đang rớt Giải tích 1, cần luyện thi cuối kỳ trong 2 tuần…"
+                className="bg-input-background"
+              />
+              <Button onClick={runAdvisor} disabled={aiLoading || !aiQuery.trim()} className="shrink-0">
+                {aiLoading ? <><Loader2 className="size-4 animate-spin" /> Đang tư vấn…</> : <><Sparkles className="size-4" /> Tư vấn AI</>}
+              </Button>
+            </div>
+            {aiResult && (
+              <div className="mt-4 space-y-3 text-sm">
+                <p className="whitespace-pre-wrap text-muted-foreground">{aiResult.advice}</p>
+                {aiResult.matches.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {aiResult.matches.map((m) => (
+                      <Link
+                        key={m.mentorId}
+                        to={`/mentors/${m.mentorId}`}
+                        className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-background px-3 py-1 text-primary transition-colors hover:bg-primary/10"
+                        style={{ fontWeight: 500 }}
+                        title={m.reason}
+                      >
+                        <UserSearch className="size-3.5" /> {m.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -178,7 +249,11 @@ export function MentorListing() {
             {T.mentorsFound(filtered.length)}
           </p>
 
-          {filtered.length ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+              <Loader2 className="size-5 animate-spin" /> Loading mentors…
+            </div>
+          ) : filtered.length ? (
             <>
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {filtered.map((m) => (

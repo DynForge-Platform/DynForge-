@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { PublicLayout } from './components/layouts/PublicLayout';
 import { DashboardLayout } from './components/layouts/DashboardLayout';
+import { RoleRoute, ProtectedRoute } from './components/RouteGuards';
 
 // Public pages
 import { Home } from './pages/Home';
@@ -13,9 +14,11 @@ import { ScheduleConsultation } from './pages/ScheduleConsultation';
 import { OrderSummary } from './pages/OrderSummary';
 import { EscrowStatus } from './pages/EscrowStatus';
 import { BecomeMentor } from './pages/BecomeMentor';
+import { HowItWorks } from './pages/HowItWorks';
 import { Resources } from './pages/Resources';
 import { About } from './pages/About';
 import { Login, Register } from './pages/Auth';
+import { ForgotPassword } from './pages/ForgotPassword';
 import { ContactSupport } from './pages/ContactSupport';
 import { Messages } from './pages/Messages';
 
@@ -55,6 +58,7 @@ import { AdminPayouts } from './pages/admin/AdminPayouts';
 import { AdminVouchers } from './pages/admin/AdminVouchers';
 import { AdminDisputes } from './pages/admin/AdminDisputes';
 import { AdminAuditLogs } from './pages/admin/AdminAuditLogs';
+import { AdminRecordings } from './pages/admin/AdminRecordings';
 
 const router = createBrowserRouter([
   // ── Public ──────────────────────────────────────────────────
@@ -88,93 +92,118 @@ const router = createBrowserRouter([
       { path: '/payment-status', element: <EscrowStatus /> },
 
       // Other public pages
+      { path: '/how-it-works', element: <HowItWorks /> },
       { path: '/become-a-mentor', element: <BecomeMentor /> },
       { path: '/resources', element: <Resources /> },
+      // Mentor application form — any logged-in user (a mentee can apply to become a mentor)
+      {
+        element: <ProtectedRoute />,
+        children: [
+          { path: '/become-a-mentor/apply', element: <TeacherVerification /> },
+        ],
+      },
       { path: '/about', element: <About /> },
       { path: '/support/contact', element: <ContactSupport /> },
     ],
   },
 
-  // ── Student dashboard ────────────────────────────────────────
+  // ── Student dashboard (mentee/mentor only) ───────────────────
   {
-    element: <DashboardLayout role="student" />,
+    element: <RoleRoute allow={['mentee', 'mentor']} />,
     errorElement: <GlobalErrorBoundary />,
     children: [
-      { path: '/dashboard', element: <StudentDashboard /> },
-      { path: '/dashboard/sessions', element: <StudentDashboard /> },
-      { path: '/messages', element: <Messages /> },
-      { path: '/messages/:mentorId', element: <Messages /> },
-      { path: '/dashboard/wallet', element: <DashboardWallet /> },
-      { path: '/dashboard/disputes', element: <DashboardDisputes /> },
-      { path: '/dashboard/profile', element: <DashboardProfile /> },
-      { path: '/dashboard/settings', element: <DashboardSettings /> },
+      {
+        element: <DashboardLayout role="student" />,
+        children: [
+          { path: '/dashboard', element: <StudentDashboard /> },
+          { path: '/dashboard/sessions', element: <StudentDashboard /> },
+          { path: '/messages', element: <Messages /> },
+          { path: '/messages/:mentorId', element: <Messages /> },
+          { path: '/dashboard/wallet', element: <DashboardWallet /> },
+          { path: '/dashboard/disputes', element: <DashboardDisputes /> },
+          { path: '/dashboard/profile', element: <DashboardProfile /> },
+          { path: '/dashboard/settings', element: <DashboardSettings /> },
+        ],
+      },
     ],
   },
 
-  // ── Mentor portal (/mentor/*) ────────────────────────────────
+  // ── Mentor portal (/mentor/*) — mentor only ──────────────────
   {
-    element: <DashboardLayout role="teacher" />,
+    element: <RoleRoute allow={['mentor']} />,
     errorElement: <GlobalErrorBoundary />,
     children: [
-      { path: '/mentor/dashboard', element: <TeacherDashboard /> },
-      { path: '/mentor/sessions', element: <TeacherSessions /> },
-      { path: '/mentor/calendar', element: <TeacherCalendar /> },
-      { path: '/mentor/availability', element: <TeacherAvailability /> },
-      { path: '/mentor/messages', element: <Messages role="mentor" /> },
-      { path: '/mentor/earnings', element: <TeacherEarnings /> },
-      { path: '/mentor/wallet', element: <TeacherWallet /> },
-      { path: '/mentor/withdraw', element: <MentorWithdraw /> },
-      { path: '/mentor/unlock-withdraw', element: <MentorUnlockWithdraw /> },
-      { path: '/mentor/vouchers', element: <MentorVouchers /> },
-      { path: '/mentor/disputes', element: <TeacherDisputes /> },
-      { path: '/mentor/profile', element: <TeacherProfile /> },
-      { path: '/mentor/verification', element: <TeacherVerification /> },
-      { path: '/mentor/settings', element: <TeacherSettings /> },
+      {
+        element: <DashboardLayout role="teacher" />,
+        children: [
+          { path: '/mentor/dashboard', element: <TeacherDashboard /> },
+          { path: '/mentor/sessions', element: <TeacherSessions /> },
+          { path: '/mentor/calendar', element: <TeacherCalendar /> },
+          { path: '/mentor/availability', element: <TeacherAvailability /> },
+          { path: '/mentor/messages', element: <Messages role="mentor" /> },
+          { path: '/mentor/earnings', element: <TeacherEarnings /> },
+          { path: '/mentor/wallet', element: <TeacherWallet /> },
+          { path: '/mentor/withdraw', element: <MentorWithdraw /> },
+          { path: '/mentor/unlock-withdraw', element: <MentorUnlockWithdraw /> },
+          { path: '/mentor/vouchers', element: <MentorVouchers /> },
+          { path: '/mentor/disputes', element: <TeacherDisputes /> },
+          { path: '/mentor/profile', element: <TeacherProfile /> },
+          { path: '/mentor/verification', element: <TeacherVerification /> },
+          { path: '/mentor/settings', element: <TeacherSettings /> },
 
-      // Legacy /teacher/* → redirect to /mentor/*
-      { path: '/teacher', element: <Navigate to="/mentor/dashboard" replace /> },
-      { path: '/teacher/sessions', element: <Navigate to="/mentor/sessions" replace /> },
-      { path: '/teacher/calendar', element: <Navigate to="/mentor/calendar" replace /> },
-      { path: '/teacher/availability', element: <Navigate to="/mentor/availability" replace /> },
-      { path: '/teacher/earnings', element: <Navigate to="/mentor/earnings" replace /> },
-      { path: '/teacher/wallet', element: <Navigate to="/mentor/wallet" replace /> },
-      { path: '/teacher/disputes', element: <Navigate to="/mentor/disputes" replace /> },
-      { path: '/teacher/profile', element: <Navigate to="/mentor/profile" replace /> },
-      { path: '/teacher/verification', element: <Navigate to="/mentor/verification" replace /> },
-      { path: '/teacher/settings', element: <Navigate to="/mentor/settings" replace /> },
+          // Legacy /teacher/* → redirect to /mentor/*
+          { path: '/teacher', element: <Navigate to="/mentor/dashboard" replace /> },
+          { path: '/teacher/sessions', element: <Navigate to="/mentor/sessions" replace /> },
+          { path: '/teacher/calendar', element: <Navigate to="/mentor/calendar" replace /> },
+          { path: '/teacher/availability', element: <Navigate to="/mentor/availability" replace /> },
+          { path: '/teacher/earnings', element: <Navigate to="/mentor/earnings" replace /> },
+          { path: '/teacher/wallet', element: <Navigate to="/mentor/wallet" replace /> },
+          { path: '/teacher/disputes', element: <Navigate to="/mentor/disputes" replace /> },
+          { path: '/teacher/profile', element: <Navigate to="/mentor/profile" replace /> },
+          { path: '/teacher/verification', element: <Navigate to="/mentor/verification" replace /> },
+          { path: '/teacher/settings', element: <Navigate to="/mentor/settings" replace /> },
+        ],
+      },
     ],
   },
 
-  // ── Admin portal (/admin/*) ──────────────────────────────────
+  // ── Admin portal (/admin/*) — admin only ─────────────────────
   {
-    element: <DashboardLayout role="admin" />,
+    element: <RoleRoute allow={['admin']} />,
     errorElement: <GlobalErrorBoundary />,
     children: [
-      { path: '/admin', element: <Navigate to="/admin/dashboard" replace /> },
-      { path: '/admin/dashboard', element: <AdminOverview /> },
-      { path: '/admin/users', element: <AdminUsers /> },
-      { path: '/admin/mentors', element: <AdminMentors /> },
-      { path: '/admin/mentor-verification', element: <AdminVerification /> },
-      { path: '/admin/transactions', element: <AdminTransactions /> },
-      { path: '/admin/commission-revenue', element: <AdminDashboard /> },
-      { path: '/admin/payouts', element: <AdminPayouts /> },
-      { path: '/admin/vouchers', element: <AdminVouchers /> },
-      { path: '/admin/disputes', element: <AdminDisputes /> },
-      { path: '/admin/resources', element: <Resources /> },
-      { path: '/admin/reports', element: <AdminOverview /> },
-      { path: '/admin/settings', element: <DashboardSettings /> },
-      { path: '/admin/audit-logs', element: <AdminAuditLogs /> },
+      {
+        element: <DashboardLayout role="admin" />,
+        children: [
+          { path: '/admin', element: <Navigate to="/admin/dashboard" replace /> },
+          { path: '/admin/dashboard', element: <AdminOverview /> },
+          { path: '/admin/users', element: <AdminUsers /> },
+          { path: '/admin/mentors', element: <AdminMentors /> },
+          { path: '/admin/mentor-verification', element: <AdminVerification /> },
+          { path: '/admin/transactions', element: <AdminTransactions /> },
+          { path: '/admin/commission-revenue', element: <AdminDashboard /> },
+          { path: '/admin/payouts', element: <AdminPayouts /> },
+          { path: '/admin/vouchers', element: <AdminVouchers /> },
+          { path: '/admin/disputes', element: <AdminDisputes /> },
+          { path: '/admin/recordings', element: <AdminRecordings /> },
+          { path: '/admin/resources', element: <Resources /> },
+          { path: '/admin/reports', element: <AdminOverview /> },
+          { path: '/admin/settings', element: <DashboardSettings /> },
+          { path: '/admin/audit-logs', element: <AdminAuditLogs /> },
 
-      // Legacy aliases
-      { path: '/admin/verification', element: <Navigate to="/admin/mentor-verification" replace /> },
-      { path: '/admin/commission', element: <Navigate to="/admin/commission-revenue" replace /> },
-      { path: '/admin/audit', element: <Navigate to="/admin/audit-logs" replace /> },
+          // Legacy aliases
+          { path: '/admin/verification', element: <Navigate to="/admin/mentor-verification" replace /> },
+          { path: '/admin/commission', element: <Navigate to="/admin/commission-revenue" replace /> },
+          { path: '/admin/audit', element: <Navigate to="/admin/audit-logs" replace /> },
+        ],
+      },
     ],
   },
 
   // ── Auth ─────────────────────────────────────────────────────
   { path: '/login', element: <Login /> },
   { path: '/register', element: <Register /> },
+  { path: '/forgot-password', element: <ForgotPassword /> },
   { path: '/403', element: <PermissionDeniedPage /> },
 
   // ── 404 catch-all ────────────────────────────────────────────
