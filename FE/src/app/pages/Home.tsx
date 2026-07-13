@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import heroPhoto from '../../imports/ptuan.jpg';
 import {
@@ -10,7 +11,8 @@ import {
 } from '../components/ui/select';
 import { MentorCard } from '../components/MentorCard';
 import { TrustBadge, SectionHeading } from '../components/common';
-import { mentors, subjects, universities, academicLevels } from '../data/mockData';
+import { subjects, universities, academicLevels, type Mentor } from '../data/mockData';
+import { listMentors, backendToMentor } from '../services/mentorService';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,6 +21,15 @@ export function Home() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { T, lang } = useLanguage();
+
+  const [featured, setFeatured] = useState<Mentor[]>([]);
+
+  useEffect(() => {
+    // Only real (verified) mentors from the backend.
+    listMentors()
+      .then((profiles) => setFeatured(profiles.map(backendToMentor).slice(0, 6)))
+      .catch(() => setFeatured([]));
+  }, []);
 
   const trust = [
     { icon: ShieldCheck, label: T.verifiedMentors },
@@ -182,7 +193,7 @@ export function Home() {
           </Button>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {mentors.slice(0, 6).map((m) => (
+          {featured.map((m) => (
             <MentorCard key={m.id} mentor={m} />
           ))}
         </div>

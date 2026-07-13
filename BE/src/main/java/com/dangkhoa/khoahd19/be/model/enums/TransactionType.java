@@ -5,5 +5,6 @@ public enum TransactionType {
     PAYMENT,
     PAYOUT,
     REFUND,
-    COMMISSION
+    COMMISSION,
+    WITHDRAWAL
 }

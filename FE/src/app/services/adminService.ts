@@ -1,0 +1,93 @@
+import api from './api';
+import type { UserProfile } from './userService';
+import type { MentorProfileResponse } from './mentorService';
+
+export interface AdminDashboard {
+  totalUsers: number;
+  totalMentors: number;
+  totalMentees: number;
+  totalBookings: number;
+  completedBookings: number;
+  activeBookings: number;
+  disputedBookings: number;
+  pendingVerifications: number;
+  totalRevenue: number;
+  totalCommission: number;
+  escrowHeld: number;
+}
+
+export interface AdminTransaction {
+  id: string;
+  userId: string;
+  userName?: string;
+  type: string;
+  status: string;
+  amount: number;
+  description?: string;
+  relatedBookingId?: string;
+  createdAt: string;
+}
+
+export interface CommissionReport {
+  commissionRate: number;
+  totalCommissionEarned: number;
+  pendingCommission: number;
+  grossVolume: number;
+  releasedCount: number;
+  heldCount: number;
+}
+
+export interface AdminDispute {
+  bookingId: string;
+  menteeId: string;
+  menteeName?: string;
+  mentorId: string;
+  mentorName?: string;
+  courseCode: string;
+  price: number;
+  status: string;
+  issueType?: string;
+  reason?: string;
+  startAt: string;
+  createdAt: string;
+}
+
+export async function getAdminDashboard(): Promise<AdminDashboard> {
+  const { data } = await api.get('/api/admin/dashboard');
+  return data.data as AdminDashboard;
+}
+
+export async function listAdminUsers(role?: string): Promise<UserProfile[]> {
+  const { data } = await api.get('/api/admin/users', { params: role ? { role } : {} });
+  return data.data as UserProfile[];
+}
+
+export async function updateUserStatus(id: string, status: 'ACTIVE' | 'SUSPENDED'): Promise<UserProfile> {
+  const { data } = await api.patch(`/api/admin/users/${id}/status`, { status });
+  return data.data as UserProfile;
+}
+
+export async function listAdminTransactions(type?: string): Promise<AdminTransaction[]> {
+  const { data } = await api.get('/api/admin/transactions', { params: type ? { type } : {} });
+  return data.data as AdminTransaction[];
+}
+
+export async function getCommissionReport(): Promise<CommissionReport> {
+  const { data } = await api.get('/api/admin/commission');
+  return data.data as CommissionReport;
+}
+
+export async function listAdminDisputes(): Promise<AdminDispute[]> {
+  const { data } = await api.get('/api/admin/disputes');
+  return data.data as AdminDispute[];
+}
+
+export async function listAdminMentors(): Promise<MentorProfileResponse[]> {
+  const { data } = await api.get('/api/admin/mentors');
+  return data.data as MentorProfileResponse[];
+}
+
+export async function resolveDispute(bookingId: string, releaseToMentor: boolean) {
+  const { data } = await api.patch(`/api/bookings/${bookingId}/resolve`, { releaseToMentor });
+  return data.data;
+}

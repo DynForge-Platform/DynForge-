@@ -24,3 +24,18 @@ export async function topUp(amount: number): Promise<{ txnId: string; amount: nu
   const { data } = await api.post('/api/wallet/topup', { amount });
   return data.data;
 }
+
+/** Confirm a PayOS payment after the buyer is redirected back to the wallet. */
+export async function confirmPayos(orderCode: string): Promise<TransactionResponse> {
+  const { data } = await api.post('/api/wallet/payos-confirm', null, { params: { orderCode } });
+  return data.data as TransactionResponse;
+}
+
+export async function withdraw(
+  amount: number,
+  bankName: string,
+  bankAccount: string,
+): Promise<TransactionResponse> {
+  const { data } = await api.post('/api/wallet/withdraw', { amount, bankName, bankAccount });
+  return data.data as TransactionResponse;
+}

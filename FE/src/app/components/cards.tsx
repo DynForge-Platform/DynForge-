@@ -36,7 +36,13 @@ export function ResourceCard({ resource }: { resource: Resource }) {
       </div>
       <div className="flex items-center justify-between border-t border-border pt-4">
         <span className="truncate text-sm text-muted-foreground">{resource.source}</span>
-        <Button variant="ghost" size="sm" className="text-primary">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-primary"
+          disabled={!resource.url}
+          onClick={() => resource.url && window.open(resource.url, '_blank', 'noopener,noreferrer')}
+        >
           {meta.action} <ActionIcon className="size-4" />
         </Button>
       </div>

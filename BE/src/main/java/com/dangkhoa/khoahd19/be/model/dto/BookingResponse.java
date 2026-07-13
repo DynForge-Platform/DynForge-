@@ -9,6 +9,8 @@ public record BookingResponse(
         String id,
         String menteeId,
         String mentorId,
+        String menteeName,
+        String mentorName,
         String courseCode,
         BookingFormat format,
         Instant startAt,
@@ -18,6 +20,9 @@ public record BookingResponse(
         BookingStatus status,
         String escrowTxnId,
         Instant createdAt,
-        Instant taughtAt
+        Instant acceptedAt,
+        Instant taughtAt,
+        String disputeIssueType,
+        String disputeReason
 ) {
 }

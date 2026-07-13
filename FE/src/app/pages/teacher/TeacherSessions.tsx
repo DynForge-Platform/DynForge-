@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Video, CheckCircle2, Eye, AlertTriangle, Loader2 } from 'lucide-react';
+import { Video, CheckCircle2, Eye, AlertTriangle, Loader2, Check, X } from 'lucide-react';
 import { formatCurrency } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/card';
@@ -18,19 +18,21 @@ import { MeetRoomOverlay } from '../../components/MeetRoomOverlay';
 import { CalendarCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  getMyBookings, markTaught, mapStatusToDisplay,
+  getMentorSchedule, markTaught, acceptBooking, declineBooking, mapStatusToDisplay,
   type BookingResponse, type BookingStatus,
 } from '../../services/bookingService';
 
-const tabs = ['All', 'Pending Payment', 'In Escrow', 'Taught', 'Completed', 'Cancelled'];
+const tabs = ['All', 'Requests', 'Accepted', 'Taught', 'Completed', 'Cancelled'];
 
 function mentorStatusTab(status: BookingStatus): string {
   switch (status) {
     case 'PENDING_PAYMENT': return 'Pending Payment';
-    case 'ESCROW_HELD':     return 'In Escrow';
+    case 'ESCROW_HELD':     return 'Requests';
+    case 'ACCEPTED':        return 'Accepted';
     case 'TAUGHT':          return 'Taught';
     case 'COMPLETED':       return 'Completed';
     case 'CANCELLED':       return 'Cancelled';
+    case 'REFUNDED':        return 'Cancelled';
     default:                return mapStatusToDisplay(status);
   }
 }
@@ -45,21 +47,49 @@ export function TeacherSessions() {
   const [viewBooking, setViewBooking] = useState<BookingResponse | null>(null);
   const [markDoneBooking, setMarkDoneBooking] = useState<BookingResponse | null>(null);
   const [disputeBooking, setDisputeBooking] = useState<BookingResponse | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
 
   const fetchBookings = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const data = await getMyBookings();
+      const data = await getMentorSchedule();
       setBookings(data);
-    } catch {
-      // keep empty
+    } catch (err: any) {
+      console.error('fetchBookings error:', err);
+      toast.error(err?.response?.data?.message ?? 'Failed to load sessions.');
     } finally {
       setLoading(false);
     }
   }, [user?.id]);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+  const handleAccept = async (b: BookingResponse) => {
+    setActingId(b.id);
+    try {
+      await acceptBooking(b.id);
+      toast.success('Request accepted. The student has been notified.');
+      fetchBookings();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to accept request.');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const handleDecline = async (b: BookingResponse) => {
+    setActingId(b.id);
+    try {
+      await declineBooking(b.id);
+      toast.success('Request declined. The student has been refunded.');
+      fetchBookings();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to decline request.');
+    } finally {
+      setActingId(null);
+    }
+  };
 
   const withTab = bookings.map((b) => ({ ...b, tabStatus: mentorStatusTab(b.status) }));
   const filtered = tab === 'All' ? withTab : withTab.filter((b) => b.tabStatus === tab);
@@ -134,6 +164,28 @@ export function TeacherSessions() {
                       <div className="flex justify-end gap-1.5">
                         {b.status === 'ESCROW_HELD' && (
                           <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-danger border-danger/30 hover:bg-danger/5"
+                              disabled={actingId === b.id}
+                              onClick={() => handleDecline(b)}
+                            >
+                              <X className="size-3.5" /> Decline
+                            </Button>
+                            <Button
+                              size="sm"
+                              disabled={actingId === b.id}
+                              onClick={() => handleAccept(b)}
+                            >
+                              {actingId === b.id
+                                ? <Loader2 className="size-3.5 animate-spin" />
+                                : <><Check className="size-3.5" /> Accept</>}
+                            </Button>
+                          </>
+                        )}
+                        {b.status === 'ACCEPTED' && (
+                          <>
                             <Button size="sm" variant="outline" onClick={() => setViewBooking(b)}>
                               <Eye className="size-3.5" />
                             </Button>
@@ -174,11 +226,11 @@ export function TeacherSessions() {
       {/* Meet room */}
       {meetBooking && (
         <MeetRoomOverlay
+          bookingId={meetBooking.id}
           course={meetBooking.courseCode}
-          partnerName="Student"
-          partnerAvatar=""
-          partnerRole="Student"
+          partnerName={meetBooking.menteeName ?? 'Student'}
           durationMinutes={meetBooking.durationMin}
+          displayName={user?.name}
           onClose={() => setMeetBooking(null)}
         />
       )}

@@ -14,4 +14,8 @@ public interface MentorRepository extends MongoRepository<MentorProfile, String>
     List<MentorProfile> findByVerifiedTrue();
 
     List<MentorProfile> findByVerifiedTrueAndCourses_Code(String courseCode);
+
+    List<MentorProfile> findByVerified(boolean verified);
+
+    List<MentorProfile> findByVerifiedAndCourses_Code(boolean verified, String courseCode);
 }

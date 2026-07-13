@@ -7,6 +7,7 @@ import com.dangkhoa.khoahd19.be.model.dto.TopUpResponse;
 import com.dangkhoa.khoahd19.be.model.dto.TransactionResponse;
 import com.dangkhoa.khoahd19.be.model.dto.WalletResponse;
 import com.dangkhoa.khoahd19.be.model.dto.WebhookRequest;
+import com.dangkhoa.khoahd19.be.model.dto.WithdrawRequest;
 import com.dangkhoa.khoahd19.be.model.entity.User;
 import com.dangkhoa.khoahd19.be.model.entity.WalletTransaction;
 import com.dangkhoa.khoahd19.be.model.enums.TransactionStatus;
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +28,10 @@ public class WalletService {
 
     private final WalletTransactionRepository txnRepository;
     private final UserRepository userRepository;
+    private final PayOsClient payOsClient;
 
-    @Value("${app.payment.base-url:http://localhost:8080}")
-    private String paymentBaseUrl;
+    @Value("${app.frontend.base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
 
     public WalletResponse getWallet(User user) {
         ObjectId userId = new ObjectId(user.getId());
@@ -44,7 +45,8 @@ public class WalletService {
     }
 
     public TopUpResponse topUp(User user, TopUpRequest request) {
-        String externalRef = UUID.randomUUID().toString();
+        // PayOS orderCode must be a unique positive number; millis works well and fits in a long.
+        long orderCode = System.currentTimeMillis();
 
         WalletTransaction txn = WalletTransaction.builder()
                 .userId(new ObjectId(user.getId()))
@@ -52,15 +54,78 @@ public class WalletService {
                 .status(TransactionStatus.PENDING)
                 .amount(request.amount())
                 .description("Wallet top-up")
-                .externalRef(externalRef)
+                .externalRef(String.valueOf(orderCode))
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        txnRepository.save(txn);
+
+        // PayOS redirects the buyer back to the wallet page (it appends orderCode + status).
+        String returnUrl = frontendBaseUrl + "/dashboard/wallet";
+        String cancelUrl = frontendBaseUrl + "/dashboard/wallet";
+        String checkoutUrl = payOsClient.createPaymentLink(
+                orderCode, request.amount(), "Nap vi GRADORA", returnUrl, cancelUrl);
+
+        return new TopUpResponse(txn.getId(), request.amount(), checkoutUrl);
+    }
+
+    /**
+     * Called after PayOS redirects back. Verifies the payment with PayOS and credits
+     * the wallet once (idempotent).
+     */
+    public TransactionResponse confirmPayosPayment(User user, long orderCode) {
+        WalletTransaction txn = txnRepository.findByExternalRef(String.valueOf(orderCode))
+                .orElseThrow(() -> new ResourceNotFoundException("Unknown order: " + orderCode));
+
+        if (!txn.getUserId().toHexString().equals(user.getId())) {
+            throw new BadRequestException("This payment does not belong to you");
+        }
+
+        // Idempotency: already finalized — return current state
+        if (txn.getStatus() != TransactionStatus.PENDING) {
+            return toResponse(txn);
+        }
+
+        String status = payOsClient.getPaymentStatus(orderCode);
+        if ("PAID".equals(status)) {
+            txn.setStatus(TransactionStatus.COMPLETED);
+            txn.setUpdatedAt(Instant.now());
+            txnRepository.save(txn);
+            creditWallet(txn.getUserId(), txn.getAmount());
+        } else if ("CANCELLED".equals(status) || "EXPIRED".equals(status)) {
+            txn.setStatus(TransactionStatus.FAILED);
+            txn.setUpdatedAt(Instant.now());
+            txnRepository.save(txn);
+        }
+        // PENDING/PROCESSING → leave as-is; the buyer can retry confirmation.
+        return toResponse(txn);
+    }
+
+    /**
+     * Mentor payout: debits the wallet immediately and records a completed WITHDRAWAL.
+     * (Demo: no real bank transfer — settlement is assumed instant.)
+     */
+    public TransactionResponse withdraw(User user, WithdrawRequest request) {
+        if (user.getWalletBalance() < request.amount()) {
+            throw new BadRequestException(
+                    "Insufficient balance. Requested: " + request.amount()
+                            + ", available: " + user.getWalletBalance());
+        }
+
+        user.setWalletBalance(user.getWalletBalance() - request.amount());
+        userRepository.save(user);
+
+        WalletTransaction txn = WalletTransaction.builder()
+                .userId(new ObjectId(user.getId()))
+                .type(TransactionType.WITHDRAWAL)
+                .status(TransactionStatus.COMPLETED)
+                .amount(request.amount())
+                .description("Withdrawal to " + request.bankName() + " · " + request.bankAccount())
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
 
-        txnRepository.save(txn);
-
-        String paymentUrl = paymentBaseUrl + "/api/wallet/webhook/simulate?txnRef=" + externalRef;
-        return new TopUpResponse(txn.getId(), request.amount(), paymentUrl);
+        return toResponse(txnRepository.save(txn));
     }
 
     /**

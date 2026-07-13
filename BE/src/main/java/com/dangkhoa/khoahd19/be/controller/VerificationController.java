@@ -38,6 +38,11 @@ public class VerificationController {
         return ApiResponse.ok("Verification request submitted", verificationService.submit(principal.getUser(), dto));
     }
 
+    @GetMapping("/mine")
+    public ApiResponse<List<VerificationResponse>> mine(@AuthenticationPrincipal UserPrincipal principal) {
+        return ApiResponse.ok(verificationService.getMine(principal.getUser()));
+    }
+
     @GetMapping
     public ApiResponse<List<VerificationResponse>> list(@RequestParam(required = false) VerificationStatus status) {
         return ApiResponse.ok(verificationService.list(status));

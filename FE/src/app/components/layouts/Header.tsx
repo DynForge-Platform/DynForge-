@@ -25,6 +25,7 @@ export function Header() {
 
   const navItems = [
     { to: '/mentors', label: T.findMentors },
+    { to: '/how-it-works', label: T.howItWorksTitle },
     { to: '/become-a-mentor', label: T.becomeMentor },
     { to: '/resources', label: T.resources },
     { to: '/about', label: T.about },

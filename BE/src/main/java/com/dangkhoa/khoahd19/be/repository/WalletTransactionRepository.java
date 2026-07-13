@@ -11,5 +11,7 @@ public interface WalletTransactionRepository extends MongoRepository<WalletTrans
 
     List<WalletTransaction> findByUserIdOrderByCreatedAtDesc(ObjectId userId);
 
+    List<WalletTransaction> findAllByOrderByCreatedAtDesc();
+
     Optional<WalletTransaction> findByExternalRef(String externalRef);
 }

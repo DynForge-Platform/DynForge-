@@ -7,6 +7,7 @@ import com.dangkhoa.khoahd19.be.model.dto.TopUpResponse;
 import com.dangkhoa.khoahd19.be.model.dto.TransactionResponse;
 import com.dangkhoa.khoahd19.be.model.dto.WalletResponse;
 import com.dangkhoa.khoahd19.be.model.dto.WebhookRequest;
+import com.dangkhoa.khoahd19.be.model.dto.WithdrawRequest;
 import com.dangkhoa.khoahd19.be.security.UserPrincipal;
 import com.dangkhoa.khoahd19.be.service.WalletService;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,6 +46,23 @@ public class WalletController {
             @Valid @RequestBody TopUpRequest request
     ) {
         return ApiResponse.ok("Top-up initiated", walletService.topUp(principal.getUser(), request));
+    }
+
+    @PostMapping("/withdraw")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<TransactionResponse> withdraw(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody WithdrawRequest request
+    ) {
+        return ApiResponse.ok("Withdrawal processed", walletService.withdraw(principal.getUser(), request));
+    }
+
+    @PostMapping("/payos-confirm")
+    public ApiResponse<TransactionResponse> payosConfirm(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam long orderCode
+    ) {
+        return ApiResponse.ok(walletService.confirmPayosPayment(principal.getUser(), orderCode));
     }
 
     @PostMapping("/webhook")

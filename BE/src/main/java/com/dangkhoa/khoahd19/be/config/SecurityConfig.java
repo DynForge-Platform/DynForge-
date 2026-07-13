@@ -2,6 +2,7 @@ package com.dangkhoa.khoahd19.be.config;
 
 import com.dangkhoa.khoahd19.be.security.CustomUserDetailsService;
 import com.dangkhoa.khoahd19.be.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,13 +67,22 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Return 401 (not the default 403) for unauthenticated/expired-token requests
+                // so the frontend can refresh the token and retry.
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(
+                        (request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/wallet/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/mentors/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/mentors/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/reviews").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resources").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/verifications/mine").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/verifications/**").hasRole("ADMIN")
                         .requestMatchers("/api/verifications/*/decision").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/bookings/*/resolve").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

@@ -8,6 +8,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
 import { toast } from 'sonner';
+import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Toggle { label: string; description: string; key: string }
 
@@ -21,6 +23,8 @@ const notifToggles: Toggle[] = [
 ];
 
 export function DashboardSettings() {
+  const { user } = useAuth();
+  const { lang } = useLanguage();
   const [notifs, setNotifs] = useState<Record<string, boolean>>({
     session: true, booking: true, escrow: true, dispute: true, messages: true, news: false,
   });
@@ -41,9 +45,9 @@ export function DashboardSettings() {
             <Lock className="size-5 text-muted-foreground" /> Account settings
           </h2>
           <div className="space-y-3">
-            <SettingRow label="Email address" value="trang@student.vnu.edu.vn" action="Change" />
-            <SettingRow label="Username" value="@trangdo" action="Edit" />
-            <SettingRow label="Account language" value="English" action="Change" />
+            <SettingRow label="Full name" value={user?.name ?? '—'} action="Edit" />
+            <SettingRow label="Email address" value={user?.email ?? '—'} action="Manage" />
+            <SettingRow label="Account language" value={lang === 'vi' ? 'Tiếng Việt' : 'English'} action="Change" />
           </div>
         </Card>
 

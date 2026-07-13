@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router';
 import {
   Wallet, ShieldCheck, TrendingDown, RefreshCcw, Plus, Receipt,
-  X, Copy, CheckCircle2, Smartphone, Building2, ChevronRight, Loader2,
+  CheckCircle2, Smartphone, Building2, ChevronRight, Loader2,
 } from 'lucide-react';
 import { formatCurrency } from '../../data/mockData';
-import { getWallet, topUp, type TransactionResponse } from '../../services/walletService';
+import { getWallet, topUp, confirmPayos, type TransactionResponse } from '../../services/walletService';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -23,195 +24,75 @@ import { cn } from '../../components/ui/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '../../context/LanguageContext';
 
-function QRPlaceholder({ size = 180 }: { size?: number }) {
-  const cells = 21;
-  const cell = size / cells;
-  const on = (r: number, c: number) => {
-    if (r < 7 && c < 7) return true;
-    if (r < 7 && c > cells - 8) return true;
-    if (r > cells - 8 && c < 7) return true;
-    return ((r * 3 + c * 7 + r * c) % 3 === 0);
-  };
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
-      <rect width={size} height={size} fill="white" rx={8} />
-      {Array.from({ length: cells }).map((_, r) =>
-        Array.from({ length: cells }).map((__, c) =>
-          on(r, c) ? (
-            <rect key={`${r}-${c}`} x={c * cell + 1} y={r * cell + 1} width={cell - 1} height={cell - 1} fill="#0f1c4d" rx={1} />
-          ) : null
-        )
-      )}
-    </svg>
-  );
-}
-
-// ── Add Funds modal ────────────────────────────────────────────
-function AddFundsModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const { user } = useAuth();
-  const [method, setMethod] = useState<'momo' | 'bank' | null>(null);
+// ── Add Funds modal (PayOS) ──────────────
+function AddFundsModal({ onClose }: { onClose: () => void }) {
   const [amount, setAmount] = useState('200000');
-  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
-  const accountNo = '0123456789';
+  const num = parseInt(amount.replace(/D/g, '')) || 0;
 
-  const copy = (text: string) => {
-    navigator.clipboard.writeText(text).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const confirm = async () => {
-    const numAmount = Number(amount);
-    if (numAmount < 10000) { toast.error('Minimum top-up is 10,000₫'); return; }
-
-    if (user?.id) {
-      setLoading(true);
-      try {
-        await topUp(numAmount);
-        toast.success(`Top-up of ${formatCurrency(numAmount)} initiated. Balance updates after payment confirmation.`);
-        onSuccess();
-        onClose();
-      } catch (err: any) {
-        toast.error(err?.response?.data?.message ?? 'Top-up failed. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      toast.success(`Top-up of ${formatCurrency(numAmount)} confirmed. Your balance will update within a few minutes.`);
-      onClose();
+  const pay = async () => {
+    if (num < 10000) { toast.error('Minimum top-up is 10,000₫'); return; }
+    setLoading(true);
+    try {
+      const { paymentUrl } = await topUp(num);
+      window.location.href = paymentUrl;
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not start payment. Please try again.');
+      setLoading(false);
     }
   };
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md" aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle>Add Funds to Wallet</DialogTitle>
-        </DialogHeader>
-
-        {!method ? (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Select a top-up method:</p>
-            <button
-              onClick={() => setMethod('momo')}
-              className="flex w-full items-center justify-between rounded-xl border border-border p-4 transition-colors hover:border-primary/50 hover:bg-accent"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-[#d82d8b]/10">
-                  <Smartphone className="size-5 text-[#d82d8b]" />
-                </span>
-                <div className="text-left">
-                  <p style={{ fontWeight: 600 }}>MoMo</p>
-                  <p className="text-sm text-muted-foreground">Scan MoMo QR code</p>
-                </div>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </button>
-            <button
-              onClick={() => setMethod('bank')}
-              className="flex w-full items-center justify-between rounded-xl border border-border p-4 transition-colors hover:border-primary/50 hover:bg-accent"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-                  <Building2 className="size-5 text-primary" />
-                </span>
-                <div className="text-left">
-                  <p style={{ fontWeight: 600 }}>Chuyển khoản ngân hàng</p>
-                  <p className="text-sm text-muted-foreground">VietQR / Internet Banking</p>
-                </div>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </button>
+        <DialogHeader><DialogTitle>Add Funds to Wallet</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="mb-1.5 block">Amount to top up (₫)</Label>
+            <Input
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/D/g, ''))}
+              className="bg-input-background text-lg"
+              style={{ fontWeight: 600 }}
+              autoFocus
+            />
+            <div className="mt-2 flex flex-wrap gap-2">
+              {['50000', '100000', '200000', '500000'].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setAmount(v)}
+                  className={cn('rounded-lg border px-3 py-1 text-sm transition-colors', amount === v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-accent')}
+                >
+                  {formatCurrency(Number(v))}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Minimum: 10.000₫</p>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <button onClick={() => setMethod(null)} className="flex items-center gap-1 text-sm text-primary hover:underline">
-              ← Change method
-            </button>
 
-            <div>
-              <Label className="mb-1.5 block">Amount to top up (₫)</Label>
-              <Input
-                value={amount}
-                onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
-                className="bg-input-background text-lg"
-                style={{ fontWeight: 600 }}
-              />
-              <div className="mt-2 flex flex-wrap gap-2">
-                {['50000', '100000', '200000', '500000'].map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setAmount(v)}
-                    className={cn(
-                      'rounded-lg border px-3 py-1 text-sm transition-colors',
-                      amount === v ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-accent'
-                    )}
-                  >
-                    {formatCurrency(Number(v))}
-                  </button>
-                ))}
+          <div className="rounded-xl border border-border p-4">
+            <p className="mb-2 text-sm text-muted-foreground">Payment method</p>
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Building2 className="size-5" /></span>
+              <div>
+                <p style={{ fontWeight: 600 }}>PayOS</p>
+                <p className="text-sm text-muted-foreground">Bank transfer · VietQR · e-wallet</p>
               </div>
             </div>
+          </div>
 
-            <div className="rounded-2xl border border-border bg-pale-blue/50 p-5 text-center">
-              {method === 'momo' ? (
-                <>
-                  <div className="mb-2 flex items-center justify-center gap-2">
-                    <span className="size-3 rounded-full bg-[#d82d8b]" />
-                    <span className="text-sm text-[#d82d8b]" style={{ fontWeight: 700 }}>MoMo</span>
-                  </div>
-                  <QRPlaceholder size={160} />
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Open MoMo app → Scan QR → Enter amount <strong>{formatCurrency(Number(amount))}</strong>
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Reference: <strong>GRADORA {accountNo}</strong>
-                    <button onClick={() => copy(`GRADORA ${accountNo}`)} className="ml-2 text-primary">
-                      {copied ? <CheckCircle2 className="inline size-3.5" /> : <Copy className="inline size-3.5" />}
-                    </button>
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="mb-2 flex items-center justify-center gap-2">
-                    <Building2 className="size-4 text-primary" />
-                    <span className="text-sm text-primary" style={{ fontWeight: 700 }}>VietQR</span>
-                  </div>
-                  <QRPlaceholder size={160} />
-                  <div className="mt-3 space-y-1.5 text-left text-sm">
-                    {[
-                      ['Bank', 'Vietcombank'],
-                      ['Số tài khoản', accountNo],
-                      ['Account holder', 'GRADORA CO. LTD'],
-                      ['Amount', formatCurrency(Number(amount))],
-                      ['Reference', `GRADORA ${accountNo}`],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex items-center justify-between rounded-lg bg-white px-3 py-2">
-                        <span className="text-muted-foreground">{label}</span>
-                        <div className="flex items-center gap-1.5">
-                          <span style={{ fontWeight: 600 }}>{value}</span>
-                          <button onClick={() => copy(value)} className="text-primary">
-                            {copied ? <CheckCircle2 className="size-3.5" /> : <Copy className="size-3.5" />}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+          <div className="flex items-start gap-2 rounded-xl bg-success/10 p-3 text-sm text-success">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+            You'll be redirected to PayOS to pay securely. Your balance updates automatically when you return.
+          </div>
 
-            <div className="flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-sm text-warning">
-              <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              After transferring, click "I've transferred" to confirm. Balance updates within 5–10 minutes.
-            </div>
-
-            <Button className="w-full" size="lg" onClick={confirm} disabled={loading}>
-              {loading ? <Loader2 className="size-4 animate-spin" /> : "I've transferred"}
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>Cancel</Button>
+            <Button className="flex-1" onClick={pay} disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : `Pay ${formatCurrency(num)}`}
             </Button>
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -295,6 +176,7 @@ function WithdrawModal({ onClose, balance }: { onClose: () => void; balance: num
 export function DashboardWallet() {
   const { T } = useLanguage();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState('All');
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
@@ -317,6 +199,35 @@ export function DashboardWallet() {
   }, [user?.id]);
 
   useEffect(() => { fetchWallet(); }, [fetchWallet]);
+
+  // Handle the PayOS return redirect (?orderCode=...&status=...) — confirm & credit once.
+  useEffect(() => {
+    const orderCode = searchParams.get('orderCode');
+    if (!orderCode || !user?.id) return;
+    const status = searchParams.get('status');
+    const cancelled = searchParams.get('cancel') === 'true' || status === 'CANCELLED';
+
+    // Clear PayOS params from the URL so a refresh doesn't re-trigger.
+    setSearchParams({}, { replace: true });
+
+    if (cancelled) {
+      toast.info('Payment was cancelled.');
+      return;
+    }
+    confirmPayos(orderCode)
+      .then((txn) => {
+        if (txn.status === 'COMPLETED') {
+          toast.success(`Top-up of ${formatCurrency(txn.amount)} successful!`);
+          fetchWallet();
+        } else if (txn.status === 'FAILED') {
+          toast.error('Payment failed or was cancelled.');
+        } else {
+          toast.info('Payment is still processing. Your balance will update shortly.');
+        }
+      })
+      .catch((err: any) => toast.error(err?.response?.data?.message ?? 'Could not confirm payment.'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // compute summary stats
   const escrowHeld = transactions.filter((t) => t.type === 'PAYMENT' && t.status === 'COMPLETED').reduce((s, t) => s + t.amount, 0);
@@ -421,7 +332,7 @@ export function DashboardWallet() {
         )}
       </Card>
 
-      {showAddFunds && <AddFundsModal onClose={() => setShowAddFunds(false)} onSuccess={fetchWallet} />}
+      {showAddFunds && <AddFundsModal onClose={() => setShowAddFunds(false)} />}
       {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} balance={balance} />}
     </div>
   );

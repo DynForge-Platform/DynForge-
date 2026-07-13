@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
+import { getGoogleClientId } from '../services/authService';
 import { ShieldCheck, BadgeCheck, Star, Mail, GraduationCap, Users, LayoutDashboard, Loader2 } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { Button } from '../components/ui/button';
@@ -22,6 +23,19 @@ const quickRoles: { label: string; role: AuthRole; color: string; icon: React.El
   { label: 'Mentor', role: 'mentor', color: 'bg-emerald-500', icon: GraduationCap },
   { label: 'Admin', role: 'admin', color: 'bg-amber-500', icon: LayoutDashboard },
 ];
+
+// Seeded demo accounts (see DataSeeder). Quick-login uses these so it obtains a real JWT.
+const DEMO_CREDENTIALS: Record<AuthRole, { email: string; password: string }> = {
+  mentee: { email: 'student@gradora.vn', password: 'Gradora@123' },
+  mentor: { email: 'khoa.tran@gradora.vn', password: 'Gradora@123' },
+  admin: { email: 'admin@gradora.vn', password: 'Gradora@123' },
+};
+
+const DASHBOARD_PATHS: Record<AuthRole, string> = {
+  mentee: '/dashboard',
+  mentor: '/mentor/dashboard',
+  admin: '/admin/dashboard',
+};
 
 function BrandPanel({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -64,18 +78,83 @@ function AuthShell({ children, title, subtitle }: { children: React.ReactNode; t
   );
 }
 
+declare global {
+  interface Window { google?: any }
+}
+
+const GSI_SCRIPT_ID = 'google-gsi-client';
+
+/**
+ * Real Google Sign-In via Google Identity Services. Fetches the OAuth client id from the
+ * backend, loads the GIS script and renders Google's own button; the returned ID token is
+ * exchanged at POST /api/auth/google for our JWT session (auto-registers first-time users).
+ */
 function GoogleButton() {
-  return (
-    <Button variant="outline" className="w-full" onClick={() => toast.info('Google sign-in is a demo placeholder.')}>
-      <svg className="size-4" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/>
-        <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"/>
-      </svg>
-      Continue with Google
-    </Button>
-  );
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
+  const { loginWithGoogle } = useAuth();
+  // null = still loading config, '' = not configured on the backend
+  const [clientId, setClientId] = useState<string | null>(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getGoogleClientId().then(setClientId).catch(() => setClientId(''));
+  }, []);
+
+  useEffect(() => {
+    if (!clientId) return;
+
+    const init = () => {
+      if (!window.google?.accounts?.id || !buttonRef.current) return;
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: { credential: string }) => {
+          try {
+            const u = await loginWithGoogle(response.credential);
+            toast.success('Signed in with Google. Welcome!');
+            navigate(redirectTo ?? u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
+          } catch (err: any) {
+            toast.error(err?.response?.data?.message ?? 'Google sign-in failed. Please try again.');
+          }
+        },
+      });
+      window.google.accounts.id.renderButton(buttonRef.current, {
+        theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill', width: 380,
+      });
+    };
+
+    if (window.google?.accounts?.id) { init(); return; }
+    let script = document.getElementById(GSI_SCRIPT_ID) as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement('script');
+      script.id = GSI_SCRIPT_ID;
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+    script.addEventListener('load', init);
+    return () => script?.removeEventListener('load', init);
+  }, [clientId, loginWithGoogle, navigate, redirectTo]);
+
+  // Backend has no google.client-id configured — show an inert button that explains why.
+  if (clientId === '') {
+    return (
+      <Button variant="outline" className="w-full"
+        onClick={() => toast.info('Google Sign-In chưa được cấu hình (google.client-id trong application.properties).')}>
+        <svg className="size-4" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/>
+          <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"/>
+        </svg>
+        Continue with Google
+      </Button>
+    );
+  }
+
+  return <div ref={buttonRef} className="flex min-h-10 justify-center" />;
 }
 
 function QuickLogin({ onLogin }: { onLogin: (role: AuthRole) => void }) {
@@ -108,20 +187,25 @@ export function Login() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const { login, loginWithCredentials } = useAuth();
-  const { T } = useLanguage();
+  const { T, lang } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleQuickLogin = (role: AuthRole) => {
-    login(role);
-    const defaultPaths: Record<AuthRole, string> = {
-      mentee: '/dashboard',
-      mentor: '/mentor/dashboard',
-      admin: '/admin/dashboard',
-    };
-    toast.success(`Signed in as ${role.charAt(0).toUpperCase() + role.slice(1)}. Welcome back!`);
-    navigate(redirectTo && role === 'mentee' ? redirectTo : defaultPaths[role]);
+  const handleQuickLogin = async (role: AuthRole) => {
+    const dest = redirectTo && role === 'mentee' ? redirectTo : DASHBOARD_PATHS[role];
+    try {
+      // Real login with the seeded demo account → obtains a JWT so API calls work.
+      const { email: demoEmail, password: demoPassword } = DEMO_CREDENTIALS[role];
+      await loginWithCredentials(demoEmail, demoPassword);
+      toast.success(`Signed in as ${role.charAt(0).toUpperCase() + role.slice(1)}. Welcome back!`);
+      navigate(dest);
+    } catch {
+      // Fallback: seeded accounts not present — use offline demo profile (no JWT).
+      login(role);
+      toast.warning('Demo mode (no backend session). Seed the database to enable live data.');
+      navigate(dest);
+    }
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -129,9 +213,10 @@ export function Login() {
     if (!email || !password) { handleQuickLogin('mentee'); return; }
     setLoading(true);
     try {
-      await loginWithCredentials(email, password);
+      const u = await loginWithCredentials(email, password);
       toast.success('Welcome back!');
-      navigate(redirectTo ?? '/dashboard');
+      // Route to the user's own workspace based on role (avoids 403 on /dashboard for admin/mentor).
+      navigate(redirectTo ?? u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Invalid email or password.');
     } finally {
@@ -164,7 +249,12 @@ export function Login() {
           />
         </div>
         <div>
-          <Label htmlFor="password" className="mb-1.5 block">{T.password}</Label>
+          <div className="mb-1.5 flex items-center justify-between">
+            <Label htmlFor="password">{T.password}</Label>
+            <Link to="/forgot-password" className="text-sm text-primary" style={{ fontWeight: 500 }}>
+              {lang === 'vi' ? 'Quên mật khẩu?' : 'Forgot password?'}
+            </Link>
+          </div>
           <Input
             id="password" type="password" placeholder="••••••••"
             className="bg-input-background"
@@ -187,23 +277,27 @@ export function Login() {
 // ── Register (Join Now) ────────────────────────────────────────
 export function Register() {
   const navigate = useNavigate();
-  const { login, registerWithCredentials } = useAuth();
+  const [searchParams] = useSearchParams();
+  const applyingAsMentor = searchParams.get('apply') === 'mentor';
+  const { login, loginWithCredentials, registerWithCredentials } = useAuth();
   const { T } = useLanguage();
-  const [role, setRole] = useState<'mentee' | 'mentor'>('mentee');
+  const [role, setRole] = useState<'mentee' | 'mentor'>(applyingAsMentor ? 'mentor' : 'mentee');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleQuickLogin = (r: AuthRole) => {
-    login(r);
-    const paths: Record<AuthRole, string> = {
-      mentee: '/dashboard',
-      mentor: '/mentor/dashboard',
-      admin: '/admin/dashboard',
-    };
-    toast.success(`Signed in as ${r.charAt(0).toUpperCase() + r.slice(1)}. Welcome to GRADORA!`);
-    navigate(paths[r]);
+  const handleQuickLogin = async (r: AuthRole) => {
+    try {
+      const { email: demoEmail, password: demoPassword } = DEMO_CREDENTIALS[r];
+      await loginWithCredentials(demoEmail, demoPassword);
+      toast.success(`Signed in as ${r.charAt(0).toUpperCase() + r.slice(1)}. Welcome to GRADORA!`);
+      navigate(DASHBOARD_PATHS[r]);
+    } catch {
+      login(r);
+      toast.warning('Demo mode (no backend session). Seed the database to enable live data.');
+      navigate(DASHBOARD_PATHS[r]);
+    }
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -218,7 +312,8 @@ export function Register() {
     try {
       await registerWithCredentials(fullName, email, password, role === 'mentor' ? 'MENTOR' : 'MENTEE');
       toast.success('Account created! Welcome to GRADORA.');
-      navigate(role === 'mentor' ? '/mentor/dashboard' : '/dashboard');
+      // Mentors go straight to the application/verification form to submit documents.
+      navigate(role === 'mentor' ? '/mentor/verification' : '/dashboard');
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Registration failed. Please try again.');
     } finally {

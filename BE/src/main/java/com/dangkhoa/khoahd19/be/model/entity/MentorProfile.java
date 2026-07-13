@@ -34,6 +34,14 @@ public class MentorProfile {
 
     private String bio;
 
+    /** Academic major (matches the mentee search filter options). */
+    private String major;
+
+    private String university;
+
+    /** e.g. "Senior Student", "Alumni Mentor", "Lecturer", "Research Advisor". */
+    private String teachingRole;
+
     private List<Course> courses;
 
     private List<String> skills;
@@ -41,6 +49,9 @@ public class MentorProfile {
     private List<String> languages;
 
     private Map<String, List<String>> availability;
+
+    @Builder.Default
+    private List<String> formats = List.of("Online", "Offline");
 
     @Builder.Default
     private boolean verified = false;

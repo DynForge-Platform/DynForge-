@@ -3,6 +3,7 @@ package com.dangkhoa.khoahd19.be.service;
 import com.dangkhoa.khoahd19.be.exception.BadRequestException;
 import com.dangkhoa.khoahd19.be.mapper.UserMapper;
 import com.dangkhoa.khoahd19.be.model.dto.AuthResponse;
+import com.dangkhoa.khoahd19.be.model.dto.GoogleLoginRequest;
 import com.dangkhoa.khoahd19.be.model.dto.LoginRequest;
 import com.dangkhoa.khoahd19.be.model.dto.RefreshRequest;
 import com.dangkhoa.khoahd19.be.model.dto.RegisterRequest;
@@ -36,6 +37,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     @Value("${app.jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
@@ -66,6 +68,37 @@ public class AuthService {
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BadRequestException("Invalid email or password"));
+
+        return buildAuthResponse(user);
+    }
+
+    /**
+     * Sign in with a verified Google ID token. First-time users get an account created on the
+     * fly (MENTEE role, random password — they can set a real one via "forgot password").
+     */
+    public AuthResponse loginWithGoogle(GoogleLoginRequest request) {
+        GoogleTokenVerifier.GoogleUser google = googleTokenVerifier.verify(request.idToken());
+
+        User user = userRepository.findByEmail(google.email()).orElseGet(() -> User.builder()
+                .fullName(google.fullName())
+                .email(google.email())
+                .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .roles(EnumSet.of(Role.MENTEE))
+                .avatarUrl(google.avatarUrl())
+                .walletBalance(0)
+                .status(UserStatus.ACTIVE)
+                .createdAt(Instant.now())
+                .build());
+
+        if (user.getStatus() == UserStatus.SUSPENDED) {
+            throw new BadRequestException("This account has been suspended");
+        }
+        if (user.getId() == null) {
+            user = userRepository.save(user);
+        } else if ((user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) && google.avatarUrl() != null) {
+            user.setAvatarUrl(google.avatarUrl());
+            user = userRepository.save(user);
+        }
 
         return buildAuthResponse(user);
     }

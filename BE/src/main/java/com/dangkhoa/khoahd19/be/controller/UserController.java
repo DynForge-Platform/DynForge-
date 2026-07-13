@@ -2,12 +2,21 @@ package com.dangkhoa.khoahd19.be.controller;
 
 import com.dangkhoa.khoahd19.be.mapper.UserMapper;
 import com.dangkhoa.khoahd19.be.model.dto.ApiResponse;
+import com.dangkhoa.khoahd19.be.model.dto.ChangePasswordRequest;
+import com.dangkhoa.khoahd19.be.model.dto.UpdateProfileRequest;
 import com.dangkhoa.khoahd19.be.model.dto.UserResponse;
 import com.dangkhoa.khoahd19.be.security.UserPrincipal;
+import com.dangkhoa.khoahd19.be.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -16,9 +25,27 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserMapper userMapper;
+    private final UserService userService;
 
     @GetMapping("/me")
     public ApiResponse<UserResponse> me(@AuthenticationPrincipal UserPrincipal principal) {
         return ApiResponse.ok(userMapper.toResponse(principal.getUser()));
+    }
+
+    @PutMapping("/me")
+    public ApiResponse<UserResponse> updateMe(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateProfileRequest request
+    ) {
+        return ApiResponse.ok("Profile updated", userService.updateProfile(principal.getUser(), request));
+    }
+
+    @PostMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        userService.changePassword(principal.getUser(), request);
     }
 }
