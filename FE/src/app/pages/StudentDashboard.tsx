@@ -22,6 +22,7 @@ import { Label } from '../components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../components/ui/select';
+import { FormattedText } from '../components/FormattedText';
 import { KpiCard } from '../components/cards';
 import { StatusBadge, EmptyState } from '../components/common';
 import { cn } from '../components/ui/utils';
@@ -224,12 +225,12 @@ function ReviewModal({ booking, onClose, onReviewed }: { booking: BookingRespons
 // ── AI ask (post-session tutor) modal ──────────────────────────
 function AskModal({ booking, onClose }: { booking: BookingResponse; onClose: () => void }) {
   const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const send = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    const q = input.trim();
+  const send = async (overrideQ?: string) => {
+    const q = (overrideQ ?? input).trim();
     if (!q || loading) return;
     setMessages((m) => [...m, { role: 'user', text: q }]);
     setInput('');
@@ -237,6 +238,9 @@ function AskModal({ booking, onClose }: { booking: BookingResponse; onClose: () 
     try {
       const res = await askSession(booking.id, q);
       setMessages((m) => [...m, { role: 'ai', text: res.answer }]);
+      if (res.suggestedQuestions && res.suggestedQuestions.length > 0) {
+        setSuggestions(res.suggestedQuestions);
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Không hỏi được. Vui lòng thử lại.');
     } finally {
@@ -255,12 +259,16 @@ function AskModal({ booking, onClose }: { booking: BookingResponse; onClose: () 
         <div className="max-h-[45vh] space-y-3 overflow-y-auto">
           {messages.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Hỏi lại bất kỳ điều gì về buổi học này. AI trả lời bám sát nội dung buổi học; nếu cần kèm sâu hơn sẽ gợi ý đặt thêm buổi.
+              Hỏi lại bất kỳ điều gì về buổi học này. Trợ lý Gradora AI sẽ trả lời bám sát nội dung buổi học; nếu cần kèm sâu hơn sẽ gợi ý đặt thêm buổi.
             </p>
           )}
           {messages.map((m, i) => (
             <div key={i} className={cn('rounded-xl p-3 text-sm', m.role === 'user' ? 'ml-8 bg-primary/10' : 'mr-8 bg-accent/60')}>
-              <p className="whitespace-pre-wrap">{m.text}</p>
+              {m.role === 'user' ? (
+                <p className="whitespace-pre-wrap">{m.text}</p>
+              ) : (
+                <FormattedText content={m.text} />
+              )}
             </div>
           ))}
           {loading && (
@@ -268,8 +276,24 @@ function AskModal({ booking, onClose }: { booking: BookingResponse; onClose: () 
               <Loader2 className="size-4 animate-spin" /> Đang trả lời…
             </div>
           )}
+          {suggestions.length > 0 && !loading && (
+            <div className="mt-2 pt-2 border-t border-border">
+              <p className="mb-1.5 text-xs text-muted-foreground font-medium">💡 Gợi ý hỏi tiếp:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {suggestions.map((sg, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => send(sg)}
+                    className="rounded-lg border border-primary/30 bg-background px-2.5 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
+                  >
+                    💬 {sg}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <form onSubmit={send} className="flex gap-2">
+        <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex gap-2">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

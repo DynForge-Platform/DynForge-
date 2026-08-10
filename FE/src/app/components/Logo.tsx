@@ -3,28 +3,18 @@ import logoImg from '../../imports/logo.jpg';
 
 export function Logo({ light = false }: { light?: boolean }) {
   return (
-    <Link to="/" className="inline-flex items-center gap-2.5">
-      {/* Icon mark only — just the G symbol portion */}
+    <Link to="/" className="inline-flex items-center gap-3 shrink-0 select-none">
+      {/* Icon logo with white background removed */}
       <img
         src={logoImg}
-        alt="GRADORA icon"
-        style={{
-          height: '38px',
-          width: '38px',
-          objectFit: 'cover',
-          objectPosition: 'center top',
-          borderRadius: '10px',
-          mixBlendMode: light ? 'normal' : 'multiply',
-          filter: light ? 'brightness(0) invert(1)' : 'none',
-        }}
+        alt="GRADORA"
+        className={`h-9 w-auto object-contain ${light ? 'mix-blend-screen brightness-0 invert' : 'mix-blend-multiply'}`}
       />
-      {/* Wordmark */}
+      {/* Website Name */}
       <span
+        className="font-extrabold tracking-wider text-xl"
         style={{
           fontFamily: 'Sora, var(--font-heading)',
-          fontWeight: 800,
-          fontSize: '1.2rem',
-          letterSpacing: '0.08em',
           color: light ? '#ffffff' : 'var(--navy)',
         }}
       >

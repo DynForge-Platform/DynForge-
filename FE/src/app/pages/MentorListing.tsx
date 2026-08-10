@@ -18,6 +18,7 @@ import { MentorCard } from '../components/MentorCard';
 import { EmptyState } from '../components/common';
 import { majors, formatCurrency, type Mentor } from '../data/mockData';
 import { useLanguage } from '../context/LanguageContext';
+import { FormattedText } from '../components/FormattedText';
 import { listMentors, backendToMentor } from '../services/mentorService';
 import { mentorMatch, type MentorMatchResult } from '../services/aiService';
 import { toast } from 'sonner';
@@ -38,11 +39,13 @@ export function MentorListing() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<MentorMatchResult | null>(null);
 
-  const runAdvisor = async () => {
-    if (!aiQuery.trim()) return;
+  const runAdvisor = async (overrideQuery?: string) => {
+    const textToRun = (overrideQuery ?? aiQuery).trim();
+    if (!textToRun) return;
+    if (overrideQuery) setAiQuery(overrideQuery);
     setAiLoading(true);
     try {
-      setAiResult(await mentorMatch(aiQuery.trim()));
+      setAiResult(await mentorMatch(textToRun));
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Không tư vấn được. Vui lòng thử lại.');
     } finally {
@@ -196,15 +199,15 @@ export function MentorListing() {
                 onChange={(e) => setAiQuery(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') runAdvisor(); }}
                 placeholder="VD: Mình đang rớt Giải tích 1, cần luyện thi cuối kỳ trong 2 tuần…"
-                className="bg-input-background"
+                className="h-11 border-2 border-primary/60 bg-background text-sm shadow-sm transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/60"
               />
-              <Button onClick={runAdvisor} disabled={aiLoading || !aiQuery.trim()} className="shrink-0">
+              <Button onClick={() => runAdvisor()} disabled={aiLoading || !aiQuery.trim()} className="h-11 shrink-0 px-5">
                 {aiLoading ? <><Loader2 className="size-4 animate-spin" /> Đang tư vấn…</> : <><Sparkles className="size-4" /> Tư vấn AI</>}
               </Button>
             </div>
             {aiResult && (
               <div className="mt-4 space-y-3 text-sm">
-                <p className="whitespace-pre-wrap text-muted-foreground">{aiResult.advice}</p>
+                <FormattedText content={aiResult.advice} />
                 {aiResult.matches.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {aiResult.matches.map((m) => (
@@ -218,6 +221,23 @@ export function MentorListing() {
                         <UserSearch className="size-3.5" /> {m.name}
                       </Link>
                     ))}
+                  </div>
+                )}
+                {aiResult.suggestedQuestions && aiResult.suggestedQuestions.length > 0 && (
+                  <div className="mt-3 border-t border-primary/20 pt-3">
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">💡 Câu hỏi gợi ý tiếp theo:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {aiResult.suggestedQuestions.map((q, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => runAdvisor(q)}
+                          disabled={aiLoading}
+                          className="rounded-lg border border-primary/30 bg-background px-2.5 py-1 text-xs text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+                        >
+                          💬 {q}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

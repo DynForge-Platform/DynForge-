@@ -9,6 +9,7 @@ export interface MentorMatchItem {
 export interface MentorMatchResult {
   advice: string;
   matches: MentorMatchItem[];
+  suggestedQuestions?: string[];
 }
 
 /** AI recommends the best-fit mentors for a mentee's free-text need. */
@@ -19,6 +20,7 @@ export async function mentorMatch(query: string): Promise<MentorMatchResult> {
 
 export interface SessionAskResult {
   answer: string;
+  suggestedQuestions?: string[];
 }
 
 /** AI answers a mentee's follow-up question grounded in a specific session. */
@@ -31,5 +33,11 @@ export async function askSession(bookingId: string, question: string): Promise<S
 export async function rewriteNote(bookingId: string, notes: string): Promise<string> {
   const { data } = await api.post(`/api/ai/sessions/${bookingId}/rewrite-note`, { notes });
   return (data.data as { note: string }).note;
+}
+
+/** General AI chatbot for free-form conversation & platform help. */
+export async function generalChat(query: string): Promise<SessionAskResult> {
+  const { data } = await api.post('/api/ai/chat', { query });
+  return data.data as SessionAskResult;
 }
 

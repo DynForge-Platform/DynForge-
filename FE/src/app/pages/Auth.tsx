@@ -11,6 +11,9 @@ import { useAuth, AuthRole } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { toast } from 'sonner';
 
+import Lottie from 'lottie-react';
+import onlineLearningAnimation from '../../assets/animations/Online Learning.json';
+
 const trustMessages = [
   { icon: ShieldCheck, label: 'Escrow anti-fraud protection' },
   { icon: BadgeCheck, label: 'Verified mentors only' },
@@ -18,13 +21,7 @@ const trustMessages = [
   { icon: Mail, label: 'University email recommended' },
 ];
 
-const quickRoles: { label: string; role: AuthRole; color: string; icon: React.ElementType }[] = [
-  { label: 'Mentee', role: 'mentee', color: 'bg-sky-500', icon: Users },
-  { label: 'Mentor', role: 'mentor', color: 'bg-emerald-500', icon: GraduationCap },
-  { label: 'Admin', role: 'admin', color: 'bg-amber-500', icon: LayoutDashboard },
-];
-
-// Seeded demo accounts (see DataSeeder). Quick-login uses these so it obtains a real JWT.
+// Seeded demo accounts (see DataSeeder).
 const DEMO_CREDENTIALS: Record<AuthRole, { email: string; password: string }> = {
   mentee: { email: 'student@gradora.vn', password: 'Gradora@123' },
   mentor: { email: 'khoa.tran@gradora.vn', password: 'Gradora@123' },
@@ -39,38 +36,46 @@ const DASHBOARD_PATHS: Record<AuthRole, string> = {
 
 function BrandPanel({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary via-[#1e3acc] to-navy p-12 text-white lg:flex">
-      <Logo light />
-      <div>
-        <h2 className="text-white" style={{ fontSize: '2rem', fontWeight: 700, lineHeight: 1.2 }}>
+    <div className="relative flex h-full min-h-screen flex-col justify-between overflow-hidden bg-gradient-to-br from-primary/10 via-slate-50 to-indigo-50/60 p-10 lg:p-14 border-r border-border/50">
+      {/* Background ambient glowing lights */}
+      <div className="absolute -top-32 -left-32 size-96 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 size-96 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
+
+      <Logo />
+
+      {/* Lottie Animation: Online Learning */}
+      <div className="my-auto flex flex-col items-center justify-center text-center py-6">
+        <div className="w-full max-w-md drop-shadow-xl my-2">
+          <Lottie animationData={onlineLearningAnimation} loop={true} autoplay={true} />
+        </div>
+        <h2 className="text-foreground text-center mt-4 text-2xl lg:text-3xl font-bold tracking-tight leading-tight max-w-md">
           {title}
         </h2>
-        <p className="mt-4 max-w-sm text-white/70">{subtitle}</p>
-        <ul className="mt-8 space-y-4">
-          {trustMessages.map(({ icon: Icon, label }) => (
-            <li key={label} className="flex items-center gap-3">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-white/15">
-                <Icon className="size-4.5" />
-              </span>
-              <span style={{ fontWeight: 500 }}>{label}</span>
-            </li>
-          ))}
-        </ul>
+        <p className="mt-3 text-center text-muted-foreground text-sm lg:text-base max-w-md leading-relaxed">{subtitle}</p>
       </div>
-      <p className="text-sm text-white/50">
-        Your payment is held securely and released only after the session is completed.
-      </p>
+
+      <div className="flex items-center justify-between text-xs lg:text-sm text-muted-foreground border-t border-border/50 pt-5">
+        <span className="flex items-center gap-2"><ShieldCheck className="size-4.5 text-primary" /> Escrow Security 🛡️</span>
+        <span className="flex items-center gap-2"><Star className="size-4.5 text-amber-500" /> Verified Mentors ✨</span>
+      </div>
     </div>
   );
 }
 
 function AuthShell({ children, title, subtitle }: { children: React.ReactNode; title: string; subtitle: string }) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <BrandPanel title={title} subtitle={subtitle} />
-      <div className="flex items-center justify-center bg-background px-5 py-12">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 lg:hidden"><Logo /></div>
+    <div className="grid min-h-screen w-full lg:grid-cols-12 bg-background overflow-x-hidden">
+      <div className="hidden lg:block lg:col-span-6 xl:col-span-7 h-full">
+        <BrandPanel title={title} subtitle={subtitle} />
+      </div>
+
+      <div className="lg:col-span-6 xl:col-span-5 flex min-h-screen flex-col justify-center p-4 sm:p-8 lg:p-12 bg-slate-50/60 relative">
+        {/* Background ambient glowing light */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+
+        {/* Floating Glassmorphic Form Card */}
+        <div className="relative z-10 w-full max-w-md mx-auto rounded-3xl border border-border/70 bg-card/95 backdrop-blur-xl p-8 sm:p-10 shadow-2xl shadow-primary/5 transition-all duration-500 hover:shadow-primary/15 animate-in fade-in zoom-in-95">
+          <div className="mb-6 lg:hidden flex justify-center"><Logo /></div>
           {children}
         </div>
       </div>
@@ -157,60 +162,23 @@ function GoogleButton() {
   return <div ref={buttonRef} className="flex min-h-10 justify-center" />;
 }
 
-function QuickLogin({ onLogin }: { onLogin: (role: AuthRole) => void }) {
-  const { T } = useLanguage();
-  return (
-    <div className="mt-5 rounded-2xl border border-dashed border-primary/30 bg-accent/60 p-4">
-      <p className="mb-3 text-center text-xs text-muted-foreground" style={{ fontWeight: 600 }}>
-        {T.quickAccess}
-      </p>
-      <div className="grid grid-cols-3 gap-2">
-        {quickRoles.map(({ label, role, color, icon: Icon }) => (
-          <button
-            key={role}
-            onClick={() => onLogin(role)}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-white py-3 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-            style={{ fontWeight: 600 }}
-          >
-            <span className={cn('size-3 rounded-full', color)} />
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── Login ──────────────────────────────────────────────────────
 export function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
-  const { login, loginWithCredentials } = useAuth();
+  const { loginWithCredentials } = useAuth();
   const { T, lang } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleQuickLogin = async (role: AuthRole) => {
-    const dest = redirectTo && role === 'mentee' ? redirectTo : DASHBOARD_PATHS[role];
-    try {
-      // Real login with the seeded demo account → obtains a JWT so API calls work.
-      const { email: demoEmail, password: demoPassword } = DEMO_CREDENTIALS[role];
-      await loginWithCredentials(demoEmail, demoPassword);
-      toast.success(`Signed in as ${role.charAt(0).toUpperCase() + role.slice(1)}. Welcome back!`);
-      navigate(dest);
-    } catch {
-      // Fallback: seeded accounts not present — use offline demo profile (no JWT).
-      login(role);
-      toast.warning('Demo mode (no backend session). Seed the database to enable live data.');
-      navigate(dest);
-    }
-  };
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) { handleQuickLogin('mentee'); return; }
+    if (!email || !password) {
+      toast.error('Vui lòng nhập Email và Mật khẩu.');
+      return;
+    }
     setLoading(true);
     try {
       const u = await loginWithCredentials(email, password);
@@ -232,12 +200,11 @@ export function Login() {
       <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{T.welcomeBack}</h1>
       <p className="mt-1 text-muted-foreground">{T.loginSubtitle}</p>
 
-      <QuickLogin onLogin={handleQuickLogin} />
+      <div className="mb-5 mt-6"><GoogleButton /></div>
 
       <div className="my-5 flex items-center gap-3 text-sm text-muted-foreground">
         <span className="h-px flex-1 bg-border" /> {T.orSignIn} <span className="h-px flex-1 bg-border" />
       </div>
-      <div className="mb-5"><GoogleButton /></div>
 
       <form className="space-y-4" onSubmit={submit}>
         <div>
@@ -279,7 +246,7 @@ export function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const applyingAsMentor = searchParams.get('apply') === 'mentor';
-  const { login, loginWithCredentials, registerWithCredentials } = useAuth();
+  const { login, registerWithCredentials } = useAuth();
   const { T } = useLanguage();
   const [role, setRole] = useState<'mentee' | 'mentor'>(applyingAsMentor ? 'mentor' : 'mentee');
   const [fullName, setFullName] = useState('');
@@ -287,25 +254,10 @@ export function Register() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleQuickLogin = async (r: AuthRole) => {
-    try {
-      const { email: demoEmail, password: demoPassword } = DEMO_CREDENTIALS[r];
-      await loginWithCredentials(demoEmail, demoPassword);
-      toast.success(`Signed in as ${r.charAt(0).toUpperCase() + r.slice(1)}. Welcome to GRADORA!`);
-      navigate(DASHBOARD_PATHS[r]);
-    } catch {
-      login(r);
-      toast.warning('Demo mode (no backend session). Seed the database to enable live data.');
-      navigate(DASHBOARD_PATHS[r]);
-    }
-  };
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !password) {
-      login(role);
-      toast.success('Account created! Welcome to GRADORA.');
-      navigate(role === 'mentor' ? '/mentor/dashboard' : '/dashboard');
+      toast.error('Vui lòng nhập đầy đủ Họ tên, Email và Mật khẩu.');
       return;
     }
     setLoading(true);
@@ -329,14 +281,8 @@ export function Register() {
       <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{T.createYourAccount}</h1>
       <p className="mt-1 text-muted-foreground">{T.joinSubtitle}</p>
 
-      <QuickLogin onLogin={handleQuickLogin} />
-
-      <div className="my-5 flex items-center gap-3 text-sm text-muted-foreground">
-        <span className="h-px flex-1 bg-border" /> {T.orCreate} <span className="h-px flex-1 bg-border" />
-      </div>
-
       {/* Role selector */}
-      <div className="mb-4 grid grid-cols-2 gap-3">
+      <div className="mb-4 mt-6 grid grid-cols-2 gap-3">
         {([
           { key: 'mentee', label: T.iAmMentee, icon: Users },
           { key: 'mentor', label: T.iAmMentor, icon: GraduationCap },

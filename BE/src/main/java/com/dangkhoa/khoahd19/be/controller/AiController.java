@@ -32,6 +32,12 @@ public class AiController {
         return ApiResponse.ok(aiMenteeService.matchMentors(request.query()));
     }
 
+    /** General AI Chatbot for platform & learning assistance. */
+    @PostMapping("/chat")
+    public ApiResponse<SessionAskResponse> generalChat(@Valid @RequestBody MentorMatchRequest request) {
+        return ApiResponse.ok(aiMenteeService.generalChat(request.query()));
+    }
+
     /** Answers a mentee's follow-up question grounded in a specific session. */
     @PostMapping("/sessions/{bookingId}/ask")
     public ApiResponse<SessionAskResponse> askSession(

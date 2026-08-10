@@ -1,6 +1,7 @@
 import { Outlet, ScrollRestoration } from 'react-router';
 import { Header } from './Header';
 import { Footer } from './Footer';
+import { GlobalAiChatbot } from '../GlobalAiChatbot';
 
 export function PublicLayout() {
   return (
@@ -10,6 +11,7 @@ export function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
+      <GlobalAiChatbot />
       <ScrollRestoration />
     </div>
   );

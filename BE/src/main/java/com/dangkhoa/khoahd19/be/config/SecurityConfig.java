@@ -74,6 +74,7 @@ public class SecurityConfig {
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/ai/**").permitAll()
                         .requestMatchers("/api/wallet/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/mentors/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/mentors/**").permitAll()

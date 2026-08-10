@@ -12,6 +12,7 @@ import { LanguageSwitcher } from '../LanguageSwitcher';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
+import { GlobalAiChatbot } from '../GlobalAiChatbot';
 
 type Role = 'student' | 'teacher' | 'admin';
 
@@ -162,6 +163,7 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
           <Outlet />
         </main>
       </div>
+      <GlobalAiChatbot />
       <ScrollRestoration />
     </div>
   );

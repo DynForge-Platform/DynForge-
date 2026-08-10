@@ -190,7 +190,6 @@ const t = {
     voucherApplied: (code: string, saving: string) => `Voucher ${code} applied — you save ${saving}!`,
     confirmPay: 'Confirm & Pay',
     back: 'Back',
-    escrowProtection: 'Escrow protection',
     escrowDetail: 'Your payment is held securely and released only after the session is completed. If something goes wrong, you can open a dispute and GRADORA will review it fairly.',
     paymentSecured: 'Payment secured with escrow · Released after session completion',
 
@@ -364,9 +363,6 @@ const t = {
     recentTransactions: 'Recent transactions',
 
     // ── Schedule ─ extra labels ──────────────────────────────
-    morning: 'Morning',
-    afternoon: 'Afternoon',
-    evening: 'Evening',
     sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat',
     minLabel: 'min',
     customDuration: 'Custom',
@@ -395,7 +391,7 @@ const t = {
     exampleEarnings: 'Example monthly earnings',
     sessionsCompleted: 'Sessions completed',
     grossEarnings: 'Gross earnings',
-    platformCommission: 'Platform commission (15%)',
+    platformCommissionRate: 'Platform commission (15%)',
     netPayout: 'Net payout',
     escrowSafetyNote: 'Escrow safety: payouts are guaranteed for every completed session.',
     whyMentorEyebrow: 'Why mentor',
@@ -472,7 +468,6 @@ const t = {
     // ── Home ─ extra ──────────────────────────────────────────
     devPreviewLabel: 'Preview UI by role',
     fptuCampusLabel: 'FPT University HCM Campus',
-    whereItHappens: 'Where mentorship happens',
     handPickedSubtitle: 'Hand-picked seniors, alumni, and lecturers ready to help you succeed.',
 
     // ── Common ───────────────────────────────────────────────
@@ -683,7 +678,6 @@ const t = {
     voucherApplied: (code: string, saving: string) => `Đã áp dụng voucher ${code} — bạn tiết kiệm ${saving}!`,
     confirmPay: 'Xác nhận & thanh toán',
     back: 'Quay lại',
-    escrowProtection: 'Bảo vệ ký quỹ',
     escrowDetail: 'Khoản thanh toán của bạn được GRADORA giữ an toàn và chỉ chuyển cho gia sư sau khi buổi học hoàn tất. Nếu có vấn đề, bạn có thể mở tranh chấp và GRADORA sẽ xem xét công bằng.',
     paymentSecured: 'Thanh toán bảo mật qua ký quỹ · Chuyển tiền sau khi hoàn tất buổi học',
 
@@ -857,9 +851,6 @@ const t = {
     recentTransactions: 'Giao dịch gần đây',
 
     // ── Schedule ─ extra labels ──────────────────────────────
-    morning: 'Buổi sáng',
-    afternoon: 'Buổi chiều',
-    evening: 'Buổi tối',
     sun: 'CN', mon: 'T2', tue: 'T3', wed: 'T4', thu: 'T5', fri: 'T6', sat: 'T7',
     minLabel: 'phút',
     customDuration: 'Tùy chỉnh',
@@ -888,7 +879,7 @@ const t = {
     exampleEarnings: 'Thu nhập ví dụ hàng tháng',
     sessionsCompleted: 'Buổi học đã hoàn thành',
     grossEarnings: 'Tổng thu nhập',
-    platformCommission: 'Hoa hồng nền tảng (15%)',
+    platformCommissionRate: 'Hoa hồng nền tảng (15%)',
     netPayout: 'Thu nhập thực nhận',
     escrowSafetyNote: 'Bảo đảm ký quỹ: thanh toán được đảm bảo cho mọi buổi học hoàn thành.',
     whyMentorEyebrow: 'Vì sao trở thành gia sư',
@@ -961,7 +952,6 @@ const t = {
     // ── Home ─ extra ──────────────────────────────────────────
     devPreviewLabel: 'Xem trước giao diện theo vai trò',
     fptuCampusLabel: 'Đại học FPT HCM',
-    whereItHappens: 'Nơi kết nối học thuật diễn ra',
     handPickedSubtitle: 'Anh chị khoá trên, cựu sinh viên và giảng viên được tuyển chọn, sẵn sàng hỗ trợ bạn.',
 
     // ── Common ───────────────────────────────────────────────
