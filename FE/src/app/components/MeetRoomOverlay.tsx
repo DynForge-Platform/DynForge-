@@ -15,8 +15,8 @@ interface MeetProps {
 
 // ── In-meeting notes panel (persisted per booking, AI rewrites the main points) ──
 function NotesPanel({ bookingId, onClose }: { bookingId: string; onClose: () => void }) {
-  const storageKey = `gradora_meet_note_${bookingId}`;
-  const [note, setNote] = useState(() => localStorage.getItem(storageKey) ?? '');
+  const storageKey = `dynforge_meet_note_${bookingId}`;
+  const [note, setNote] = useState(() => localStorage.getItem(storageKey) ?? localStorage.getItem(`gradora_meet_note_${bookingId}`) ?? '');
   const [rewriting, setRewriting] = useState(false);
 
   // Autosave so notes survive accidental tab close / rejoin.
@@ -74,7 +74,7 @@ interface ChatMsg { mine: boolean; text: string }
 
 function AiChatPopup({ bookingId, course, onClose }: { bookingId: string; course: string; onClose: () => void }) {
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { mine: false, text: `Chào bạn! Mình là trợ lý AI của GRADORA. Hỏi mình bất cứ điều gì về buổi học ${course} này nhé.` },
+    { mine: false, text: `Chào bạn! Mình là trợ lý AI của DynForge. Hỏi mình bất cứ điều gì về buổi học ${course} này nhé.` },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -166,7 +166,7 @@ export function MeetRoomOverlay({ bookingId, course, partnerName, durationMinute
   }, []);
 
   // Both participants join the same per-booking room, so they meet each other.
-  const room = `gradora-${bookingId}`;
+  const room = `dynforge-${bookingId}`;
   const name = encodeURIComponent(displayName ?? 'Guest');
   const jitsiUrl = `https://meet.jit.si/${room}#userInfo.displayName=%22${name}%22&config.prejoinPageEnabled=false&config.disableDeepLinking=true`;
 
@@ -237,7 +237,7 @@ export function MeetRoomOverlay({ bookingId, course, partnerName, durationMinute
       {/* Real meeting (Jitsi) + optional notes panel */}
       <div className="relative flex flex-1 min-h-0 gap-3 px-4">
         <iframe
-          title="GRADORA meeting"
+          title="DynForge meeting"
           src={jitsiUrl}
           allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
           className="h-full w-full min-w-0 flex-1 rounded-2xl border-0 bg-[#1c1f2e]"
@@ -300,7 +300,7 @@ export function MeetRoomOverlay({ bookingId, course, partnerName, durationMinute
       </div>
 
       <div className="flex items-center justify-center gap-1.5 pb-4 text-xs text-white/40">
-        <ShieldCheck className="size-3.5" /> Recordings are stored securely and only visible to GRADORA admins for dispute review.
+        <ShieldCheck className="size-3.5" /> Recordings are stored securely and only visible to DynForge admins for dispute review.
       </div>
     </div>
   );

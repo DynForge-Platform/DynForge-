@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { Sparkles, X, Send, Loader2, Bot } from 'lucide-react';
+import { X, Send, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { generalChat } from '../services/aiService';
 import { cn } from './ui/utils';
 import { FormattedText } from './FormattedText';
+import { RiveRobot } from './RiveRobot';
 
 export function GlobalAiChatbot() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([
     {
       role: 'ai',
-      text: 'Chào bạn! Mình là Gradora AI. Bạn cần mình tư vấn gia sư môn học nào hay giải đáp thắc mắc gì không?',
+      text: 'Chào bạn! Mình là DynForge AI. Bạn cần mình tư vấn gia sư môn học nào hay giải đáp thắc mắc gì không?',
     },
   ]);
   const [suggestions, setSuggestions] = useState<string[]>([
@@ -39,7 +40,7 @@ export function GlobalAiChatbot() {
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
-        { role: 'ai', text: 'Xin lỗi, không thể kết nối tới Gradora AI lúc này. Vui lòng thử lại sau!' },
+        { role: 'ai', text: 'Xin lỗi, không thể kết nối tới DynForge AI lúc này. Vui lòng thử lại sau!' },
       ]);
     } finally {
       setLoading(false);
@@ -53,12 +54,12 @@ export function GlobalAiChatbot() {
         <div className="mb-4 flex h-[500px] w-[360px] max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-primary/20 bg-background shadow-2xl transition-all">
           {/* Header */}
           <div className="flex items-center justify-between rounded-t-2xl bg-primary px-4 py-3 text-primary-foreground">
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-full bg-white/20">
-                <Bot className="size-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-full bg-white/20 overflow-hidden shadow-inner p-0.5">
+                <RiveRobot className="size-full" />
               </div>
               <div>
-                <p className="text-sm font-semibold">Gradora AI</p>
+                <p className="text-sm font-semibold">DynForge AI</p>
                 <p className="text-[11px] text-primary-foreground/80">Trợ lý học tập 24/7</p>
               </div>
             </div>
@@ -93,7 +94,7 @@ export function GlobalAiChatbot() {
             ))}
             {loading && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="size-3.5 animate-spin" /> Gradora AI đang suy nghĩ…
+                <Loader2 className="size-3.5 animate-spin" /> DynForge AI đang suy nghĩ…
               </div>
             )}
 
@@ -139,15 +140,22 @@ export function GlobalAiChatbot() {
         </div>
       )}
 
-      {/* Floating Toggle Button */}
+      {/* Floating Toggle Button with Cute Interactive Robot */}
       {!open && (
-        <Button
+        <button
           onClick={() => setOpen(true)}
-          className="size-14 rounded-full shadow-xl hover:scale-105 transition-transform bg-primary text-primary-foreground"
-          size="icon"
+          className="group relative size-28 sm:size-32 flex items-center justify-center cursor-pointer bg-transparent border-none p-0 outline-none hover:scale-105 active:scale-95 transition-transform duration-300 drop-shadow-[0_12px_24px_rgba(0,229,255,0.4)]"
+          title="Trò chuyện với DynForge AI"
+          aria-label="Mở DynForge AI Chatbot"
         >
-          <Sparkles className="size-6 animate-pulse" />
-        </Button>
+          {/* Transparent container for robot directly over the website */}
+          <div className="size-full flex items-center justify-center">
+            <RiveRobot className="size-full" />
+          </div>
+
+          {/* Subtle glowing ground shadow */}
+          <span className="absolute -bottom-1 w-16 h-3 rounded-full bg-cyan-400/30 blur-md pointer-events-none -z-10 group-hover:bg-cyan-400/60 transition-colors animate-pulse" />
+        </button>
       )}
     </div>
   );

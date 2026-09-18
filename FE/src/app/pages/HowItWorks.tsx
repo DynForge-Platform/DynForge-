@@ -1,11 +1,9 @@
 import { useNavigate } from 'react-router';
 import {
-  Search, CreditCard, Video, CheckCircle2, ShieldCheck, Wallet,
+  Search, CreditCard, Video, CheckCircle2,
   UserCheck, CalendarRange, Banknote, ArrowRight,
 } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { SectionHeading } from '../components/common';
+import { EditorialPageHeader } from '../components/EditorialPageHeader';
 import { useLanguage } from '../context/LanguageContext';
 
 export function HowItWorks() {
@@ -49,8 +47,8 @@ export function HowItWorks() {
       icon: UserCheck,
       title: vi ? 'Đăng ký & xác minh' : 'Apply & get verified',
       desc: vi
-        ? 'Nộp bảng điểm và tài liệu. Đội ngũ GRADORA xác minh để đảm bảo chất lượng.'
-        : 'Submit your transcript and documents. The GRADORA team verifies you for quality.',
+        ? 'Nộp bảng điểm và tài liệu. Đội ngũ DynForge xác minh để đảm bảo chất lượng.'
+        : 'Submit your transcript and documents. The DynForge team verifies you for quality.',
     },
     {
       icon: CalendarRange,
@@ -69,149 +67,120 @@ export function HowItWorks() {
   ];
 
   return (
-    <div>
-      {/* Hero */}
-      <section className="bg-gradient-to-b from-pale-blue to-background">
-        <div className="mx-auto max-w-[860px] px-5 py-20 text-center">
-          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1 text-sm text-primary" style={{ fontWeight: 500 }}>
-            <ShieldCheck className="size-4" /> {vi ? 'Bảo vệ bằng ký quỹ' : 'Escrow protected'}
-          </span>
-          <h1 className="text-navy" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, lineHeight: 1.15 }}>
-            {vi ? 'GRADORA hoạt động như thế nào?' : 'How GRADORA works'}
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-muted-foreground" style={{ fontSize: '1.125rem' }}>
-            {vi
-              ? 'Kết nối với mentor đã xác minh và học tập an toàn nhờ hệ thống thanh toán ký quỹ — tiền chỉ được giải phóng khi buổi học hoàn tất.'
-              : 'Connect with verified mentors and learn safely with escrow-protected payments — money is only released when the session is complete.'}
-          </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Button size="lg" onClick={() => navigate('/mentors')}>
-              {vi ? 'Tìm mentor' : 'Find a mentor'} <ArrowRight className="size-4" />
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/become-a-mentor')}>
-              {vi ? 'Trở thành mentor' : 'Become a mentor'}
-            </Button>
-          </div>
-        </div>
-      </section>
+    <div className="relative z-10 pb-24 text-slate-100">
+      {/* Editorial Header */}
+      <EditorialPageHeader
+        eyebrow={vi ? 'QUY TRÌNH HỌC TẬP AN TOÀN' : 'SAFE ACADEMIC ECOSYSTEM'}
+        title={
+          vi ? (
+            <>
+              Đơn giản. An toàn. <span className="italic text-cyan-400">Hiệu quả.</span>
+            </>
+          ) : (
+            <>
+              Simple. Secure. <span className="italic text-cyan-400">Effective.</span>
+            </>
+          )
+        }
+        subtitle={
+          vi
+            ? 'Kết nối với mentor đã xác minh và học tập an toàn nhờ hệ thống thanh toán ký quỹ — tiền chỉ được giải phóng khi buổi học hoàn tất.'
+            : 'Connect with verified mentors and learn safely with escrow-protected payments — money is only released when the session is complete.'
+        }
+      />
 
-      {/* Student steps */}
-      <section className="mx-auto max-w-[1240px] px-5 py-20">
-        <SectionHeading
-          center
-          eyebrow={vi ? 'Dành cho sinh viên' : 'For students'}
-          title={vi ? '4 bước để bắt đầu học' : '4 steps to start learning'}
-        />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {studentSteps.map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <Card key={s.title} className="relative border-border p-6">
-                <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Icon className="size-5" />
-                </span>
-                <span className="absolute right-5 top-5 text-3xl text-border" style={{ fontWeight: 800 }}>{i + 1}</span>
-                <h3 style={{ fontWeight: 600 }}>{s.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Escrow explainer */}
-      <section className="bg-pale-blue/50">
-        <div className="mx-auto grid max-w-[1240px] items-center gap-10 px-5 py-20 lg:grid-cols-[1fr_1.1fr]">
-          <div>
-            <SectionHeading
-              eyebrow={vi ? 'An toàn' : 'Safety first'}
-              title={vi ? 'Thanh toán ký quỹ chống lừa đảo' : 'Escrow payments, anti-fraud by design'}
-            />
-            <ul className="space-y-4">
-              {[
-                vi ? 'Tiền của bạn được giữ an toàn khi đặt lịch, không chuyển thẳng cho mentor.' : 'Your money is held safely on booking — never sent straight to the mentor.',
-                vi ? 'Mentor chỉ nhận tiền sau khi bạn xác nhận buổi học hoàn tất.' : 'The mentor is paid only after you confirm the session is complete.',
-                vi ? 'Không hài lòng? Mở tranh chấp để admin xử lý hoàn tiền hoặc giải phóng.' : 'Not satisfied? Open a dispute and an admin resolves a refund or release.',
-                vi ? 'Tự động xác nhận sau 24 giờ nếu bạn không phản hồi.' : 'Auto-confirmation after 24 hours if you take no action.',
-              ].map((t) => (
-                <li key={t} className="flex items-start gap-3">
-                  <ShieldCheck className="mt-0.5 size-5 shrink-0 text-success" />
-                  <span className="text-muted-foreground">{t}</span>
-                </li>
-              ))}
-            </ul>
+      <div className="max-w-6xl mx-auto px-6 space-y-20">
+        {/* Learner Process */}
+        <section className="space-y-8">
+          <div className="text-center space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
+              {vi ? 'DÀNH CHO SINH VIÊN' : 'FOR LEARNERS'}
+            </span>
+            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              {vi ? '4 bước học cùng Mentor' : 'How to learn with a mentor'}
+            </h2>
           </div>
-          <Card className="border-border p-6">
-            <div className="space-y-3">
-              {[
-                { icon: CreditCard, label: vi ? 'Thanh toán → Ký quỹ giữ tiền' : 'Pay → Escrow holds funds', tone: 'bg-primary/10 text-primary' },
-                { icon: Video, label: vi ? 'Buổi học diễn ra' : 'Session takes place', tone: 'bg-accent text-foreground' },
-                { icon: CheckCircle2, label: vi ? 'Xác nhận → Giải phóng cho mentor' : 'Confirm → Release to mentor', tone: 'bg-success/10 text-success' },
-                { icon: Wallet, label: vi ? 'Mentor rút về ngân hàng' : 'Mentor withdraws to bank', tone: 'bg-primary/10 text-primary' },
-              ].map((row, i) => {
-                const Icon = row.icon;
-                return (
-                  <div key={row.label} className="flex items-center gap-3 rounded-xl border border-border p-4">
-                    <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${row.tone}`}>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {studentSteps.map((step, idx) => {
+              const Icon = step.icon;
+              return (
+                <div key={idx} className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-6 relative transition-all hover:border-cyan-500/40 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
                       <Icon className="size-5" />
+                    </div>
+                    <span className="text-2xl font-light text-slate-500" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                      0{idx + 1}
                     </span>
-                    <span style={{ fontWeight: 500 }}>{row.label}</span>
-                    <span className="ml-auto text-sm text-muted-foreground">{i + 1}/4</span>
                   </div>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      {/* Mentor steps */}
-      <section className="mx-auto max-w-[1240px] px-5 py-20">
-        <SectionHeading
-          center
-          eyebrow={vi ? 'Dành cho mentor' : 'For mentors'}
-          title={vi ? 'Chia sẻ kiến thức, nhận thu nhập' : 'Share what you know, get paid'}
-        />
-        <div className="grid gap-6 sm:grid-cols-3">
-          {mentorSteps.map((s) => {
-            const Icon = s.icon;
-            return (
-              <Card key={s.title} className="border-border p-6">
-                <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Icon className="size-5" />
-                </span>
-                <h3 style={{ fontWeight: 600 }}>{s.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="mx-auto max-w-[1240px] px-5 pb-20">
-        <div className="overflow-hidden rounded-3xl bg-navy px-8 py-14 text-center text-white sm:px-14">
-          <h2 className="text-white" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', fontWeight: 700 }}>
-            {vi ? 'Sẵn sàng bắt đầu?' : 'Ready to get started?'}
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/70">
-            {vi
-              ? 'Tìm mentor phù hợp và đặt buổi học đầu tiên được bảo vệ bằng ký quỹ ngay hôm nay.'
-              : 'Find your mentor and book your first escrow-protected session today.'}
-          </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Button size="lg" onClick={() => navigate('/mentors')}>{vi ? 'Tìm mentor' : 'Find a mentor'}</Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
-              onClick={() => navigate('/become-a-mentor')}
-            >
-              {vi ? 'Trở thành mentor' : 'Become a mentor'}
-            </Button>
+                  <h3 className="font-semibold text-white text-base">{step.title}</h3>
+                  <p className="text-xs text-white/60 leading-relaxed font-normal">{step.desc}</p>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Mentor Process */}
+        <section className="space-y-8 pt-12 border-t border-white/10">
+          <div className="text-center space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
+              {vi ? 'DÀNH CHO GIA SƯ' : 'FOR MENTORS'}
+            </span>
+            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              {vi ? '3 bước chia sẻ kiến thức & nhận thù lao' : 'How to mentor on DynForge'}
+            </h2>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-3">
+            {mentorSteps.map((step, idx) => {
+              const Icon = step.icon;
+              return (
+                <div key={idx} className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-6 relative transition-all hover:border-cyan-500/40 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                      <Icon className="size-5" />
+                    </div>
+                    <span className="text-2xl font-light text-slate-500" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                      0{idx + 1}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-white text-base">{step.title}</h3>
+                  <p className="text-xs text-white/60 leading-relaxed font-normal">{step.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* CTA Bottom Section */}
+        <section className="rounded-3xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 sm:p-14 text-center space-y-6 shadow-2xl">
+          <h2 className="text-3xl sm:text-5xl text-white font-normal max-w-2xl mx-auto" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            {vi ? 'Sẵn sàng chinh phục môn học?' : 'Ready to master your courses?'}
+          </h2>
+          <p className="text-white/70 text-sm max-w-xl mx-auto">
+            {vi
+              ? 'Tìm ngay mentor đã vượt qua môn học của bạn để tiết kiệm hàng chục giờ ôn tập.'
+              : 'Find a verified student mentor who aced your course and boost your academic results today.'}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <button
+              onClick={() => navigate('/mentors')}
+              className="rounded-full border border-white/30 bg-white/10 backdrop-blur-md px-8 py-3.5 text-sm font-semibold text-white hover:bg-white/20 transition-all cursor-pointer shadow-lg hover:scale-[1.02] inline-flex items-center gap-2"
+            >
+              <span>{vi ? 'Tìm gia sư ngay' : 'Find a Mentor'}</span>
+              <ArrowRight className="size-4 text-cyan-400" />
+            </button>
+            <button
+              onClick={() => navigate('/become-a-mentor')}
+              className="rounded-full border border-white/15 bg-white/5 backdrop-blur-md px-8 py-3.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+            >
+              {vi ? 'Đăng ký làm Gia sư' : 'Become a Mentor'}
+            </button>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

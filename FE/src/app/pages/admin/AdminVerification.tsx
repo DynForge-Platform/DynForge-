@@ -112,9 +112,18 @@ export function AdminVerification() {
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {item.transcriptUrl
-                        ? <span className="text-primary underline cursor-pointer">{item.transcriptUrl}</span>
-                        : '—'}
+                      {item.transcriptUrl ? (
+                        <a
+                          href={item.transcriptUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline max-w-[180px] truncate block"
+                        >
+                          {item.transcriptUrl}
+                        </a>
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
                       {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}

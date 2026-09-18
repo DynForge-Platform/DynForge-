@@ -44,7 +44,7 @@ export function TeacherDisputes() {
       <div className="mb-6">
         <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Disputes</h1>
         <p className="mt-1 text-muted-foreground">
-          Student complaints raised against your sessions. GRADORA reviews and resolves each case.
+          Student complaints raised against your sessions. DynForge reviews and resolves each case.
         </p>
       </div>
 
@@ -137,7 +137,7 @@ export function TeacherDisputes() {
                 </div>
               </div>
               <p className="rounded-xl bg-warning/10 p-3 text-warning">
-                GRADORA is reviewing this case and will release the escrow to you or refund the student.
+                DynForge is reviewing this case and will release the escrow to you or refund the student.
               </p>
             </div>
             <DialogFooter>

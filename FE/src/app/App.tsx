@@ -21,6 +21,7 @@ import { Login, Register } from './pages/Auth';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ContactSupport } from './pages/ContactSupport';
 import { Messages } from './pages/Messages';
+import { VelorahLanding } from './pages/VelorahLanding';
 
 // Error pages
 import { NotFoundPage, PermissionDeniedPage, GlobalErrorBoundary } from './pages/ErrorPages';
@@ -38,12 +39,10 @@ import { TeacherSessions } from './pages/teacher/TeacherSessions';
 import { TeacherCalendar } from './pages/teacher/TeacherCalendar';
 import { TeacherAvailability } from './pages/teacher/TeacherAvailability';
 import { TeacherEarnings } from './pages/teacher/TeacherEarnings';
-import { TeacherWallet } from './pages/teacher/TeacherWallet';
 import { TeacherDisputes } from './pages/teacher/TeacherDisputes';
 import { TeacherProfile } from './pages/teacher/TeacherProfile';
 import { TeacherVerification } from './pages/teacher/TeacherVerification';
 import { TeacherSettings } from './pages/teacher/TeacherSettings';
-import { MentorWithdraw } from './pages/teacher/MentorWithdraw';
 import { MentorUnlockWithdraw } from './pages/teacher/MentorUnlockWithdraw';
 import { MentorVouchers } from './pages/teacher/MentorVouchers';
 
@@ -103,6 +102,7 @@ const router = createBrowserRouter([
         ],
       },
       { path: '/about', element: <About /> },
+      { path: '/velorah', element: <VelorahLanding /> },
       { path: '/support/contact', element: <ContactSupport /> },
     ],
   },
@@ -142,8 +142,8 @@ const router = createBrowserRouter([
           { path: '/mentor/availability', element: <TeacherAvailability /> },
           { path: '/mentor/messages', element: <Messages role="mentor" /> },
           { path: '/mentor/earnings', element: <TeacherEarnings /> },
-          { path: '/mentor/wallet', element: <TeacherWallet /> },
-          { path: '/mentor/withdraw', element: <MentorWithdraw /> },
+          { path: '/mentor/wallet', element: <Navigate to="/mentor/earnings" replace /> },
+          { path: '/mentor/withdraw', element: <Navigate to="/mentor/earnings" replace /> },
           { path: '/mentor/unlock-withdraw', element: <MentorUnlockWithdraw /> },
           { path: '/mentor/vouchers', element: <MentorVouchers /> },
           { path: '/mentor/disputes', element: <TeacherDisputes /> },

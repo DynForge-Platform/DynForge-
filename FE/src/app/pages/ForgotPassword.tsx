@@ -59,130 +59,126 @@ export function ForgotPassword() {
       await resetPassword(email, otp, newPassword);
       setStep('done');
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Could not reset password.');
+      toast.error(err?.response?.data?.message ?? 'Reset failed. Try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const resend = async () => {
-    try {
-      await forgotPassword(email);
-      toast.success('A new code has been sent.');
-    } catch { toast.error('Could not resend code.'); }
-  };
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-pale-blue/40 px-5 py-12">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex justify-center"><Logo /></div>
-
-        <div className="rounded-2xl border border-border bg-background p-6 shadow-sm">
-          {/* Step indicator */}
-          {step !== 'done' && (
-            <div className="mb-6 flex items-center justify-center gap-2">
-              {(['email', 'otp', 'reset'] as const).map((s, i) => (
-                <span
-                  key={s}
-                  className={`h-1.5 rounded-full transition-all ${
-                    step === s ? 'w-8 bg-primary' : i < ['email', 'otp', 'reset'].indexOf(step) ? 'w-8 bg-primary/40' : 'w-4 bg-border'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-
-          {step === 'email' && (
-            <form onSubmit={submitEmail} className="space-y-4">
-              <div className="text-center">
-                <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Mail className="size-6" />
-                </span>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Forgot password?</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Enter your email and we'll send a reset code.</p>
-              </div>
-              <div>
-                <Label htmlFor="fp-email" className="mb-1.5 block">Email</Label>
-                <Input id="fp-email" type="email" placeholder="you@fpt.edu.vn" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-input-background" autoFocus />
-              </div>
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                {loading ? <Loader2 className="size-4 animate-spin" /> : 'Send reset code'}
-              </Button>
-            </form>
-          )}
-
-          {step === 'otp' && (
-            <form onSubmit={submitOtp} className="space-y-4">
-              <div className="text-center">
-                <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <KeyRound className="size-6" />
-                </span>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Enter the code</h1>
-                <p className="mt-1 text-sm text-muted-foreground">We sent a 6-digit code to <strong>{email}</strong>.</p>
-              </div>
-              <div>
-                <Label htmlFor="fp-otp" className="mb-1.5 block">Verification code</Label>
-                <Input
-                  id="fp-otp"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="000000"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                  className="bg-input-background text-center text-lg tracking-[0.5em]"
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                {loading ? <Loader2 className="size-4 animate-spin" /> : 'Verify code'}
-              </Button>
-              <button type="button" onClick={resend} className="w-full text-center text-sm text-primary" style={{ fontWeight: 500 }}>
-                Didn't get it? Resend code
-              </button>
-            </form>
-          )}
-
-          {step === 'reset' && (
-            <form onSubmit={submitReset} className="space-y-4">
-              <div className="text-center">
-                <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Lock className="size-6" />
-                </span>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Set a new password</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Choose a strong password you haven't used before.</p>
-              </div>
-              <div>
-                <Label htmlFor="fp-new" className="mb-1.5 block">New password</Label>
-                <Input id="fp-new" type="password" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-input-background" autoFocus />
-              </div>
-              <div>
-                <Label htmlFor="fp-confirm" className="mb-1.5 block">Confirm password</Label>
-                <Input id="fp-confirm" type="password" placeholder="••••••••" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="bg-input-background" />
-              </div>
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                {loading ? <Loader2 className="size-4 animate-spin" /> : 'Reset password'}
-              </Button>
-            </form>
-          )}
-
-          {step === 'done' && (
-            <div className="space-y-4 text-center">
-              <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-success/15 text-success">
-                <CheckCircle2 className="size-9" />
-              </span>
-              <div>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Password reset!</h1>
-                <p className="mt-1 text-sm text-muted-foreground">You can now sign in with your new password.</p>
-              </div>
-              <Button className="w-full" size="lg" onClick={() => navigate('/login')}>Back to sign in</Button>
-            </div>
-          )}
+    <div className="flex min-h-screen items-center justify-center bg-[#020B18] text-slate-100 p-6 selection:bg-cyan-500 selection:text-white">
+      <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-8 sm:p-10 shadow-2xl text-slate-100">
+        <div className="mb-6 flex justify-center">
+          <Logo light />
         </div>
 
-        {step !== 'done' && (
-          <Link to="/login" className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-4" /> Back to sign in
-          </Link>
+        {step === 'email' && (
+          <form onSubmit={submitEmail} className="space-y-4">
+            <div className="text-center">
+              <h2 className="text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>Forgot Password</h2>
+              <p className="mt-1 text-xs text-slate-400">Enter your email address to receive a verification code.</p>
+            </div>
+            <div>
+              <Label className="mb-1.5 block text-xs uppercase tracking-wider text-slate-400">Email Address</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@university.edu.vn"
+                  className="bg-[#020b18] border-white/10 text-white pl-9 rounded-xl"
+                  required
+                />
+              </div>
+            </div>
+            <Button type="submit" disabled={loading} className="w-full h-11 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl shadow-lg">
+              {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : null} Send Code
+            </Button>
+            <div className="text-center pt-2">
+              <Link to="/login" className="inline-flex items-center text-xs text-cyan-400 hover:text-cyan-300">
+                <ArrowLeft className="size-3.5 mr-1" /> Back to Log In
+              </Link>
+            </div>
+          </form>
+        )}
+
+        {step === 'otp' && (
+          <form onSubmit={submitOtp} className="space-y-4">
+            <div className="text-center">
+              <h2 className="text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>Enter Verification Code</h2>
+              <p className="mt-1 text-xs text-slate-400">We sent a code to <strong className="text-white">{email}</strong>.</p>
+            </div>
+            <div>
+              <Label className="mb-1.5 block text-xs uppercase tracking-wider text-slate-400">OTP Code</Label>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Enter 6-digit code"
+                  className="bg-[#020b18] border-white/10 text-white pl-9 rounded-xl text-center tracking-widest font-mono text-lg"
+                  required
+                />
+              </div>
+            </div>
+            <Button type="submit" disabled={loading} className="w-full h-11 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl shadow-lg">
+              {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : null} Verify Code
+            </Button>
+          </form>
+        )}
+
+        {step === 'reset' && (
+          <form onSubmit={submitReset} className="space-y-4">
+            <div className="text-center">
+              <h2 className="text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>Set New Password</h2>
+              <p className="mt-1 text-xs text-slate-400">Create a new secure password for your DynForge account.</p>
+            </div>
+            <div>
+              <Label className="mb-1.5 block text-xs uppercase tracking-wider text-slate-400">New Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  className="bg-[#020b18] border-white/10 text-white pl-9 rounded-xl"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="mb-1.5 block text-xs uppercase tracking-wider text-slate-400">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  placeholder="Repeat new password"
+                  className="bg-[#020b18] border-white/10 text-white pl-9 rounded-xl"
+                  required
+                />
+              </div>
+            </div>
+            <Button type="submit" disabled={loading} className="w-full h-11 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl shadow-lg">
+              {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : null} Reset Password
+            </Button>
+          </form>
+        )}
+
+        {step === 'done' && (
+          <div className="text-center space-y-4">
+            <div className="flex size-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 mx-auto">
+              <CheckCircle2 className="size-8" />
+            </div>
+            <h2 className="text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>Password Reset Complete</h2>
+            <p className="text-xs text-slate-400">Your password has been updated. You can now log in with your new credentials.</p>
+            <Button onClick={() => navigate('/login')} className="w-full h-11 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl shadow-lg">
+              Log In Now
+            </Button>
+          </div>
         )}
       </div>
     </div>

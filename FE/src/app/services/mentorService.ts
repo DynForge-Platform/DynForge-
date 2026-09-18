@@ -124,7 +124,12 @@ export function backendToMentor(p: MentorProfileResponse): Mentor {
     languages: p.languages ?? [],
     level: 'Undergraduate',
     expertise: skills,
-    courses: courses.map((c) => ({ code: c.code, name: c.name })),
+    courses: courses.map((c) => ({
+      code: c.code,
+      name: c.name,
+      ratePrivate: c.ratePrivate,
+      rateGroup: c.rateGroup,
+    })),
     strengths: skills,
     nextAvailable: nextAvailableDate(p.availability ?? {}),
   };

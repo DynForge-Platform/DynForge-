@@ -83,11 +83,11 @@ export function TrustBadge({
   label: string;
 }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white/70 px-4 py-2 backdrop-blur">
-      <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-md text-slate-300">
+      <span className="flex size-7 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
         <Icon className="size-4" />
       </span>
-      <span className="text-sm text-foreground" style={{ fontWeight: 500 }}>
+      <span className="text-sm font-medium">
         {label}
       </span>
     </div>
@@ -99,20 +99,32 @@ export function EmptyState({
   title,
   description,
   action,
+  actionLabel,
+  onAction,
 }: {
   icon?: React.ElementType;
   title: string;
   description: string;
   action?: React.ReactNode;
+  actionLabel?: string;
+  onAction?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-pale-blue px-6 py-16 text-center">
-      <span className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/60 backdrop-blur-md px-6 py-16 text-center text-slate-100">
+      <span className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
         <Icon className="size-7" />
       </span>
-      <h3 className="mb-1">{title}</h3>
-      <p className="mb-6 max-w-sm text-muted-foreground">{description}</p>
+      <h3 className="mb-1 text-lg font-semibold text-white">{title}</h3>
+      <p className="mb-6 max-w-sm text-slate-400 text-sm">{description}</p>
       {action}
+      {actionLabel && onAction && (
+        <button
+          onClick={onAction}
+          className="rounded-xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/20 transition-all cursor-pointer shadow-md"
+        >
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -133,21 +145,19 @@ export function StepProgress({
             <div className="flex flex-col items-center gap-2">
               <span
                 className={cn(
-                  'flex size-9 items-center justify-center rounded-full border-2 text-sm',
+                  'flex size-9 items-center justify-center rounded-full border-2 text-sm font-semibold',
                   done
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-white text-muted-foreground'
+                    ? 'border-cyan-500 bg-cyan-500 text-white shadow-md'
+                    : 'border-slate-800 bg-slate-900 text-slate-500'
                 )}
-                style={{ fontWeight: 600 }}
               >
                 {i + 1}
               </span>
               <span
                 className={cn(
-                  'max-w-[120px] text-center text-xs',
-                  done ? 'text-foreground' : 'text-muted-foreground'
+                  'max-w-[120px] text-center text-xs font-medium',
+                  done ? 'text-cyan-300' : 'text-slate-500'
                 )}
-                style={{ fontWeight: 500 }}
               >
                 {step}
               </span>
@@ -156,7 +166,7 @@ export function StepProgress({
               <div
                 className={cn(
                   'mx-2 h-0.5 flex-1 rounded-full',
-                  i < current ? 'bg-primary' : 'bg-border'
+                  i < current ? 'bg-cyan-500' : 'bg-slate-800'
                 )}
               />
             )}
@@ -181,16 +191,60 @@ export function SectionHeading({
   return (
     <div className={cn('mb-8', center && 'text-center')}>
       {eyebrow && (
-        <span className="mb-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs text-primary" style={{ fontWeight: 600 }}>
+        <span className="mb-2 inline-block rounded-full bg-cyan-500/10 px-3 py-1 text-xs text-cyan-300 border border-cyan-500/20 font-semibold">
           {eyebrow}
         </span>
       )}
-      <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 700 }}>{title}</h2>
+      <h2 className="text-2xl sm:text-4xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+        {title}
+      </h2>
       {subtitle && (
-        <p className={cn('mt-2 text-muted-foreground', center && 'mx-auto max-w-2xl')}>
+        <p className={cn('mt-2 text-slate-400', center && 'mx-auto max-w-2xl')}>
           {subtitle}
         </p>
       )}
     </div>
   );
 }
+
+export function PageHeader({
+  eyebrow = 'DYNFORGE ACADEMIC MENTORING',
+  title,
+  highlightWord,
+  titleEnd,
+  subtitle,
+  className = '',
+}: {
+  eyebrow?: string;
+  title: string;
+  highlightWord?: string;
+  titleEnd?: string;
+  subtitle?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn('relative py-10 sm:py-14 text-center max-w-4xl mx-auto px-4 animate-fade-rise', className)}>
+      {eyebrow && (
+        <span className="mb-3 inline-block text-xs font-semibold uppercase tracking-widest text-cyan-400">
+          {eyebrow}
+        </span>
+      )}
+      <h1
+        className="text-4xl sm:text-6xl text-white font-normal leading-tight tracking-tight drop-shadow-md"
+        style={{ fontFamily: "'Instrument Serif', serif" }}
+      >
+        {title}{' '}
+        {highlightWord && (
+          <span className="text-cyan-300 italic">{highlightWord}</span>
+        )}{' '}
+        {titleEnd}
+      </h1>
+      {subtitle && (
+        <p className="mt-4 text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+}
+

@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { Outlet, NavLink, useNavigate, ScrollRestoration } from 'react-router';
 import {
   CalendarCheck, Wallet, AlertTriangle, User, Settings,
   LayoutDashboard, ShieldCheck, Calendar, Clock, TrendingUp,
   BadgeCheck, Users, FileText, BarChart3, CreditCard,
-  LogOut, BookMarked, MessageSquare, Tag, Video,
+  LogOut, BookMarked, MessageSquare, Tag, Video, Menu, X,
 } from 'lucide-react';
 import { Logo } from '../Logo';
 import { cn } from '../ui/utils';
@@ -39,7 +40,6 @@ const teacherNav: NavItem[] = [
   { to: '/mentor/availability',  labelKey: 'availability',      icon: Clock },
   { to: '/mentor/messages',      labelKey: 'messages',          icon: MessageSquare },
   { to: '/mentor/earnings',      labelKey: 'earnings',          icon: TrendingUp },
-  { to: '/mentor/wallet',        labelKey: 'walletWithdraw',    icon: Wallet },
   { to: '/mentor/vouchers',      labelKey: 'vouchers',          icon: Tag },
   { to: '/mentor/disputes',      labelKey: 'disputes',          icon: AlertTriangle },
   { to: '/mentor/profile',       labelKey: 'profile',           icon: User },
@@ -70,7 +70,6 @@ const roleNavMap: Record<Role, NavItem[]> = {
   admin: adminNav,
 };
 
-// Fallback avatar per role when the logged-in user has none.
 const fallbackAvatar: Record<Role, string> = {
   student: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
   teacher: 'https://images.unsplash.com/photo-1531427888099-b3ecff6e1a6f?auto=format&fit=crop&w=80&q=80',
@@ -78,6 +77,7 @@ const fallbackAvatar: Record<Role, string> = {
 };
 
 export function DashboardLayout({ role = 'student' }: { role?: Role }) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { T } = useLanguage();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -98,14 +98,14 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
     : T.studentWorkspace;
 
   return (
-    <div className="flex min-h-screen bg-pale-blue">
-      {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-white px-4 py-5 lg:flex">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-500 selection:text-white">
+      {/* Sidebar (Desktop Dark Glass Panel) */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900/90 px-4 py-5 backdrop-blur-xl lg:flex">
         <div className="px-2">
-          <Logo />
+          <Logo light />
         </div>
 
-        <nav className="mt-8 flex flex-1 flex-col gap-0.5 overflow-y-auto">
+        <nav className="mt-8 flex flex-1 flex-col gap-1 overflow-y-auto">
           {nav.map((item) => {
             const Icon = item.icon;
             const label = (T as Record<string, string>)[item.labelKey] ?? item.labelKey;
@@ -116,13 +116,12 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors',
+                    'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all',
                     isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                      ? 'bg-cyan-600 text-white shadow-lg'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   )
                 }
-                style={{ fontWeight: 500 }}
               >
                 <Icon className="size-4.5 shrink-0" />
                 {label}
@@ -133,33 +132,109 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-          style={{ fontWeight: 500 }}
+          className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-400 hover:bg-red-950/30 hover:text-red-400 transition-colors cursor-pointer"
         >
           <LogOut className="size-4.5" /> {T.logOut}
         </button>
       </aside>
 
+      {/* Mobile Drawer Overlay */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <aside className="relative z-10 flex h-full w-72 max-w-[80vw] flex-col border-r border-slate-800 bg-slate-900 px-5 py-6 shadow-2xl">
+            <div className="flex items-center justify-between px-1">
+              <Logo light />
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="flex size-9 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <nav className="mt-6 flex flex-1 flex-col gap-1 overflow-y-auto">
+              {nav.map((item) => {
+                const Icon = item.icon;
+                const label = (T as Record<string, string>)[item.labelKey] ?? item.labelKey;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    onClick={() => setMobileNavOpen(false)}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all',
+                        isActive
+                          ? 'bg-cyan-600 text-white shadow-lg'
+                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      )
+                    }
+                  >
+                    <Icon className="size-4.5 shrink-0" />
+                    {label}
+                  </NavLink>
+                );
+              })}
+            </nav>
+
+            <div className="mt-4 pt-4 border-t border-slate-800">
+              <div className="flex items-center gap-3 px-2 mb-3">
+                <ImageWithFallback
+                  src={avatar}
+                  alt={userLabel}
+                  className="size-9 rounded-full object-cover border border-slate-700"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-white">{userLabel}</p>
+                  <p className="truncate text-xs text-cyan-400 capitalize">{role}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-400 hover:bg-red-950/30 hover:text-red-400 transition-colors"
+              >
+                <LogOut className="size-4.5" /> {T.logOut}
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
       {/* Main area */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-white/85 px-6 backdrop-blur">
-          <span className="text-sm text-muted-foreground" style={{ fontWeight: 500 }}>
-            {portalLabel}
-          </span>
+        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-800 bg-slate-900/80 px-4 sm:px-6 backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 lg:hidden hover:bg-white/10"
+              aria-label="Open menu"
+            >
+              <Menu className="size-5" />
+            </button>
+            <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-cyan-400">
+              {portalLabel}
+            </span>
+          </div>
+
           <div className="flex items-center gap-3">
             <LanguageSwitcher />
-            <span className="hidden text-sm sm:inline" style={{ fontWeight: 500 }}>
+            <span className="hidden text-sm font-medium text-slate-200 sm:inline">
               {userLabel}
             </span>
             <ImageWithFallback
               src={avatar}
               alt={userLabel}
-              className="size-9 rounded-full object-cover"
+              className="size-8 sm:size-9 rounded-full object-cover border border-slate-700"
             />
           </div>
         </header>
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

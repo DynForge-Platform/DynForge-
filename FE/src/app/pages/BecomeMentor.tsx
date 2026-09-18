@@ -13,28 +13,24 @@ import {
   CalendarRange,
   Banknote,
   Send,
+  ArrowRight,
 } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '../components/ui/accordion';
-import { SectionHeading } from '../components/common';
-import { formatCurrency } from '../data/mockData';
-import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { EditorialPageHeader } from '../components/EditorialPageHeader';
+import { GsapTypewriter } from '../components/GsapTypewriter';
+import { MouseFollowLight } from '../components/MouseFollowLight';
+import { GsapCounter } from '../components/GsapCounter';
 
 export function BecomeMentor() {
   const navigate = useNavigate();
-  const { T } = useLanguage();
+  const { T, lang } = useLanguage();
   const { user } = useAuth();
 
-  // Route "Apply now" based on auth state:
-  // - not logged in → register first
-  // - logged-in mentor → their verification page
-  // - logged-in mentee (or other) → the mentor application form (no re-registration needed)
   const handleApply = () => {
     if (!user) navigate('/register?apply=mentor');
     else if (user.role === 'mentor') navigate('/mentor/verification');
@@ -65,137 +61,189 @@ export function BecomeMentor() {
     { q: T.faq2Q, a: T.faq2A },
     { q: T.faq3Q, a: T.faq3A },
     { q: T.faq4Q, a: T.faq4A },
+    { q: T.faq5Q, a: T.faq5A },
   ];
+
   const commission = 0.15;
   const gross = 6000000;
   const net = Math.round(gross * (1 - commission));
 
   return (
-    <div>
-      {/* Hero */}
-      <section className="bg-gradient-to-b from-pale-blue to-background">
-        <div className="mx-auto grid max-w-[1240px] items-center gap-12 px-5 py-20 lg:grid-cols-[1.1fr_0.9fr]">
-          <div>
-            <h1 className="text-navy" style={{ fontSize: 'clamp(2.25rem, 4.5vw, 3.5rem)', fontWeight: 800, lineHeight: 1.1 }}>
-              {T.becomeMentorTitle}
-            </h1>
-            <p className="mt-5 max-w-xl text-muted-foreground" style={{ fontSize: '1.125rem' }}>
-              {T.becomeMentorSubtitle}
-            </p>
-            <Button size="lg" className="mt-7" onClick={handleApply}>
-              {T.applyNow}
-            </Button>
+    <div className="relative z-10 pb-24 text-slate-100">
+      {/* ── High-Performance Interactive Mouse-Following Light Effect ── */}
+      <MouseFollowLight />
+
+      {/* Editorial Header */}
+      <EditorialPageHeader
+        eyebrow={lang === 'vi' ? 'TRỞ THÀNH MENTOR DYNFORGE' : 'BECOME A DYNFORGE MENTOR'}
+        title={
+          lang === 'vi' ? (
+            <GsapTypewriter
+              key="become-vi"
+              prefix="Chia sẻ những gì bạn "
+              highlight="biết."
+              duration={2}
+            />
+          ) : (
+            <GsapTypewriter
+              key="become-en"
+              prefix="Share what you "
+              highlight="know."
+              duration={2}
+            />
+          )
+        }
+        subtitle={T.becomeMentorSubtitle}
+      >
+        <button
+          onClick={handleApply}
+          className="rounded-full border border-white/30 bg-white/10 backdrop-blur-md px-8 py-3.5 text-sm font-semibold text-white hover:bg-white/20 transition-all cursor-pointer shadow-lg hover:scale-[1.02] inline-flex items-center gap-2"
+        >
+          <span>{T.applyToBecome}</span>
+          <ArrowRight className="size-4 text-cyan-400" />
+        </button>
+      </EditorialPageHeader>
+
+      <div className="max-w-6xl mx-auto px-6 space-y-20">
+        {/* Earnings Estimator Glass Card */}
+        <section className="rounded-3xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 sm:p-12 shadow-2xl">
+          <div className="grid gap-8 lg:grid-cols-12 items-center">
+            <div className="lg:col-span-6 space-y-4">
+              <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
+                {lang === 'vi' ? 'THU NHẬP DỰ KIẾN' : 'EARNINGS POTENTIAL'}
+              </span>
+              <h2 className="text-3xl sm:text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                {lang === 'vi' ? 'Thu nhập linh hoạt theo lịch học của bạn.' : 'Flexible income scheduled around your studies.'}
+              </h2>
+              <p className="text-white/70 text-sm leading-relaxed">
+                {lang === 'vi'
+                  ? 'Tự thiết lập mức thù lao theo giờ và chủ động quản lý số buổi dạy mỗi tuần. Thanh toán ký quỹ đảm bảo bạn luôn nhận đủ thù lao cho các buổi dạy hoàn tất.'
+                  : 'Set your own hourly rate and manage your session slots. Escrow payment guarantees you are paid for every completed session.'}
+              </p>
+            </div>
+
+            <div className="lg:col-span-6 rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <span className="text-xs font-semibold uppercase text-slate-400">{T.exampleEarnings}</span>
+                <span className="text-xs text-cyan-300 font-medium">24 {T.sessionsPerMonth}</span>
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between text-slate-300">
+                  <span>{T.grossEarnings} (250,000đ × 24h)</span>
+                  <span className="font-semibold">
+                    <GsapCounter targetValue={gross} suffix=" ₫" duration={2} />
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>{T.platformFee} (15%)</span>
+                  <span>- <GsapCounter targetValue={gross * commission} suffix=" ₫" duration={2} /></span>
+                </div>
+                <div className="flex justify-between text-base font-bold text-white pt-2 border-t border-white/10">
+                  <span>{T.netPayout}</span>
+                  <span className="text-cyan-300">
+                    <GsapCounter targetValue={net} suffix=" ₫" duration={2} />
+                  </span>
+                </div>
+              </div>
+              <p className="text-[11px] text-cyan-400/80 bg-cyan-500/10 p-2.5 rounded-xl border border-cyan-500/20 text-center">
+                ✓ {lang === 'vi' ? 'Tiền thù lao được đảm bảo qua Ký quỹ cho mọi buổi học thành công.' : 'Payouts guaranteed for every completed session.'}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Benefits Grid */}
+        <section className="space-y-8">
+          <div className="text-center space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
+              {lang === 'vi' ? 'VÌ SAO CHỌN DYNFORGE' : 'WHY MENTOR WITH DYNFORGE'}
+            </span>
+            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              {T.benefitsTitle}
+            </h2>
           </div>
 
-          {/* Earnings estimate */}
-          <Card className="border-border p-6 shadow-sm">
-            <p className="text-sm text-muted-foreground">{T.exampleEarnings}</p>
-            <p className="mt-1 text-navy" style={{ fontSize: '2.25rem', fontWeight: 800 }}>{formatCurrency(net)}</p>
-            <div className="mt-5 space-y-3 text-sm">
-              <Row label={T.sessionsCompleted} value="24" />
-              <Row label={T.grossEarnings} value={formatCurrency(gross)} />
-              <Row label={T.platformCommission} value={`- ${formatCurrency(gross - net)}`} />
-              <div className="flex items-center justify-between border-t border-border pt-3">
-                <span style={{ fontWeight: 600 }}>{T.netPayout}</span>
-                <span style={{ fontWeight: 700 }}>{formatCurrency(net)}</span>
-              </div>
-            </div>
-            <div className="mt-4 flex items-start gap-2 rounded-xl bg-success/10 p-3 text-sm text-success">
-              <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              {T.escrowSafetyNote}
-            </div>
-          </Card>
-        </div>
-      </section>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {benefits.map((b, idx) => {
+              const Icon = b.icon;
+              return (
+                <div key={idx} className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-6 transition-all hover:border-cyan-500/40 shadow-xl space-y-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <Icon className="size-5" />
+                  </div>
+                  <h3 className="font-semibold text-white text-base">{b.title}</h3>
+                  <p className="text-xs text-white/60 leading-relaxed font-normal">{b.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
-      {/* Benefits */}
-      <section className="mx-auto max-w-[1240px] px-5 py-20">
-        <SectionHeading center eyebrow={T.whyMentorEyebrow} title={T.whyBecomeTitle} />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {benefits.map((b) => {
-            const Icon = b.icon;
-            return (
-              <Card key={b.title} className="border-border p-6">
-                <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Icon className="size-5" />
-                </span>
-                <h3 style={{ fontWeight: 600 }}>{b.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{b.desc}</p>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Requirements + How it works */}
-      <section className="bg-pale-blue/50">
-        <div className="mx-auto grid max-w-[1240px] gap-12 px-5 py-20 lg:grid-cols-2">
-          <div>
-            <SectionHeading title={T.requirementsTitle} />
-            <div className="space-y-3">
-              {requirements.map((r) => (
-                <Card key={r} className="flex items-center gap-3 border-border p-4">
-                  <FileCheck className="size-5 shrink-0 text-primary" />
-                  <span>{r}</span>
-                </Card>
+        {/* Requirements & Process */}
+        <section className="grid gap-8 lg:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 shadow-xl space-y-6">
+            <h2 className="text-3xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              {T.reqsTitle}
+            </h2>
+            <div className="space-y-4">
+              {requirements.map((req, idx) => (
+                <div key={idx} className="flex items-start gap-3 text-sm text-slate-300">
+                  <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 mt-0.5">
+                    <FileCheck className="size-3.5" />
+                  </div>
+                  <p className="leading-relaxed">{req}</p>
+                </div>
               ))}
             </div>
-            <div className="mt-6 overflow-hidden rounded-2xl">
-              <ImageWithFallback
-                src="https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&w=900&q=80"
-                alt="Mentor helping a student"
-                className="h-56 w-full object-cover"
-              />
-            </div>
           </div>
-          <div>
-            <SectionHeading title={T.howItWorksTitle} />
-            <ol className="space-y-4">
-              {steps.map((s, i) => {
-                const Icon = s.icon;
+
+          <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 shadow-xl space-y-6">
+            <h2 className="text-3xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              {T.howItWorksTitle}
+            </h2>
+            <div className="space-y-4">
+              {steps.map((step, idx) => {
+                const Icon = step.icon;
                 return (
-                  <li key={s.title} className="flex gap-4">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground" style={{ fontWeight: 600 }}>
-                      {i + 1}
+                  <div key={idx} className="flex items-start gap-4">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-cyan-500/10 border border-cyan-500/20 text-xs font-semibold text-cyan-300">
+                      0{idx + 1}
                     </span>
                     <div>
-                      <p className="flex items-center gap-2" style={{ fontWeight: 600 }}>
-                        <Icon className="size-4 text-primary" /> {s.title}
-                      </p>
-                      <p className="text-sm text-muted-foreground">{s.desc}</p>
+                      <p className="text-sm font-semibold text-white">{step.title}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{step.desc}</p>
                     </div>
-                  </li>
+                  </div>
                 );
               })}
-            </ol>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FAQ */}
-      <section className="mx-auto max-w-[760px] px-5 py-20">
-        <SectionHeading center title={T.faqTitle} />
-        <Accordion type="single" collapsible className="w-full">
-          {faqs.map((f) => (
-            <AccordionItem key={f.q} value={f.q}>
-              <AccordionTrigger>{f.q}</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">{f.a}</AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-        <div className="mt-10 text-center">
-          <Button size="lg" onClick={handleApply}>{T.applyNow}</Button>
-        </div>
-      </section>
-    </div>
-  );
-}
+        {/* FAQs */}
+        <section className="space-y-8">
+          <div className="text-center space-y-2">
+            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              {T.faqTitle}
+            </h2>
+          </div>
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span style={{ fontWeight: 500 }}>{value}</span>
+          <div className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="space-y-3">
+              {faqs.map((f, idx) => (
+                <AccordionItem key={idx} value={`item-${idx}`} className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md px-6 shadow-md">
+                  <AccordionTrigger className="text-white hover:text-cyan-300 text-sm font-medium py-4 text-left">
+                    {f.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-xs text-slate-400 pb-4 leading-relaxed">
+                    {f.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

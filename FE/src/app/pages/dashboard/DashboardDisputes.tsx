@@ -75,7 +75,7 @@ export function DashboardDisputes() {
     setSubmitting(true);
     try {
       await disputeBooking(selectedBookingId, issueType, reason.trim());
-      toast.success('Dispute submitted. GRADORA will review it within 48 hours.');
+      toast.success('Dispute submitted. DynForge will review it within 48 hours.');
       setOpen(false);
       setSelectedBookingId('');
       setReason('');
@@ -146,7 +146,7 @@ export function DashboardDisputes() {
           <EmptyState
             icon={AlertTriangle}
             title="No disputes yet"
-            description="When something goes wrong with a taught session, you can open a dispute and GRADORA will review it fairly."
+            description="When something goes wrong with a taught session, you can open a dispute and DynForge will review it fairly."
             action={disputable.length > 0 ? <Button onClick={() => setOpen(true)}>Open a Dispute</Button> : undefined}
           />
         )}
@@ -185,7 +185,7 @@ export function DashboardDisputes() {
             </div>
             <div className="flex items-start gap-2 rounded-xl bg-accent/60 p-3 text-sm text-muted-foreground">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
-              Opening a dispute pauses the payout. GRADORA reviews all disputes fairly within 48 hours.
+              Opening a dispute pauses the payout. DynForge reviews all disputes fairly within 48 hours.
             </div>
             <DialogFooter className="gap-3">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

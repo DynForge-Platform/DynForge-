@@ -13,11 +13,11 @@ const LanguageContext = createContext<LangCtx>({
   T: t.en,
 });
 
-const STORAGE_KEY = 'gradora_lang';
+const STORAGE_KEY = 'dynforge_lang';
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(
-    () => (localStorage.getItem(STORAGE_KEY) as Lang) || 'en'
+    () => (localStorage.getItem(STORAGE_KEY) as Lang) || (localStorage.getItem('gradora_lang') as Lang) || 'en'
   );
 
   const setLang = (l: Lang) => {

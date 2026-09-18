@@ -1,7 +1,8 @@
 import React from 'react';
 
 interface FormattedTextProps {
-  content: string;
+  content?: string;
+  text?: string;
   className?: string;
 }
 
@@ -9,11 +10,12 @@ interface FormattedTextProps {
  * Renders Markdown-formatted AI text into clean, beautifully styled React HTML elements
  * (converts **bold**, * bullets, - lists into structured typography instead of raw characters).
  */
-export const FormattedText: React.FC<FormattedTextProps> = ({ content, className }) => {
-  if (!content) return null;
+export const FormattedText: React.FC<FormattedTextProps> = ({ content, text, className }) => {
+  const rawText = content ?? text ?? '';
+  if (!rawText) return null;
 
   // Clean out any leftover internal tags like (M1), (M2)
-  const cleanContent = content.replaceAll(/\(M\d+\)/g, '').trim();
+  const cleanContent = rawText.replaceAll(/\(M\d+\)/g, '').trim();
 
   // Split into paragraphs / lines
   const lines = cleanContent.split('\n');

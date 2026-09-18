@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { ChevronLeft, ChevronRight, ShieldCheck, Video, MapPin, Loader2 } from 'lucide-react';
 import { getMentor, formatCurrency, type Mentor } from '../data/mockData';
-import { Button, buttonVariants } from '../components/ui/button';
+import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Card } from '../components/ui/card';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { cn } from '../components/ui/utils';
+import { EditorialPageHeader } from '../components/EditorialPageHeader';
+import { GsapTypewriter } from '../components/GsapTypewriter';
+import { MouseFollowLight } from '../components/MouseFollowLight';
+import { GsapCounter } from '../components/GsapCounter';
 import { getMentorById, isObjectId, backendToMentor } from '../services/mentorService';
 
 const durations = [30, 45, 60, 90];
@@ -17,36 +21,29 @@ export function ScheduleConsultation() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { T } = useLanguage();
+  const { T, lang } = useLanguage();
 
-  // ── All hooks MUST be declared before any conditional return ──
   const [monthOffset, setMonthOffset] = useState(0);
   const [duration, setDuration] = useState(60);
   const [showCustom, setShowCustom] = useState(false);
-  // bookingFormat is the enum value sent to the backend; mode is the display label
   const [bookingFormat, setBookingFormat] = useState<'ONE_ON_ONE' | 'GROUP'>('ONE_ON_ONE');
-  const [displayMode, setDisplayMode] = useState<string>('');        // set after T is available
+  const [displayMode, setDisplayMode] = useState<string>('');
   const [sessionFormat, setSessionFormat] = useState<'Online' | 'Offline'>('Online');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<string>('');  // stores course.code
-  // Real mentor userId fetched from backend (null = demo mode)
+  const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [realMentorUserId, setRealMentorUserId] = useState<string | null>(null);
-  // Backend mentor profile (populated when id is a valid ObjectId)
   const [backendMentor, setBackendMentor] = useState<Mentor | undefined>(undefined);
   const [mentorLoading, setMentorLoading] = useState(isObjectId(id ?? ''));
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!user) navigate(`/login?redirect=/mentors/${id}/schedule`);
   }, [user, navigate, id]);
 
-  // Initialise displayMode from T once translations load
   useEffect(() => {
     if (!displayMode && T.oneOnOne) setDisplayMode(T.oneOnOne);
   }, [T.oneOnOne, displayMode]);
 
-  // Fetch backend mentor when id is a real ObjectId
   useEffect(() => {
     if (!id || !isObjectId(id)) return;
     setMentorLoading(true);
@@ -59,65 +56,66 @@ export function ScheduleConsultation() {
       .finally(() => setMentorLoading(false));
   }, [id]);
 
-  // The mentor to display: backend profile (real) → mockData (demo) → undefined (not found)
-  const mentor: Mentor | undefined = backendMentor ?? getMentor(id);
+  const mockMentor = getMentor(id);
+  const mentor = backendMentor ?? mockMentor;
 
-  // Pre-select the first course once mentor data is available
   useEffect(() => {
-    if (mentor?.courses?.[0]?.code && !selectedCourse) {
+    if (mentor && mentor.courses && mentor.courses.length > 0 && !selectedCourse) {
       setSelectedCourse(mentor.courses[0].code);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mentor?.id]);
-
-  if (!user) return null;
+  }, [mentor, selectedCourse]);
 
   if (mentorLoading) {
     return (
-      <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
-        <Loader2 className="size-5 animate-spin" /> Loading mentor profile…
+      <div className="bg-[#020B18] min-h-screen flex items-center justify-center py-32 text-slate-400 gap-2">
+        <Loader2 className="size-5 animate-spin text-cyan-400" /> Loading booking calendar…
       </div>
     );
   }
 
-  if (!mentor) return <div className="p-20 text-center">{T.mentorNotFound}</div>;
+  if (!mentor) {
+    return (
+      <div className="bg-[#020B18] min-h-screen mx-auto max-w-[1240px] px-5 py-20 text-center text-slate-100">
+        <h1 className="text-3xl font-bold">{T.mentorNotFound}</h1>
+        <Link to="/mentors" className="mt-4 inline-block liquid-glass rounded-full px-6 py-2.5 text-sm font-medium text-white border border-cyan-400/40 bg-cyan-600/30">{T.backToMentors}</Link>
+      </div>
+    );
+  }
 
-  const learningModes: { label: string; format: 'ONE_ON_ONE' | 'GROUP' }[] = [
-    { label: T.oneOnOne, format: 'ONE_ON_ONE' },
-    { label: T.group,    format: 'GROUP' },
-    { label: T.custom,   format: 'ONE_ON_ONE' },   // Custom → same rate logic as 1-on-1
+  const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+  const mentorAvatar = mentor.avatar?.trim() ? mentor.avatar : defaultAvatar;
+
+  const learningModes = [
+    { label: T.oneOnOne, format: 'ONE_ON_ONE' as const },
+    { label: T.smallGroup || T.group, format: 'GROUP' as const },
   ];
 
-  const slotGroups = {
-    [T.morning]:   ['08:00', '09:00', '10:00', '11:00'],
-    [T.afternoon]: ['13:00', '14:00', '15:00', '16:00'],
-    [T.evening]:   ['18:00', '19:00', '20:00'],
-  };
+  const timeSlots = ['08:00', '09:30', '11:00', '13:30', '15:00', '16:30', '19:00', '20:30'];
 
   const now = new Date();
   const base = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const monthLabel = base.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
   const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
   const firstWeekday = new Date(base.getFullYear(), base.getMonth(), 1).getDay();
-  // Only mark past days in the current calendar month; all days in future months are available
   const todayDay = monthOffset === 0 ? now.getDate() : 0;
 
-  // Use the correct hourly rate for the selected format
-  const activeRate = bookingFormat === 'GROUP' ? mentor.groupRate : mentor.hourlyRate;
+  const chosenCourse = mentor.courses?.find((c) => c.code.toLowerCase() === (selectedCourse || '').toLowerCase());
+  const courseHourlyRate = chosenCourse?.ratePrivate ?? mentor.hourlyRate;
+  const courseGroupRate = chosenCourse?.rateGroup ?? mentor.groupRate;
+  const activeRate = bookingFormat === 'GROUP' ? courseGroupRate : courseHourlyRate;
   const price = Math.round((activeRate * duration) / 60);
 
   const cont = () => {
-    // mentorId: use real backend userId if available, fall back to mock id (demo mode)
     const mentorId = realMentorUserId ?? mentor.id;
     navigate(`/mentors/${mentor.id}/order`, {
       state: {
         duration,
         displayMode,
-        bookingFormat,          // 'ONE_ON_ONE' | 'GROUP' — sent directly to backend
+        bookingFormat,
         sessionFormat,
         day: selectedDay,
-        month: base.getMonth(),     // 0-indexed — actual selected calendar month
-        year: base.getFullYear(),   // actual selected calendar year
+        month: base.getMonth(),
+        year: base.getFullYear(),
         slot: selectedSlot,
         price,
         courseCode: selectedCourse,
@@ -127,296 +125,373 @@ export function ScheduleConsultation() {
   };
 
   return (
-    <div className="mx-auto max-w-[1240px] px-5 py-10">
-      <h1 className="mb-1" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', fontWeight: 700 }}>
-        {T.scheduleTitle}
-      </h1>
-      <p className="mb-8 text-muted-foreground">{T.scheduleSubtitle}</p>
+    <div className="relative z-10 pb-24 text-slate-100 min-h-screen">
+      <MouseFollowLight />
 
-      <div className="grid gap-8 lg:grid-cols-[340px_1fr]">
-        {/* Summary sidebar */}
-        <aside className="lg:sticky lg:top-[88px] lg:h-fit">
-          <Card className="border-border p-6">
-            <div className="flex items-center gap-3">
-              <ImageWithFallback src={mentor.avatar} alt={mentor.name} className="size-14 rounded-xl object-cover" />
-              <div>
-                <p style={{ fontWeight: 600 }}>{mentor.name}</p>
-                <p className="text-sm text-muted-foreground">{mentor.role}</p>
-              </div>
-            </div>
+      {/* Editorial Page Header */}
+      <EditorialPageHeader
+        eyebrow={lang === 'vi' ? 'ĐẶT LỊCH HỌC DYNFORGE' : 'BOOK A DYNFORGE SESSION'}
+        title={
+          lang === 'vi' ? (
+            <GsapTypewriter
+              key="schedule-vi"
+              prefix="Lên lịch tư vấn "
+              highlight="học tập."
+              duration={2}
+            />
+          ) : (
+            <GsapTypewriter
+              key="schedule-en"
+              prefix="Schedule your "
+              highlight="consultation."
+              duration={2}
+            />
+          )
+        }
+        subtitle={lang === 'vi' ? 'Chọn môn học, thời lượng, ngày và khung giờ học phù hợp nhất với bạn.' : 'Pick your course, duration, date, and preferred time slot.'}
+      />
 
-            <div className="mt-5 space-y-4">
-              {/* Learning mode */}
-              <div>
-                <p className="mb-2 text-sm text-muted-foreground">{T.learningMode}</p>
-                <div className="flex flex-wrap gap-2">
-                  {learningModes.map(({ label, format }) => (
-                    <button
-                      key={label}
-                      onClick={() => { setDisplayMode(label); setBookingFormat(format); }}
-                      className={cn(
-                        'rounded-lg border px-3 py-1.5 text-sm transition-colors',
-                        displayMode === label
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border hover:bg-accent'
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Session format (Online / Offline) */}
-              <div>
-                <p className="mb-2 text-sm text-muted-foreground">{T.format}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['Online', 'Offline'] as const).map((f) => {
-                    const label = f === 'Online' ? T.online : T.offline;
-                    const Icon = f === 'Online' ? Video : MapPin;
-                    return (
-                      <button
-                        key={f}
-                        onClick={() => setSessionFormat(f)}
-                        className={cn(
-                          'flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
-                          sessionFormat === f
-                            ? 'border-primary bg-accent text-primary'
-                            : 'border-border hover:bg-accent'
-                        )}
-                      >
-                        <Icon className="size-4" /> {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Course selector */}
-              {mentor.courses && mentor.courses.length > 0 && (
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="grid gap-8 lg:grid-cols-[340px_1fr]">
+          {/* Summary sidebar (Dark Glass) */}
+          <aside className="lg:sticky lg:top-[88px] lg:h-fit order-last lg:order-first">
+            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-6 text-slate-100 shadow-2xl rounded-3xl">
+              <div className="flex items-center gap-3">
+                <ImageWithFallback src={mentorAvatar} alt={mentor.name} className="size-14 rounded-2xl object-cover border border-white/15" />
                 <div>
-                  <p className="mb-2 text-sm text-muted-foreground">Course</p>
+                  <p className="font-semibold text-white text-base">{mentor.name}</p>
+                  <p className="text-sm text-cyan-300 font-medium">{mentor.role}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-4 border-t border-white/10 pt-4">
+                {/* Learning mode */}
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">{T.learningMode}</p>
                   <div className="flex flex-wrap gap-2">
-                    {mentor.courses.map((c) => (
+                    {learningModes.map(({ label, format }) => (
                       <button
-                        key={c.code}
-                        onClick={() => setSelectedCourse(c.code)}
+                        key={label}
+                        onClick={() => { setDisplayMode(label); setBookingFormat(format); }}
                         className={cn(
-                          'rounded-lg border px-3 py-1.5 text-xs transition-colors',
-                          selectedCourse === c.code
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-border hover:bg-accent'
+                          'rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-all cursor-pointer',
+                          displayMode === label
+                            ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-[0_0_12px_rgba(6,182,212,0.25)]'
+                            : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-500/30 hover:bg-white/10'
                         )}
                       >
-                        {c.name}
+                        {label}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
 
-            <div className="mt-5 space-y-2 border-t border-border pt-4 text-sm">
-              <SummaryRow label={T.sessionType} value={displayMode} />
-              <SummaryRow label={T.duration} value={duration >= 120 ? `${duration / 60}h (${duration} min)` : `${duration} min`} />
-              <SummaryRow
-                label={T.date}
-                value={selectedDay ? `${selectedDay} ${base.toLocaleDateString('en-US', { month: 'short' })}` : '—'}
-              />
-              <SummaryRow label={T.time} value={selectedSlot ?? '—'} />
-              {selectedCourse && <SummaryRow label="Course" value={selectedCourse} />}
-            </div>
-
-            <div className="mt-4 border-t border-border pt-4">
-              <div className="mb-3 rounded-xl bg-accent/60 px-3 py-2 text-xs space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className={cn('text-muted-foreground', bookingFormat === 'GROUP' && 'text-primary font-semibold')}>
-                    {T.groupRate}
-                  </span>
-                  <span className={cn('font-semibold', bookingFormat === 'GROUP' ? 'text-primary' : 'text-muted-foreground')}>
-                    {formatCurrency(mentor.groupRate)}/hr
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className={cn('text-muted-foreground', bookingFormat === 'ONE_ON_ONE' && 'text-primary font-semibold')}>
-                    {T.oneOnOneRate}
-                  </span>
-                  <span className={cn('font-semibold', bookingFormat === 'ONE_ON_ONE' ? 'text-primary' : 'text-muted-foreground')}>
-                    {formatCurrency(mentor.hourlyRate)}/hr
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
+                {/* Session format (Online / Offline) */}
                 <div>
-                  <span className="text-muted-foreground">{T.total}</span>
-                  <span className="ml-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary" style={{ fontWeight: 500 }}>
-                    {displayMode} · {duration} {T.minLabel}
-                  </span>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">{T.format}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['Online', 'Offline'] as const).map((f) => {
+                      const label = f === 'Online' ? T.online : T.offline;
+                      const Icon = f === 'Online' ? Video : MapPin;
+                      return (
+                        <button
+                          key={f}
+                          onClick={() => setSessionFormat(f)}
+                          className={cn(
+                            'flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-all cursor-pointer',
+                            sessionFormat === f
+                              ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-[0_0_12px_rgba(6,182,212,0.25)]'
+                              : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-500/30 hover:bg-white/10'
+                          )}
+                        >
+                          <Icon className="size-3.5" /> {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <span style={{ fontWeight: 700, fontSize: '1.125rem' }}>{formatCurrency(price)}</span>
-              </div>
-            </div>
-          </Card>
-        </aside>
 
-        {/* Main */}
-        <div className="space-y-6">
-          <Card className="border-border p-6">
-            <p className="mb-3" style={{ fontWeight: 600 }}>{T.selectDuration}</p>
-            <div className="flex flex-wrap gap-3">
-              {durations.map((d) => (
-                <button
-                  key={d}
-                  onClick={() => { setDuration(d); setShowCustom(false); }}
-                  className={cn(
-                    'rounded-xl border px-5 py-3 text-sm transition-colors',
-                    duration === d && !showCustom
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border hover:bg-accent'
-                  )}
-                  style={{ fontWeight: 500 }}
-                >
-                  {d} {T.minLabel}
-                </button>
-              ))}
-              <button
-                onClick={() => setShowCustom((v) => !v)}
-                className={cn(
-                  'rounded-xl border px-5 py-3 text-sm transition-colors',
-                  showCustom
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-dashed border-border text-muted-foreground hover:bg-accent'
+                {/* Course selector */}
+                {mentor.courses && mentor.courses.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Course</p>
+                    <div className="flex flex-wrap gap-2">
+                      {mentor.courses.map((c) => (
+                        <button
+                          key={c.code}
+                          onClick={() => setSelectedCourse(c.code)}
+                          className={cn(
+                            'rounded-xl border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer',
+                            selectedCourse === c.code
+                              ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-[0_0_12px_rgba(6,182,212,0.25)]'
+                              : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-500/30 hover:bg-white/10'
+                          )}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
-                style={{ fontWeight: 500 }}
-              >
-                {T.custom}
-              </button>
-            </div>
+              </div>
 
-            {showCustom && (
-              <div className="mt-4 rounded-xl border border-primary/20 bg-accent/50 p-4">
-                <p className="mb-3 text-xs text-muted-foreground" style={{ fontWeight: 500 }}>
-                  {T.extendedSession}
-                </p>
-                <div className="flex flex-wrap gap-3">
+              <div className="mt-5 space-y-2 border-t border-white/10 pt-4 text-xs">
+                <SummaryRow label={T.sessionType} value={displayMode} />
+                <SummaryRow label={T.duration} value={duration >= 120 ? `${duration / 60}h (${duration} min)` : `${duration} min`} />
+                <SummaryRow
+                  label={T.date}
+                  value={selectedDay ? `${selectedDay} ${base.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { month: 'short' })}` : '—'}
+                />
+                <SummaryRow label={T.time} value={selectedSlot ?? '—'} />
+                {selectedCourse && <SummaryRow label="Course" value={selectedCourse} />}
+              </div>
+
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <div className="mb-3 rounded-2xl border border-white/10 bg-[#020b18]/80 px-3.5 py-3 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className={cn('text-slate-400', bookingFormat === 'GROUP' && 'text-cyan-300 font-semibold')}>
+                      {T.groupRate}
+                    </span>
+                    <span className={cn('font-semibold', bookingFormat === 'GROUP' ? 'text-cyan-300' : 'text-slate-400')}>
+                      {formatCurrency(courseGroupRate)}/hr
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={cn('text-slate-400', bookingFormat === 'ONE_ON_ONE' && 'text-cyan-300 font-semibold')}>
+                      {T.oneOnOneRate}
+                    </span>
+                    <span className={cn('font-semibold', bookingFormat === 'ONE_ON_ONE' ? 'text-cyan-300' : 'text-slate-400')}>
+                      {formatCurrency(courseHourlyRate)}/hr
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-baseline justify-between px-1">
+                    <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
+                      {T.estimatedTotal}
+                    </span>
+                    <span className="text-2xl font-black text-cyan-300">
+                      <GsapCounter targetValue={price} suffix=" ₫" duration={1.2} />
+                    </span>
+                  </div>
+
+                  <Button
+                    onClick={cont}
+                    disabled={!selectedDay || !selectedSlot}
+                    className="w-full py-3 h-12 text-sm font-semibold rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 disabled:opacity-40 transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                  >
+                    {T.continueToOrder}
+                  </Button>
+
+                  <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-300">
+                    <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-400" />
+                    <span className="leading-relaxed">{T.escrowProtectedNotice}</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </aside>
+
+          {/* Main selection area */}
+          <div className="space-y-6">
+            {/* Step 1: Duration */}
+            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-6 sm:p-8 text-slate-100 shadow-2xl rounded-3xl">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
+                  01
+                </span>
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  {T.stepDuration}
+                </h2>
+              </div>
+              <p className="mb-5 text-sm text-slate-400 leading-relaxed">
+                {T.stepDurationDesc}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {durations.map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => { setDuration(d); setShowCustom(false); }}
+                    className={cn(
+                      'rounded-xl border px-5 py-2.5 text-sm font-medium transition-all cursor-pointer',
+                      duration === d && !showCustom
+                        ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.25)]'
+                        : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10'
+                    )}
+                  >
+                    {d} min
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowCustom(true)}
+                  className={cn(
+                    'rounded-xl border px-5 py-2.5 text-sm font-medium transition-all cursor-pointer',
+                    showCustom
+                      ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.25)]'
+                      : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10'
+                  )}
+                >
+                  {T.customDuration}
+                </button>
+              </div>
+
+              {showCustom && (
+                <div className="mt-4 flex flex-wrap gap-2.5 border-t border-white/10 pt-4">
                   {customDurations.map((d) => (
                     <button
                       key={d}
                       onClick={() => setDuration(d)}
                       className={cn(
-                        'rounded-xl border px-5 py-3 text-sm transition-colors',
+                        'rounded-xl border px-4 py-2 text-xs font-medium transition-all cursor-pointer',
                         duration === d
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-white hover:border-primary hover:text-primary'
+                          ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-md'
+                          : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10'
                       )}
-                      style={{ fontWeight: 500 }}
                     >
-                      <span>{d / 60}h</span>
-                      <span className={cn('ml-1.5 text-xs', duration === d ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
-                        ({formatCurrency(Math.round((activeRate * d) / 60))})
-                      </span>
+                      {d / 60}h ({d} min)
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-          </Card>
+              )}
+            </Card>
 
-          <Card className="border-border p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <p style={{ fontWeight: 600 }}>{monthLabel}</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={() => setMonthOffset((v) => Math.max(0, v - 1))} disabled={monthOffset === 0}>
-                  <ChevronLeft className="size-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => setMonthOffset((v) => v + 1)}>
-                  <ChevronRight className="size-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-7 gap-1.5 text-center text-xs text-muted-foreground">
-              {[T.sun, T.mon, T.tue, T.wed, T.thu, T.fri, T.sat].map((d) => (
-                <div key={d} className="py-1">{d}</div>
-              ))}
-              {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const day = i + 1;
-                const past = day < todayDay;
-                const unavailable = past || day % 7 === 0;
-                const selected = selectedDay === day && monthOffset === 0;
-                return (
-                  <button
-                    key={day}
-                    disabled={unavailable}
-                    onClick={() => { setSelectedDay(day); setSelectedSlot(null); }}
-                    className={cn(
-                      'aspect-square rounded-lg text-sm transition-colors',
-                      unavailable && 'cursor-not-allowed text-muted-foreground/40',
-                      !unavailable && !selected && 'hover:bg-accent text-foreground',
-                      selected && 'bg-primary text-primary-foreground'
-                    )}
-                    style={{ fontWeight: selected ? 600 : 400 }}
+            {/* Step 2: Date */}
+            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-6 sm:p-8 text-slate-100 shadow-2xl rounded-3xl">
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
+                    02
+                  </span>
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                      {T.stepDate}
+                    </h2>
+                    <p className="text-sm text-slate-400 leading-relaxed">{T.stepDateDesc}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 self-end sm:self-center">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={monthOffset === 0}
+                    onClick={() => { setMonthOffset((m) => m - 1); setSelectedDay(null); }}
+                    className="size-9 rounded-xl border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:border-white/20"
                   >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
+                    <ChevronLeft className="size-4" />
+                  </Button>
 
-          <Card className="border-border p-6">
-            <p className="mb-4" style={{ fontWeight: 600 }}>{T.availableTimeSlots}</p>
-            {selectedDay ? (
-              <div className="space-y-5">
-                {Object.entries(slotGroups).map(([group, slots]) => {
-                  const groupLabel = group === T.morning ? T.morning : group === T.afternoon ? T.afternoon : T.evening;
+                  <span className="min-w-36 text-center text-sm font-semibold text-white">
+                    {base.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { month: 'long', year: 'numeric' })}
+                  </span>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={monthOffset === 2}
+                    onClick={() => { setMonthOffset((m) => m + 1); setSelectedDay(null); }}
+                    className="size-9 rounded-xl border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:border-white/20"
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-xs font-semibold text-slate-400 mb-2">
+                {[T.sun, T.mon, T.tue, T.wed, T.thu, T.fri, T.sat].map((d, i) => (
+                  <div key={i} className="py-1 uppercase tracking-wider">{d}</div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                {Array.from({ length: firstWeekday }).map((_, i) => (
+                  <div key={`empty-${i}`} className="h-10 sm:h-11" />
+                ))}
+
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const day = i + 1;
+                  const isPast = day < todayDay;
+                  const selected = selectedDay === day;
                   return (
-                    <div key={group}>
-                      <p className="mb-2 text-sm text-muted-foreground">{groupLabel}</p>
-                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                        {slots.map((slot) => {
-                          const sel = selectedSlot === slot;
-                          return (
-                            <button
-                              key={slot}
-                              onClick={() => setSelectedSlot(slot)}
-                              className={cn(
-                                'rounded-lg border py-2.5 text-sm transition-colors',
-                                sel ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary hover:text-primary'
-                              )}
-                              style={{ fontWeight: 500 }}
-                            >
-                              {slot}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <button
+                      key={day}
+                      disabled={isPast}
+                      onClick={() => setSelectedDay(day)}
+                      className={cn(
+                        'flex h-10 sm:h-11 w-full items-center justify-center rounded-xl text-sm font-medium transition-all',
+                        isPast
+                          ? 'border border-white/[0.03] bg-white/[0.02] text-slate-600 cursor-not-allowed'
+                          : selected
+                          ? 'border border-cyan-400 bg-cyan-500 text-white font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)] scale-105 z-10'
+                          : 'border border-white/10 bg-white/5 text-slate-200 hover:border-cyan-400/40 hover:bg-white/10 hover:text-white cursor-pointer'
+                      )}
+                    >
+                      {day}
+                    </button>
                   );
                 })}
               </div>
-            ) : (
-              <p className="text-muted-foreground">{T.selectDateFirst}</p>
-            )}
-          </Card>
+            </Card>
 
-          <div className="flex items-center justify-between">
-            <Link to={`/mentors/${mentor.id}`} className={buttonVariants({ variant: 'ghost' })}>
-              {T.backToProfile}
-            </Link>
-            <Button
-              size="lg"
-              disabled={!selectedDay || !selectedSlot || !selectedCourse}
-              onClick={cont}
-            >
-              {T.continueToOrder}
-            </Button>
-          </div>
+            {/* Step 3: Time Slot */}
+            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-6 sm:p-8 text-slate-100 shadow-2xl rounded-3xl">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
+                  03
+                </span>
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  {T.stepTime}
+                </h2>
+              </div>
+              <p className="mb-5 text-sm text-slate-400 leading-relaxed">
+                {T.stepTimeDesc}
+              </p>
 
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ShieldCheck className="size-4 text-success" />
-            {T.escrowNote}
+              {!selectedDay ? (
+                <div className="rounded-2xl border border-white/5 bg-white/5 py-8 text-center text-sm text-slate-400">
+                  {T.selectDateFirst}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {timeSlots.map((slot) => {
+                    const selected = selectedSlot === slot;
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => setSelectedSlot(slot)}
+                        className={cn(
+                          'rounded-xl border py-3 text-sm font-medium transition-all cursor-pointer text-center',
+                          selected
+                            ? 'border-cyan-400 bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.35)] font-semibold scale-[1.02]'
+                            : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10'
+                        )}
+                      >
+                        {slot}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+
+            {/* Navigation bottom buttons */}
+            <div className="flex items-center justify-between pt-2">
+              <Link
+                to={`/mentors/${mentor.id}`}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-all"
+              >
+                <ChevronLeft className="size-4" />
+                {T.backToProfile}
+              </Link>
+              <Button
+                onClick={cont}
+                disabled={!selectedDay || !selectedSlot}
+                className="py-2.5 px-6 text-sm font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 disabled:opacity-40 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {T.continueToOrder}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -427,8 +502,8 @@ export function ScheduleConsultation() {
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span style={{ fontWeight: 500 }}>{value}</span>
+      <span className="text-slate-400">{label}</span>
+      <span className="font-medium text-slate-200">{value}</span>
     </div>
   );
 }

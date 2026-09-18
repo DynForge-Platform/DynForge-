@@ -39,7 +39,7 @@ interface Voucher {
 }
 
 const seedVouchers: Voucher[] = [
-  { id: 'v1', code: 'GRADORA20', type: 'percentage', value: 20, minOrder: 100000, scope: 'platform', usageLimit: 500, usedCount: 143, expiry: '2026-07-31', status: 'Active', createdBy: 'Admin' },
+  { id: 'v1', code: 'DYNFORGE20', type: 'percentage', value: 20, minOrder: 100000, scope: 'platform', usageLimit: 500, usedCount: 143, expiry: '2026-07-31', status: 'Active', createdBy: 'Admin' },
   { id: 'v2', code: 'WELCOME50K', type: 'fixed', value: 50000, minOrder: 80000, scope: 'platform', usageLimit: 200, usedCount: 200, expiry: '2026-06-30', status: 'Expired', createdBy: 'Admin' },
   { id: 'v3', code: 'LINH15', type: 'percentage', value: 15, minOrder: 90000, scope: 'mentor', mentorName: 'Nguyễn Thị Linh', usageLimit: 50, usedCount: 12, expiry: '2026-08-15', status: 'Active', createdBy: 'Mentor' },
   { id: 'v4', code: 'GROUPDEAL', type: 'fixed', value: 30000, minOrder: 55000, scope: 'platform', usageLimit: 300, usedCount: 89, expiry: '2026-09-01', status: 'Active', createdBy: 'Admin' },
@@ -65,7 +65,7 @@ function VoucherFormDialog({
   const [type, setType] = useState<VoucherType>('percentage');
   const [scope, setScope] = useState<VoucherScope>(mentorLock ? 'mentor' : 'platform');
   const [autoCode, setAutoCode] = useState(true);
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(() => `GRD${Math.random().toString(36).substring(2, 7).toUpperCase()}`);
 
   const generate = () => {
     const rand = Math.random().toString(36).substring(2, 7).toUpperCase();

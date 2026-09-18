@@ -8,11 +8,11 @@
         <version>4.1.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.dangkhoa.KhoaHD19</groupId>
-    <artifactId>BE</artifactId>
+    <groupId>com.dynforge</groupId>
+    <artifactId>dynforge-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>BE</name>
-    <description>BE</description>
+    <name>DynForge Backend</name>
+    <description>DynForge Platform Backend API</description>
     <url/>
     <licenses>
         <license/>

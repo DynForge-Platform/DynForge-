@@ -12,6 +12,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../components/ui/table';
 import { KpiCard } from '../components/cards';
+import { GsapCounter } from '../components/GsapCounter';
 import { StatusBadge } from '../components/common';
 import { toast } from 'sonner';
 import {
@@ -75,7 +76,7 @@ export function AdminDashboard() {
     <div className="mx-auto max-w-[1200px]">
       <h1 className="mb-1" style={{ fontSize: '1.75rem', fontWeight: 700 }}>Commission &amp; Revenue</h1>
       <p className="mb-6 text-muted-foreground">
-        Monitor platform earnings and commission at {((report?.commissionRate ?? 0) * 100).toFixed(0)}% rate.
+        Monitor platform earnings and commission at <GsapCounter targetValue={Math.round((report?.commissionRate ?? 0) * 100)} suffix="%" /> rate.
       </p>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -105,7 +106,7 @@ export function AdminDashboard() {
                 <CartesianGrid key="grid" strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis key="x" dataKey="month" tickLine={false} axisLine={false} stroke="var(--muted-foreground)" fontSize={12} />
                 <YAxis key="y" tickFormatter={compact} tickLine={false} axisLine={false} stroke="var(--muted-foreground)" fontSize={12} width={48} />
-                <Tooltip key="tip" formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid var(--border)' }} />
+                <Tooltip key="tip" formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.1)', backgroundColor: '#090f1e', color: '#f8fafc' }} />
                 <Area key="area-rev" type="monotone" dataKey="revenue" stroke="var(--chart-1)" strokeWidth={2} fill="url(#rev)" name="Payments in" />
               </AreaChart>
             </ResponsiveContainer>
@@ -118,19 +119,42 @@ export function AdminDashboard() {
             <Percent className="size-5 text-primary" /> Breakdown
           </h2>
           <div className="space-y-3 text-sm">
-            {[
-              ['Commission rate', `${((report?.commissionRate ?? 0) * 100).toFixed(0)}%`],
-              ['Gross volume', formatCurrency(report?.grossVolume ?? 0)],
-              ['Commission earned', formatCurrency(report?.totalCommissionEarned ?? 0)],
-              ['Pending commission', formatCurrency(report?.pendingCommission ?? 0)],
-              ['Released escrows', String(report?.releasedCount ?? 0)],
-              ['Held escrows', String(report?.heldCount ?? 0)],
-            ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between rounded-xl border border-border p-3">
-                <span className="text-muted-foreground">{label}</span>
-                <span style={{ fontWeight: 600 }}>{value}</span>
-              </div>
-            ))}
+            <div className="flex items-center justify-between rounded-xl border border-border p-3">
+              <span className="text-muted-foreground">Commission rate</span>
+              <span style={{ fontWeight: 600 }}>
+                <GsapCounter targetValue={Math.round((report?.commissionRate ?? 0) * 100)} suffix="%" />
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border p-3">
+              <span className="text-muted-foreground">Gross volume</span>
+              <span style={{ fontWeight: 600 }}>
+                <GsapCounter targetValue={report?.grossVolume ?? 0} suffix="₫" />
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border p-3">
+              <span className="text-muted-foreground">Commission earned</span>
+              <span style={{ fontWeight: 600 }}>
+                <GsapCounter targetValue={report?.totalCommissionEarned ?? 0} suffix="₫" />
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border p-3">
+              <span className="text-muted-foreground">Pending commission</span>
+              <span style={{ fontWeight: 600 }}>
+                <GsapCounter targetValue={report?.pendingCommission ?? 0} suffix="₫" />
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border p-3">
+              <span className="text-muted-foreground">Released escrows</span>
+              <span style={{ fontWeight: 600 }}>
+                <GsapCounter targetValue={report?.releasedCount ?? 0} />
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border p-3">
+              <span className="text-muted-foreground">Held escrows</span>
+              <span style={{ fontWeight: 600 }}>
+                <GsapCounter targetValue={report?.heldCount ?? 0} />
+              </span>
+            </div>
           </div>
         </Card>
       </div>

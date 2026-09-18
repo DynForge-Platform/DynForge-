@@ -75,7 +75,7 @@ export function TeacherCalendar() {
 
   function dayStyle(day: number) {
     const past = monthOffset === 0 && day < todayDay;
-    if (selectedDay === day) return 'bg-navy text-white';
+    if (selectedDay === day) return 'bg-cyan-500 text-white font-bold shadow-lg ring-2 ring-cyan-400/40';
     if (past) return 'text-muted-foreground/40 cursor-default';
     if (bookedDays.has(day)) return 'bg-primary text-primary-foreground';
     if (isAvailableWeekday(day)) return 'bg-success/15 text-success hover:bg-success/30';

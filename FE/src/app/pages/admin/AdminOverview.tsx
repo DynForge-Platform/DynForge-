@@ -110,7 +110,7 @@ export function AdminOverview() {
                 <CartesianGrid key="grid" strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis key="x" dataKey="month" tickLine={false} axisLine={false} stroke="var(--muted-foreground)" fontSize={12} />
                 <YAxis key="y" tickFormatter={compact} tickLine={false} axisLine={false} stroke="var(--muted-foreground)" fontSize={12} width={48} />
-                <Tooltip key="tip" formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid var(--border)' }} />
+                <Tooltip key="tip" formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.1)', backgroundColor: '#090f1e', color: '#f8fafc' }} />
                 <Area key="area-rev" type="monotone" dataKey="revenue" stroke="var(--chart-1)" strokeWidth={2} fill="url(#arev)" name="Payments in" />
               </AreaChart>
             </ResponsiveContainer>

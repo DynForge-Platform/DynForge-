@@ -109,7 +109,7 @@ export function TeacherSessions() {
 
   const handleDisputeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Your response has been submitted to GRADORA.');
+    toast.success('Your response has been submitted to DynForge.');
     setDisputeBooking(null);
   };
 
@@ -316,7 +316,7 @@ export function TeacherSessions() {
               </div>
               <div>
                 <Label className="mb-1.5 block">Your response</Label>
-                <Textarea placeholder="Explain your side of the situation clearly and factually. GRADORA will review both sides fairly." rows={4} required />
+                <Textarea placeholder="Explain your side of the situation clearly and factually. DynForge will review both sides fairly." rows={4} required />
               </div>
               <DialogFooter className="gap-2">
                 <Button type="button" variant="outline" onClick={() => setDisputeBooking(null)}>Cancel</Button>

@@ -116,7 +116,7 @@ function UploadZone({
       {files.length > 0 && (
         <ul className="space-y-2">
           {files.map((f) => (
-            <li key={f.name} className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3">
+            <li key={f.name} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               {f.preview
                 ? <img src={f.preview} alt={f.name} className="size-10 rounded-lg object-cover" />
                 : <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><FileText className="size-5" /></span>}
@@ -138,7 +138,7 @@ function UploadZone({
 
 const baseDocuments = [
   { icon: Mail, title: 'University email verification', description: 'Verify your university email address to confirm your enrollment.' },
-  { icon: Mic, title: 'Verification interview', description: 'A short 15-minute online call with a GRADORA team member.' },
+  { icon: Mic, title: 'Verification interview', description: 'A short 15-minute online call with a DynForge team member.' },
 ];
 
 export function TeacherVerification() {
@@ -240,7 +240,7 @@ export function TeacherVerification() {
           transcriptUrl: transcriptFile?.name,
         });
         setExisting(result);
-        toast.success('Application submitted! GRADORA will review within 2–3 business days.');
+        toast.success('Application submitted! DynForge will review within 2–3 business days.');
       }
       // Creating the profile grants the MENTOR role — refresh so the header/portal updates.
       await refreshUser();
@@ -288,7 +288,7 @@ export function TeacherVerification() {
             <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" />
             <div>
               <p className="text-success" style={{ fontWeight: 600 }}>Verification approved!</p>
-              <p className="text-sm text-muted-foreground">Your profile is now listed as a verified mentor on GRADORA.</p>
+              <p className="text-sm text-muted-foreground">Your profile is now listed as a verified mentor on DynForge.</p>
             </div>
           </div>
         </Card>
@@ -302,7 +302,7 @@ export function TeacherVerification() {
               <p className="text-warning" style={{ fontWeight: 600 }}>Application under review</p>
               <p className="text-sm text-muted-foreground">
                 Your courses have been saved and submitted for <strong>{existing.course}</strong> ({existing.claimedGrade}).
-                GRADORA will review within 2–3 business days.
+                DynForge will review within 2–3 business days.
               </p>
             </div>
           </div>

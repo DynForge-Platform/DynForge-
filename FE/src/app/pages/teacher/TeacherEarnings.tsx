@@ -18,6 +18,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '../../components/ui/dialog';
 import { KpiCard } from '../../components/cards';
+import { GsapCounter } from '../../components/GsapCounter';
 import { StatusBadge, EmptyState } from '../../components/common';
 import { cn } from '../../components/ui/utils';
 import { toast } from 'sonner';
@@ -74,7 +75,9 @@ function WithdrawModal({
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-accent/50 p-4">
               <p className="text-sm text-muted-foreground">Available for withdrawal</p>
-              <p className="mt-0.5 text-success" style={{ fontSize: '1.75rem', fontWeight: 800 }}>{formatCurrency(balance)}</p>
+              <p className="mt-0.5 text-success" style={{ fontSize: '1.75rem', fontWeight: 800 }}>
+                <GsapCounter targetValue={balance} suffix="₫" />
+              </p>
             </div>
             <div>
               <Label className="mb-1.5 block">Amount (₫)</Label>
@@ -225,7 +228,9 @@ export function TeacherEarnings() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Available for withdrawal</p>
-            <p className="text-success" style={{ fontSize: '2rem', fontWeight: 800 }}>{formatCurrency(available)}</p>
+            <p className="text-success" style={{ fontSize: '2rem', fontWeight: 800 }}>
+              <GsapCounter targetValue={available} suffix="₫" />
+            </p>
             <p className="text-sm text-muted-foreground">Withdraw to your bank account · 1–3 business days</p>
           </div>
           <Button size="lg" className="gap-1.5" onClick={() => setShowWithdraw(true)} disabled={available <= 0}>
@@ -261,7 +266,7 @@ export function TeacherEarnings() {
               <CartesianGrid key="grid" strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis key="x" dataKey="month" tickLine={false} axisLine={false} stroke="var(--muted-foreground)" fontSize={12} />
               <YAxis key="y" tickFormatter={compact} tickLine={false} axisLine={false} stroke="var(--muted-foreground)" fontSize={12} width={52} />
-              <Tooltip key="tip" formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid var(--border)' }} />
+              <Tooltip key="tip" formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.1)', backgroundColor: '#090f1e', color: '#f8fafc' }} />
               <Area key="area-earn" type="monotone" dataKey="earnings" stroke="var(--chart-2)" strokeWidth={2} fill="url(#earn)" name="Net earnings" />
             </AreaChart>
           </ResponsiveContainer>

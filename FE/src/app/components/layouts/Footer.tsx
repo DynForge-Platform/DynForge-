@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import {
-  Megaphone, BarChart3, Users, Star, X, Check, Mail, Phone, ArrowRight,
+  Megaphone, BarChart3, Users, Star, Check, Mail, ArrowRight,
+  ShieldCheck, CreditCard, Target,
 } from 'lucide-react';
 import { Logo } from '../Logo';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogTitle,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -13,7 +14,6 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { toast } from 'sonner';
 import { useLanguage } from '../../context/LanguageContext';
-
 
 type BillingCycle = 'monthly' | 'yearly';
 
@@ -33,7 +33,7 @@ const adPlans: AdPlan[] = [
   {
     name: 'Starter',
     monthlyPrice: 2500000,
-    color: 'border-border',
+    color: 'border-slate-800',
     badge: null,
     badgeColor: '',
     description: 'Phù hợp cho thương hiệu nhỏ và startup muốn tiếp cận thị trường sinh viên.',
@@ -49,9 +49,9 @@ const adPlans: AdPlan[] = [
   {
     name: 'Growth',
     monthlyPrice: 6000000,
-    color: 'border-primary',
+    color: 'border-cyan-500',
     badge: 'Phổ biến nhất',
-    badgeColor: 'bg-primary',
+    badgeColor: 'bg-cyan-600',
     description: 'Lý tưởng cho thương hiệu muốn tiếp cận sinh viên FPTU theo quy mô lớn.',
     features: [
       'Banner + thẻ tài trợ in-feed',
@@ -67,9 +67,9 @@ const adPlans: AdPlan[] = [
   {
     name: 'Enterprise',
     monthlyPrice: null,
-    color: 'border-navy',
+    color: 'border-slate-700',
     badge: 'Doanh nghiệp lớn',
-    badgeColor: 'bg-navy',
+    badgeColor: 'bg-slate-800',
     description: 'Tích hợp toàn nền tảng dành cho đối tác doanh nghiệp và trường đại học.',
     features: [
       'Tất cả tính năng Growth',
@@ -103,83 +103,72 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
   const getPrice = (plan: AdPlan) => {
     if (!plan.monthlyPrice) return null;
     return billing === 'yearly'
-      ? Math.round(plan.monthlyPrice * 10) // 10 tháng = 2 tháng free
+      ? Math.round(plan.monthlyPrice * 10)
       : plan.monthlyPrice;
   };
 
   const getPerMonth = (plan: AdPlan) => {
     if (!plan.monthlyPrice) return null;
     return billing === 'yearly'
-      ? Math.round(plan.monthlyPrice * 10 / 12)
+      ? Math.round((plan.monthlyPrice * 10) / 12)
       : plan.monthlyPrice;
   };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Yêu cầu hợp tác đã được gửi! Chúng tôi sẽ liên hệ trong vòng 1–2 ngày làm việc.");
+    toast.success('Yêu cầu hợp tác đã được gửi! Chúng tôi sẽ liên hệ trong vòng 1–2 ngày làm việc.');
     onClose();
     setTimeout(() => setStep('plans'), 300);
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0" aria-describedby={undefined}>
-        {/* Header */}
-        <div className="sticky top-0 z-10 rounded-t-lg border-b border-border bg-white px-6 py-4">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
-              <Megaphone className="size-4 text-primary" />
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 bg-slate-900 border-slate-800 text-slate-100" aria-describedby={undefined}>
+        <div className="sticky top-0 z-10 rounded-t-lg border-b border-slate-800 bg-slate-900 px-6 py-4">
+          <DialogTitle className="flex items-center gap-2 text-base text-white">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+              <Megaphone className="size-4" />
             </span>
-            {step === 'plans' ? 'Quảng cáo & Hợp tác với GRADORA' : `Đăng ký gói ${selectedPlan}`}
+            {step === 'plans' ? 'Quảng cáo & Hợp tác với DynForge' : `Đăng ký gói ${selectedPlan}`}
           </DialogTitle>
         </div>
 
         <div className="px-6 pb-6 pt-5">
           {step === 'plans' ? (
             <div className="space-y-5">
-              {/* Stats banner */}
-              <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-accent to-pale-blue p-4">
-                <p className="mb-3 text-sm text-muted-foreground">
-                  Tiếp cận <strong className="text-foreground">12.000+ sinh viên</strong> đang chủ động tìm kiếm tài nguyên học thuật, công cụ và cơ hội nghề nghiệp.
+              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                <p className="mb-3 text-sm text-slate-300">
+                  Tiếp cận <strong className="text-white font-semibold">12.000+ sinh viên</strong> đang chủ động tìm kiếm tài nguyên học thuật và cố vấn.
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {stats.map(({ icon: Icon, value, label }) => (
-                    <div key={label} className="flex flex-col items-center rounded-xl bg-white/80 px-2 py-3 text-center backdrop-blur">
-                      <Icon className="mb-1 size-4 text-primary" />
-                      <p style={{ fontWeight: 700, lineHeight: 1.1 }}>{value}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground leading-tight">{label}</p>
+                    <div key={label} className="flex flex-col items-center rounded-xl border border-slate-800 bg-slate-900 px-2 py-3 text-center">
+                      <Icon className="mb-1 size-4 text-cyan-400" />
+                      <p className="font-bold text-white text-base leading-tight">{value}</p>
+                      <p className="mt-0.5 text-xs text-slate-400 leading-tight">{label}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Billing toggle */}
               <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => setBilling('monthly')}
-                  className={`rounded-l-full border px-5 py-2 text-sm transition-colors ${billing === 'monthly' ? 'border-primary bg-primary text-white' : 'border-border bg-white text-muted-foreground hover:bg-accent'}`}
-                  style={{ fontWeight: 500 }}
+                  className={`rounded-l-full border px-5 py-2 text-sm font-medium transition-colors ${billing === 'monthly' ? 'border-cyan-500 bg-cyan-600 text-white' : 'border-slate-800 bg-slate-950 text-slate-400 hover:bg-slate-900'}`}
                 >
                   Theo tháng
                 </button>
                 <button
                   onClick={() => setBilling('yearly')}
-                  className={`relative rounded-r-full border px-5 py-2 text-sm transition-colors ${billing === 'yearly' ? 'border-primary bg-primary text-white' : 'border-border bg-white text-muted-foreground hover:bg-accent'}`}
-                  style={{ fontWeight: 500 }}
+                  className={`relative rounded-r-full border px-5 py-2 text-sm font-medium transition-colors ${billing === 'yearly' ? 'border-cyan-500 bg-cyan-600 text-white' : 'border-slate-800 bg-slate-950 text-slate-400 hover:bg-slate-900'}`}
                 >
                   Theo năm
-                  <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${billing === 'yearly' ? 'bg-white/20 text-white' : 'bg-success/15 text-success'}`} style={{ fontWeight: 600 }}>
+                  <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${billing === 'yearly' ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-300'}`}>
                     -17%
                   </span>
                 </button>
               </div>
-              {billing === 'yearly' && (
-                <p className="text-center text-xs text-success" style={{ fontWeight: 500 }}>
-                  🎉 Thanh toán năm = 10 tháng — tặng 2 tháng miễn phí
-                </p>
-              )}
 
-              {/* Plan cards */}
               <div className="grid gap-3 sm:grid-cols-3">
                 {adPlans.map((plan) => {
                   const price = getPrice(plan);
@@ -189,63 +178,40 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                     <div
                       key={plan.name}
                       onClick={() => setSelectedPlan(plan.name)}
-                      className={`relative flex cursor-pointer flex-col rounded-2xl border-2 p-5 transition-all ${plan.color} ${selected ? 'shadow-lg ring-2 ring-primary/30' : 'bg-white hover:border-primary/50'} ${plan.highlight && !selected ? 'bg-primary/3' : ''}`}
+                      className={`relative flex cursor-pointer flex-col rounded-2xl border-2 p-5 transition-all ${plan.color} ${selected ? 'border-cyan-500 bg-slate-900 shadow-xl ring-2 ring-cyan-500/30' : 'bg-slate-950 hover:border-slate-700'}`}
                     >
-                      {/* Badge */}
                       {plan.badge && (
-                        <span className={`absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-xs text-white ${plan.badgeColor}`} style={{ fontWeight: 600 }}>
+                        <span className={`absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-xs font-semibold text-white ${plan.badgeColor}`}>
                           {plan.badge}
                         </span>
                       )}
-
-                      {/* Selected tick */}
                       {selected && (
-                        <span className="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full bg-primary text-white">
+                        <span className="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full bg-cyan-500 text-white">
                           <Check className="size-3" />
                         </span>
                       )}
-
-                      {/* Plan name */}
-                      <p style={{ fontWeight: 700, fontSize: '1rem' }}>{plan.name}</p>
-
-                      {/* Price */}
+                      <p className="font-bold text-white text-lg">{plan.name}</p>
                       <div className="mt-2 min-h-[3.5rem]">
                         {price !== null ? (
                           <>
-                            {billing === 'yearly' && (
-                              <p className="text-xs text-muted-foreground line-through">
-                                {formatVND(plan.monthlyPrice! * 12)}/năm
-                              </p>
-                            )}
                             <div className="flex items-baseline gap-1">
-                              <span style={{ fontSize: '1.375rem', fontWeight: 800, lineHeight: 1.1 }}>
+                              <span className="text-xl font-extrabold text-white leading-tight">
                                 {formatVND(price)}
                               </span>
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-slate-400">
                                 /{billing === 'yearly' ? 'năm' : 'tháng'}
                               </span>
                             </div>
-                            {billing === 'yearly' && perMonth !== null && (
-                              <p className="text-xs text-success" style={{ fontWeight: 500 }}>
-                                ~ {formatVND(perMonth)}/tháng
-                              </p>
-                            )}
                           </>
                         ) : (
-                          <div className="flex items-baseline">
-                            <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>Liên hệ</span>
-                          </div>
+                          <span className="text-xl font-extrabold text-white">Liên hệ</span>
                         )}
                       </div>
-
-                      {/* Description */}
-                      <p className="mt-2 text-xs text-muted-foreground leading-snug">{plan.description}</p>
-
-                      {/* Features */}
+                      <p className="mt-2 text-xs text-slate-400 leading-snug">{plan.description}</p>
                       <ul className="mt-3 flex-1 space-y-1.5">
                         {plan.features.map((f) => (
-                          <li key={f} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                            <Check className="mt-0.5 size-3 shrink-0 text-success" />
+                          <li key={f} className="flex items-start gap-1.5 text-xs text-slate-300">
+                            <Check className="mt-0.5 size-3 shrink-0 text-cyan-400" />
                             {f}
                           </li>
                         ))}
@@ -255,72 +221,30 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                 })}
               </div>
 
-              {/* Footer row */}
-              <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-muted-foreground">
-                  Đã chọn: <strong className="text-foreground">{selectedPlan}</strong>
-                  {billing === 'yearly' && (
-                    <span className="ml-1.5 rounded-full bg-success/15 px-2 py-0.5 text-success" style={{ fontWeight: 500 }}>
-                      Thanh toán năm — tiết kiệm 2 tháng
-                    </span>
-                  )}
-                  <span className="ml-1">· Đã bao gồm kiểm duyệt thương hiệu & nhắm mục tiêu FPTU.</span>
+              <div className="flex flex-col gap-3 border-t border-slate-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-slate-400">
+                  Đã chọn: <strong className="text-white">{selectedPlan}</strong>
                 </p>
-                <Button onClick={() => setStep('contact')} className="shrink-0 gap-1.5">
+                <Button onClick={() => setStep('contact')} className="shrink-0 gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white">
                   Tiếp tục <ArrowRight className="size-4" />
                 </Button>
               </div>
             </div>
           ) : (
             <form onSubmit={submit} className="space-y-4">
-              {/* Selected plan reminder */}
-              <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
-                <div>
-                  Gói đã chọn: <strong>{selectedPlan}</strong>
-                  <span className="ml-2 text-muted-foreground">({billing === 'yearly' ? 'Thanh toán năm' : 'Thanh toán tháng'})</span>
-                  {(() => {
-                    const plan = adPlans.find((p) => p.name === selectedPlan);
-                    const price = plan ? getPrice(plan) : null;
-                    return price ? <span className="ml-2 text-primary" style={{ fontWeight: 600 }}>{formatVND(price)}/{billing === 'yearly' ? 'năm' : 'tháng'}</span> : null;
-                  })()}
-                </div>
-                <button type="button" onClick={() => setStep('plans')} className="text-xs text-primary hover:underline">
-                  Đổi gói
-                </button>
-              </div>
-
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="mb-1.5 block">Tên công ty / thương hiệu</Label>
-                  <Input placeholder="vd: FPT Software" className="bg-input-background" required />
+                  <Label className="mb-1.5 block text-slate-300">Tên công ty / thương hiệu</Label>
+                  <Input placeholder="vd: FPT Software" className="bg-slate-950 border-slate-800 text-white" required />
                 </div>
                 <div>
-                  <Label className="mb-1.5 block">Người liên hệ</Label>
-                  <Input placeholder="Họ và tên" className="bg-input-background" required />
-                </div>
-                <div>
-                  <Label className="mb-1.5 block">Email công ty</Label>
-                  <Input type="email" placeholder="you@company.com" className="bg-input-background" required />
-                </div>
-                <div>
-                  <Label className="mb-1.5 block">Số điện thoại</Label>
-                  <Input type="tel" placeholder="+84 ..." className="bg-input-background" />
+                  <Label className="mb-1.5 block text-slate-300">Người liên hệ</Label>
+                  <Input placeholder="Họ và tên" className="bg-slate-950 border-slate-800 text-white" required />
                 </div>
               </div>
-
-              <div>
-                <Label className="mb-1.5 block">Mục tiêu chiến dịch</Label>
-                <Textarea placeholder="Mô tả về thương hiệu, đối tượng mục tiêu và mục tiêu bạn muốn đạt được..." rows={3} />
-              </div>
-
-              <div className="flex items-center gap-3 rounded-xl bg-accent/60 px-4 py-3 text-sm text-muted-foreground">
-                <Mail className="size-4 shrink-0 text-primary" />
-                Đội ngũ hợp tác sẽ phản hồi trong vòng 1–2 ngày làm việc với đề xuất riêng cho bạn.
-              </div>
-
-              <div className="flex justify-end gap-3 border-t border-border pt-4">
-                <Button type="button" variant="outline" onClick={() => setStep('plans')}>Quay lại</Button>
-                <Button type="submit">Gửi yêu cầu hợp tác</Button>
+              <div className="flex justify-end gap-3 border-t border-slate-800 pt-4">
+                <Button type="button" variant="outline" onClick={() => setStep('plans')} className="border-slate-800 text-slate-300 hover:bg-slate-800">Quay lại</Button>
+                <Button type="submit" className="bg-cyan-600 hover:bg-cyan-500 text-white">Gửi yêu cầu hợp tác</Button>
               </div>
             </form>
           )}
@@ -332,7 +256,30 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
 
 export function Footer() {
   const [showPartner, setShowPartner] = useState(false);
-  const { T } = useLanguage();
+  const { T, lang } = useLanguage();
+
+  const trustBadges = [
+    {
+      icon: ShieldCheck,
+      title: 'Verified Mentors',
+      desc: lang === 'vi' ? '100% gia sư được kiểm định hồ sơ & học vấn' : 'Identity & credentials verified',
+    },
+    {
+      icon: Star,
+      title: 'Real Student Reviews',
+      desc: lang === 'vi' ? 'Đánh giá thực tế từ sinh viên sau buổi học' : 'Authentic feedback from real sessions',
+    },
+    {
+      icon: CreditCard,
+      title: 'Secure Escrow Payment',
+      desc: lang === 'vi' ? 'Học phí ký quỹ an toàn đến khi hoàn tất' : 'Funds held safely in escrow until done',
+    },
+    {
+      icon: Target,
+      title: 'Course-Based Matching',
+      desc: lang === 'vi' ? 'Ghép nối chính xác theo mã môn & giáo trình' : 'Matched by university course code',
+    },
+  ];
 
   const dynamicColumns = [
     {
@@ -356,7 +303,7 @@ export function Footer() {
     {
       title: T.company,
       links: [
-        { label: T.aboutGradora, to: '/about' },
+        { label: T.aboutDynForge, to: '/about' },
         { label: T.careers, to: '/about' },
         { label: T.contact, to: '/support/contact' },
         { label: T.admin, to: '/admin' },
@@ -366,56 +313,84 @@ export function Footer() {
 
   return (
     <>
+      {/* ── TRUST BADGES BAND (Moved to Footer) ───────────────────────── */}
+      <section className="relative z-10 border-t border-white/10 bg-slate-950/60 backdrop-blur-md py-8">
+        <div className="mx-auto max-w-[1240px] px-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {trustBadges.map((badge, idx) => {
+              const Icon = badge.icon;
+              return (
+                <div
+                  key={idx}
+                  className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all duration-300 hover:border-cyan-500/40 hover:bg-white/10"
+                >
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform">
+                    <Icon className="size-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white text-sm tracking-wide">
+                      {badge.title}
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5 leading-snug">
+                      {badge.desc}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* Partnership banner */}
-      <div className="border-t border-border bg-navy">
+      <div className="border-t border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
         <div className="mx-auto max-w-[1240px] px-5 py-10">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Megaphone className="size-5 text-white/70" />
-                <span className="text-xs text-white/50 uppercase tracking-widest" style={{ fontWeight: 600 }}>
+                <Megaphone className="size-5 text-cyan-400" />
+                <span className="text-xs text-cyan-400 uppercase tracking-widest font-semibold">
                   {T.footerForBusinesses}
                 </span>
               </div>
-              <h3 className="text-white" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+              <h3 className="text-white text-xl font-semibold">
                 {T.footerPartnerTitle}
               </h3>
-              <p className="mt-1 text-sm text-white/60 max-w-lg">
+              <p className="mt-1 text-sm text-slate-400 max-w-lg">
                 {T.footerPartnerDesc}
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:shrink-0">
               <Button
                 onClick={() => setShowPartner(true)}
-                className="bg-white text-navy hover:bg-white/90 gap-2"
+                className="liquid-glass border border-cyan-400/30 bg-cyan-600/30 text-white hover:bg-cyan-600/40 gap-2 font-medium"
               >
                 <Megaphone className="size-4" /> {T.viewAdvertisingPlans}
               </Button>
-              <p className="text-center text-xs text-white/40">{T.noCommitment}</p>
+              <p className="text-center text-xs text-slate-500">{T.noCommitment}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <footer className="border-t border-border bg-pale-blue">
+      <footer className="border-t border-slate-800/80 bg-slate-950/70 backdrop-blur-md text-slate-300">
         <div className="mx-auto max-w-[1240px] px-5 py-14">
           <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
             <div>
-              <Logo />
-              <p className="mt-4 max-w-xs text-sm text-muted-foreground">
+              <Logo light showTagline size="md" />
+              <p className="mt-4 max-w-xs text-sm text-slate-400 leading-relaxed">
                 {T.footerTagline}
               </p>
               <button
                 onClick={() => setShowPartner(true)}
-                className="mt-4 flex items-center gap-1.5 text-sm text-primary hover:underline"
-                style={{ fontWeight: 500 }}
+                className="mt-4 flex items-center gap-1.5 text-sm text-cyan-400 hover:text-cyan-300 font-medium"
               >
                 <Megaphone className="size-3.5" /> {T.partnerWithUs}
               </button>
             </div>
             {dynamicColumns.map((col) => (
               <div key={col.title}>
-                <h4 className="mb-3" style={{ fontWeight: 600 }}>
+                <h4 className="mb-3 font-semibold text-white">
                   {col.title}
                 </h4>
                 <ul className="flex flex-col gap-2">
@@ -423,7 +398,7 @@ export function Footer() {
                     <li key={link.label}>
                       <Link
                         to={link.to}
-                        className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                        className="text-sm text-slate-400 transition-colors hover:text-cyan-300"
                       >
                         {link.label}
                       </Link>
@@ -433,7 +408,7 @@ export function Footer() {
               </div>
             ))}
           </div>
-          <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground sm:flex-row">
+          <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-800/80 pt-6 text-sm text-slate-400 sm:flex-row">
             <span>{T.copyright}</span>
             <span>{T.paymentsSecured}</span>
           </div>

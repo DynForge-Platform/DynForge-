@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Bell, Lock, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
 import { toast } from 'sonner';
+import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const notifToggles = [
   { label: 'New student bookings', description: 'Get notified when a student requests a session.', key: 'booking' },
@@ -11,10 +14,13 @@ const notifToggles = [
   { label: 'Payment releases', description: 'When escrow funds are released to your wallet.', key: 'payment' },
   { label: 'Dispute updates', description: 'Progress updates on disputes involving your sessions.', key: 'dispute' },
   { label: 'Review alerts', description: 'When a student leaves you a review.', key: 'review' },
-  { label: 'Platform news', description: 'Feature updates and GRADORA announcements.', key: 'news' },
+  { label: 'Platform news', description: 'Feature updates and DynForge announcements.', key: 'news' },
 ];
 
 export function TeacherSettings() {
+  const { user } = useAuth();
+  const { lang } = useLanguage();
+  const navigate = useNavigate();
   const [notifs, setNotifs] = useState<Record<string, boolean>>(
     Object.fromEntries(notifToggles.map((n, i) => [n.key, i < 4]))
   );
@@ -34,8 +40,8 @@ export function TeacherSettings() {
           </h2>
           <div className="space-y-3">
             {[
-              { label: 'Email address', value: 'linh@vnu.edu.vn', action: 'Change' },
-              { label: 'Account language', value: 'English', action: 'Change' },
+              { label: 'Email address', value: user?.email ?? '—', action: 'Manage', onClick: () => navigate('/mentor/profile') },
+              { label: 'Account language', value: lang === 'vi' ? 'Tiếng Việt' : 'English', action: 'Change' },
               { label: 'Time zone', value: 'GMT+7 (Ho Chi Minh City)', action: 'Change' },
             ].map((r) => (
               <div key={r.label} className="flex items-center justify-between rounded-xl border border-border p-3">
@@ -43,7 +49,7 @@ export function TeacherSettings() {
                   <p className="text-sm text-muted-foreground">{r.label}</p>
                   <p style={{ fontWeight: 500 }}>{r.value}</p>
                 </div>
-                <Button variant="ghost" size="sm" className="text-primary">{r.action}</Button>
+                <Button variant="ghost" size="sm" className="text-primary" onClick={r.onClick}>{r.action}</Button>
               </div>
             ))}
           </div>

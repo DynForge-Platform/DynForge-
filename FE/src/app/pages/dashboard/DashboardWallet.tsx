@@ -19,6 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '../../components/ui/dialog';
 import { KpiCard } from '../../components/cards';
+import { GsapCounter } from '../../components/GsapCounter';
 import { StatusBadge } from '../../components/common';
 import { cn } from '../../components/ui/utils';
 import { toast } from 'sonner';
@@ -28,7 +29,7 @@ import { useLanguage } from '../../context/LanguageContext';
 function AddFundsModal({ onClose }: { onClose: () => void }) {
   const [amount, setAmount] = useState('200000');
   const [loading, setLoading] = useState(false);
-  const num = parseInt(amount.replace(/D/g, '')) || 0;
+  const num = parseInt(amount.replace(/\D/g, '')) || 0;
 
   const pay = async () => {
     if (num < 10000) { toast.error('Minimum top-up is 10,000₫'); return; }
@@ -51,7 +52,7 @@ function AddFundsModal({ onClose }: { onClose: () => void }) {
             <Label className="mb-1.5 block">Amount to top up (₫)</Label>
             <Input
               value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/D/g, ''))}
+              onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
               className="bg-input-background text-lg"
               style={{ fontWeight: 600 }}
               autoFocus
@@ -256,7 +257,9 @@ export function DashboardWallet() {
             <p className="text-sm text-muted-foreground">Available balance</p>
             {loading
               ? <div className="mt-1 flex items-center gap-2 text-muted-foreground"><Loader2 className="size-5 animate-spin" /> Loading…</div>
-              : <p className="mt-1 text-navy" style={{ fontSize: '2.25rem', fontWeight: 800 }}>{formatCurrency(balance)}</p>
+              : <p className="mt-1 text-navy" style={{ fontSize: '2.25rem', fontWeight: 800 }}>
+                  <GsapCounter targetValue={balance} suffix="₫" />
+                </p>
             }
           </div>
           <div className="flex gap-3">

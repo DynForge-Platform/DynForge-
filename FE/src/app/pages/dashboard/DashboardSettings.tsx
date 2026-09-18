@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Bell, CreditCard, Lock, Trash2 } from 'lucide-react';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -19,10 +20,11 @@ const notifToggles: Toggle[] = [
   { label: 'Escrow updates', description: 'Notifications when your escrow status changes.', key: 'escrow' },
   { label: 'Dispute updates', description: 'Progress updates on your dispute cases.', key: 'dispute' },
   { label: 'Mentor messages', description: 'Receive messages from mentors.', key: 'messages' },
-  { label: 'GRADORA news', description: 'Platform updates, new features, and events.', key: 'news' },
+  { label: 'DynForge news', description: 'Platform updates, new features, and events.', key: 'news' },
 ];
 
 export function DashboardSettings() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { lang } = useLanguage();
   const [notifs, setNotifs] = useState<Record<string, boolean>>({
@@ -45,8 +47,8 @@ export function DashboardSettings() {
             <Lock className="size-5 text-muted-foreground" /> Account settings
           </h2>
           <div className="space-y-3">
-            <SettingRow label="Full name" value={user?.name ?? '—'} action="Edit" />
-            <SettingRow label="Email address" value={user?.email ?? '—'} action="Manage" />
+            <SettingRow label="Full name" value={user?.name ?? '—'} action="Edit" onClick={() => navigate('/dashboard/profile')} />
+            <SettingRow label="Email address" value={user?.email ?? '—'} action="Manage" onClick={() => navigate('/dashboard/profile')} />
             <SettingRow label="Account language" value={lang === 'vi' ? 'Tiếng Việt' : 'English'} action="Change" />
           </div>
         </Card>
@@ -80,7 +82,7 @@ export function DashboardSettings() {
               <Select defaultValue="wallet">
                 <SelectTrigger className="bg-input-background sm:w-64"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="wallet">GRADORA Wallet</SelectItem>
+                  <SelectItem value="wallet">DynForge Wallet</SelectItem>
                   <SelectItem value="bank">Bank Transfer</SelectItem>
                 </SelectContent>
               </Select>
@@ -139,14 +141,14 @@ export function DashboardSettings() {
   );
 }
 
-function SettingRow({ label, value, action }: { label: string; value: string; action: string }) {
+function SettingRow({ label, value, action, onClick }: { label: string; value: string; action: string; onClick?: () => void }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-border p-3">
       <div>
         <p className="text-sm text-muted-foreground">{label}</p>
         <p style={{ fontWeight: 500 }}>{value}</p>
       </div>
-      <Button variant="ghost" size="sm" className="text-primary">{action}</Button>
+      <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10 cursor-pointer" onClick={onClick}>{action}</Button>
     </div>
   );
 }

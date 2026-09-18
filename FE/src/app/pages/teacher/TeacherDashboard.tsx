@@ -104,10 +104,10 @@ export function TeacherDashboard() {
 
       {/* Verification badge */}
       {verified && (
-        <Alert className="mb-6 border-emerald-200 bg-emerald-50">
-          <BadgeCheck className="h-4 w-4 text-emerald-600" />
-          <AlertTitle className="text-emerald-700">{T.verifiedMentorBadge}</AlertTitle>
-          <AlertDescription>{T.verifiedMentorDesc}</AlertDescription>
+        <Alert className="mb-6 border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+          <BadgeCheck className="h-4 w-4 text-emerald-400" />
+          <AlertTitle className="text-emerald-300 font-semibold">{T.verifiedMentorBadge}</AlertTitle>
+          <AlertDescription className="text-emerald-300/80">{T.verifiedMentorDesc}</AlertDescription>
         </Alert>
       )}
 

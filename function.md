@@ -1,4 +1,4 @@
-# Gradora EXE101 – Chức Năng Đã Triển Khai
+# DynForge EXE101 – Chức Năng Đã Triển Khai
 
 ## Phân Công Nhóm
 - **K1 (DangKhoa)**: MentorProfile model + repo, MentorService, MentorController, DataSeeder, luồng booking/escrow, ví điện tử, scheduler, toàn bộ kết nối frontend
@@ -421,19 +421,19 @@ Inject `UserRepository` để làm phẳng `menteeName` + `menteeAvatar` vào re
 ---
 
 ### K1 – Dữ Liệu Mẫu · `seeder/DataSeeder.java`
-`@Component`, `@Order(1)`, implements `CommandLineRunner`. Idempotent: bỏ qua nếu `khoa.tran@gradora.vn` đã tồn tại.
+`@Component`, `@Order(1)`, implements `CommandLineRunner`. Idempotent: bỏ qua nếu `khoa.tran@DynForge.vn` đã tồn tại.
 
-Tài khoản mẫu (mật khẩu `Gradora@123` cho tất cả):
+Tài khoản mẫu (mật khẩu `DynForge@123` cho tất cả):
 
 | Email | Vai Trò | Ghi Chú |
 |---|---|---|
-| `admin@gradora.vn` | ADMIN | — |
-| `student@gradora.vn` | MENTEE | Số dư ví 500.000₫ |
-| `khoa.tran@gradora.vn` | MENTOR | "AI/ML Lecturer · FPT University"; môn: MAL301, MAL401, NLP301; rating 4.9 |
-| `linh.nguyen@gradora.vn` | MENTOR | "Software Engineer · Alumni 2023"; môn: PRJ301, SWR302, SWT301; rating 4.8 |
-| `hung.pham@gradora.vn` | MENTOR | "Senior Student · AI Major"; môn: PRO192, MAD101, CSD201; rating 4.7 |
-| `thu.le@gradora.vn` | MENTOR | "Business Analyst · Alumni 2023"; môn: MKT101, ACC101, FIN101; rating 4.8 |
-| `minh.dang@gradora.vn` | MENTOR | "Senior Student · SE Major"; môn: PRF192, LAB211, CSD201; rating 4.6 |
+| `admin@DynForge.vn` | ADMIN | — |
+| `student@DynForge.vn` | MENTEE | Số dư ví 500.000₫ |
+| `khoa.tran@DynForge.vn` | MENTOR | "AI/ML Lecturer · FPT University"; môn: MAL301, MAL401, NLP301; rating 4.9 |
+| `linh.nguyen@DynForge.vn` | MENTOR | "Software Engineer · Alumni 2023"; môn: PRJ301, SWR302, SWT301; rating 4.8 |
+| `hung.pham@DynForge.vn` | MENTOR | "Senior Student · AI Major"; môn: PRO192, MAD101, CSD201; rating 4.7 |
+| `thu.le@DynForge.vn` | MENTOR | "Business Analyst · Alumni 2023"; môn: MKT101, ACC101, FIN101; rating 4.8 |
+| `minh.dang@DynForge.vn` | MENTOR | "Senior Student · SE Major"; môn: PRF192, LAB211, CSD201; rating 4.6 |
 
 ---
 
@@ -694,7 +694,7 @@ backendToReview(r)               – ánh xạ ReviewResponse → Review (kiểu
 ### K1 – Phòng Học Trực Tuyến + Ghi Hình (bằng chứng tranh chấp)
 
 #### Phòng meet riêng theo booking
-- **`MeetRoomOverlay.tsx`** nhúng **Jitsi Meet** với phòng `gradora-{bookingId}` → mentee và mentor vào **cùng một phòng** (video/audio thật, miễn phí, không cần key)
+- **`MeetRoomOverlay.tsx`** nhúng **Jitsi Meet** với phòng `DynForge-{bookingId}` → mentee và mentor vào **cùng một phòng** (video/audio thật, miễn phí, không cần key)
 - Cả StudentDashboard, TeacherSessions, TeacherDashboard đều dùng chung component này khi bấm **Join** (chỉ join được khi booking ACCEPTED)
 
 #### Ghi hình buổi học
@@ -802,7 +802,7 @@ Hai tiện ích AI ngay trong giao diện meet (`components/MeetRoomOverlay.tsx`
 
 ### #1 — Ghi chú buổi học + AI viết lại nội dung chính
 - Nút **"Notes"** ở thanh điều khiển → mở panel ghi chú bên phải khung Jitsi.
-- Ghi chú **tự lưu vào localStorage** theo booking (`gradora_meet_note_{bookingId}`) — đóng tab/join lại không mất.
+- Ghi chú **tự lưu vào localStorage** theo booking (`DynForge_meet_note_{bookingId}`) — đóng tab/join lại không mất.
 - Nút **"Dùng AI viết lại nội dung chính"** → `POST /api/ai/sessions/{bookingId}/rewrite-note` body `{notes}` → `NoteRewriteResponse(note)`; AI cấu trúc lại thành: Nội dung chính / Việc cần làm-bài tập / Câu hỏi còn lại. Kết quả thay thế nội dung textarea.
 - BE: `AiMenteeService.rewriteNote(user, bookingId, notes)` — kiểm tra là người trong booking; không có API key → `mockNote()` sắp xếp lại ghi chú, gắn nhãn DEMO.
 - FE: `aiService.rewriteNote(bookingId, notes)`.

@@ -1,32 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { getGoogleClientId } from '../services/authService';
-import { ShieldCheck, BadgeCheck, Star, Mail, GraduationCap, Users, LayoutDashboard, Loader2 } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Star, Mail, Loader2 } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { cn } from '../components/ui/utils';
 import { useAuth, AuthRole } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { toast } from 'sonner';
 
 import Lottie from 'lottie-react';
 import onlineLearningAnimation from '../../assets/animations/Online Learning.json';
-
-const trustMessages = [
-  { icon: ShieldCheck, label: 'Escrow anti-fraud protection' },
-  { icon: BadgeCheck, label: 'Verified mentors only' },
-  { icon: Star, label: 'Real student reviews' },
-  { icon: Mail, label: 'University email recommended' },
-];
-
-// Seeded demo accounts (see DataSeeder).
-const DEMO_CREDENTIALS: Record<AuthRole, { email: string; password: string }> = {
-  mentee: { email: 'student@gradora.vn', password: 'Gradora@123' },
-  mentor: { email: 'khoa.tran@gradora.vn', password: 'Gradora@123' },
-  admin: { email: 'admin@gradora.vn', password: 'Gradora@123' },
-};
 
 const DASHBOARD_PATHS: Record<AuthRole, string> = {
   mentee: '/dashboard',
@@ -36,27 +21,30 @@ const DASHBOARD_PATHS: Record<AuthRole, string> = {
 
 function BrandPanel({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div className="relative flex h-full min-h-screen flex-col justify-between overflow-hidden bg-gradient-to-br from-primary/10 via-slate-50 to-indigo-50/60 p-10 lg:p-14 border-r border-border/50">
+    <div className="relative flex h-full min-h-screen flex-col justify-between overflow-hidden bg-[#020B18] p-10 lg:p-14 border-r border-white/10 text-slate-100">
       {/* Background ambient glowing lights */}
-      <div className="absolute -top-32 -left-32 size-96 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 size-96 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
+      <div className="absolute -top-32 -left-32 size-96 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 size-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-      <Logo />
+      <Logo light />
 
       {/* Lottie Animation: Online Learning */}
       <div className="my-auto flex flex-col items-center justify-center text-center py-6">
-        <div className="w-full max-w-md drop-shadow-xl my-2">
+        <div className="w-full max-w-md drop-shadow-2xl my-2">
           <Lottie animationData={onlineLearningAnimation} loop={true} autoplay={true} />
         </div>
-        <h2 className="text-foreground text-center mt-4 text-2xl lg:text-3xl font-bold tracking-tight leading-tight max-w-md">
+        <h2
+          className="text-white text-center mt-6 text-3xl lg:text-4xl font-normal leading-tight max-w-md"
+          style={{ fontFamily: "'Instrument Serif', serif" }}
+        >
           {title}
         </h2>
-        <p className="mt-3 text-center text-muted-foreground text-sm lg:text-base max-w-md leading-relaxed">{subtitle}</p>
+        <p className="mt-3 text-center text-white/70 text-sm lg:text-base max-w-md leading-relaxed font-normal">{subtitle}</p>
       </div>
 
-      <div className="flex items-center justify-between text-xs lg:text-sm text-muted-foreground border-t border-border/50 pt-5">
-        <span className="flex items-center gap-2"><ShieldCheck className="size-4.5 text-primary" /> Escrow Security 🛡️</span>
-        <span className="flex items-center gap-2"><Star className="size-4.5 text-amber-500" /> Verified Mentors ✨</span>
+      <div className="flex items-center justify-between text-xs lg:text-sm text-slate-400 border-t border-white/10 pt-5">
+        <span className="flex items-center gap-2"><ShieldCheck className="size-4 text-cyan-400" /> Escrow Security 🛡️</span>
+        <span className="flex items-center gap-2"><Star className="size-4 text-amber-400" /> Verified Mentors ✨</span>
       </div>
     </div>
   );
@@ -64,18 +52,18 @@ function BrandPanel({ title, subtitle }: { title: string; subtitle: string }) {
 
 function AuthShell({ children, title, subtitle }: { children: React.ReactNode; title: string; subtitle: string }) {
   return (
-    <div className="grid min-h-screen w-full lg:grid-cols-12 bg-background overflow-x-hidden">
+    <div className="grid min-h-screen w-full lg:grid-cols-12 bg-[#020B18] text-slate-100 overflow-x-hidden">
       <div className="hidden lg:block lg:col-span-6 xl:col-span-7 h-full">
         <BrandPanel title={title} subtitle={subtitle} />
       </div>
 
-      <div className="lg:col-span-6 xl:col-span-5 flex min-h-screen flex-col justify-center p-4 sm:p-8 lg:p-12 bg-slate-50/60 relative">
-        {/* Background ambient glowing light */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="lg:col-span-6 xl:col-span-5 flex min-h-screen flex-col justify-center p-4 sm:p-8 lg:p-12 bg-[#020B18] relative">
+        {/* Ambient background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
 
-        {/* Floating Glassmorphic Form Card */}
-        <div className="relative z-10 w-full max-w-md mx-auto rounded-3xl border border-border/70 bg-card/95 backdrop-blur-xl p-8 sm:p-10 shadow-2xl shadow-primary/5 transition-all duration-500 hover:shadow-primary/15 animate-in fade-in zoom-in-95">
-          <div className="mb-6 lg:hidden flex justify-center"><Logo /></div>
+        {/* Floating Dark Glassmorphic Form Card */}
+        <div className="relative z-10 w-full max-w-md mx-auto rounded-3xl border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-8 sm:p-10 shadow-2xl">
+          <div className="mb-6 lg:hidden flex justify-center"><Logo light /></div>
           {children}
         </div>
       </div>
@@ -89,17 +77,11 @@ declare global {
 
 const GSI_SCRIPT_ID = 'google-gsi-client';
 
-/**
- * Real Google Sign-In via Google Identity Services. Fetches the OAuth client id from the
- * backend, loads the GIS script and renders Google's own button; the returned ID token is
- * exchanged at POST /api/auth/google for our JWT session (auto-registers first-time users).
- */
 function GoogleButton() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const { loginWithGoogle } = useAuth();
-  // null = still loading config, '' = not configured on the backend
   const [clientId, setClientId] = useState<string | null>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
 
@@ -125,7 +107,7 @@ function GoogleButton() {
         },
       });
       window.google.accounts.id.renderButton(buttonRef.current, {
-        theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill', width: 380,
+        theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill', width: 340,
       });
     };
 
@@ -143,12 +125,11 @@ function GoogleButton() {
     return () => script?.removeEventListener('load', init);
   }, [clientId, loginWithGoogle, navigate, redirectTo]);
 
-  // Backend has no google.client-id configured — show an inert button that explains why.
   if (clientId === '') {
     return (
-      <Button variant="outline" className="w-full"
+      <Button variant="outline" className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-full h-11"
         onClick={() => toast.info('Google Sign-In chưa được cấu hình (google.client-id trong application.properties).')}>
-        <svg className="size-4" viewBox="0 0 24 24">
+        <svg className="size-4 mr-2" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/>
           <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"/>
@@ -183,7 +164,6 @@ export function Login() {
     try {
       const u = await loginWithCredentials(email, password);
       toast.success('Welcome back!');
-      // Route to the user's own workspace based on role (avoids 403 on /dashboard for admin/mentor).
       navigate(redirectTo ?? u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Invalid email or password.');
@@ -194,48 +174,50 @@ export function Login() {
 
   return (
     <AuthShell
-      title="Find trusted academic mentors from your university."
+      title="Learn from mentors who have been there."
       subtitle="Book verified seniors, alumni, and lecturers for course tutoring, thesis support, and career advice."
     >
-      <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{T.welcomeBack}</h1>
-      <p className="mt-1 text-muted-foreground">{T.loginSubtitle}</p>
+      <h1 className="text-3xl text-white font-normal mb-1" style={{ fontFamily: "'Instrument Serif', serif" }}>
+        {T.welcomeBack}
+      </h1>
+      <p className="text-xs text-slate-400 mb-6">{T.loginSubtitle}</p>
 
-      <div className="mb-5 mt-6"><GoogleButton /></div>
+      <div className="mb-5"><GoogleButton /></div>
 
-      <div className="my-5 flex items-center gap-3 text-sm text-muted-foreground">
-        <span className="h-px flex-1 bg-border" /> {T.orSignIn} <span className="h-px flex-1 bg-border" />
+      <div className="my-5 flex items-center gap-3 text-xs text-slate-500">
+        <span className="h-px flex-1 bg-white/10" /> {T.orSignIn} <span className="h-px flex-1 bg-white/10" />
       </div>
 
       <form className="space-y-4" onSubmit={submit}>
         <div>
-          <Label htmlFor="email" className="mb-1.5 block">{T.email}</Label>
+          <Label htmlFor="email" className="mb-1.5 block text-xs text-slate-300">{T.email}</Label>
           <Input
             id="email" type="email" placeholder="you@fpt.edu.vn"
-            className="bg-input-background"
+            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11 text-sm"
             value={email} onChange={(e) => setEmail(e.target.value)}
           />
         </div>
         <div>
           <div className="mb-1.5 flex items-center justify-between">
-            <Label htmlFor="password">{T.password}</Label>
-            <Link to="/forgot-password" className="text-sm text-primary" style={{ fontWeight: 500 }}>
+            <Label htmlFor="password" className="text-xs text-slate-300">{T.password}</Label>
+            <Link to="/forgot-password" className="text-xs text-cyan-400 hover:underline">
               {lang === 'vi' ? 'Quên mật khẩu?' : 'Forgot password?'}
             </Link>
           </div>
           <Input
             id="password" type="password" placeholder="••••••••"
-            className="bg-input-background"
+            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11 text-sm"
             value={password} onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+        <Button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl h-11" disabled={loading}>
           {loading ? <Loader2 className="size-4 animate-spin" /> : T.logIn}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="mt-6 text-center text-xs text-slate-400">
         {T.dontHaveAccount}{' '}
-        <Link to="/register" className="text-primary" style={{ fontWeight: 500 }}>{T.createOne}</Link>
+        <Link to="/register" className="text-cyan-400 font-medium hover:underline">{T.createOne}</Link>
       </p>
     </AuthShell>
   );
@@ -245,29 +227,37 @@ export function Login() {
 export function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const applyingAsMentor = searchParams.get('apply') === 'mentor';
-  const { login, registerWithCredentials } = useAuth();
+  const defaultApplyRole = searchParams.get('apply') === 'mentor' ? 'mentor' : 'mentee';
+
+  const { registerWithCredentials } = useAuth();
   const { T } = useLanguage();
-  const [role, setRole] = useState<'mentee' | 'mentor'>(applyingAsMentor ? 'mentor' : 'mentee');
-  const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState<AuthRole>(defaultApplyRole);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [university, setUniversity] = useState('FPT University');
   const [loading, setLoading] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !email || !password) {
-      toast.error('Vui lòng nhập đầy đủ Họ tên, Email và Mật khẩu.');
+    if (!name || !email || !password) {
+      toast.error('Vui lòng điền đầy đủ Họ tên, Email và Mật khẩu.');
       return;
     }
     setLoading(true);
     try {
-      await registerWithCredentials(fullName, email, password, role === 'mentor' ? 'MENTOR' : 'MENTEE');
-      toast.success('Account created! Welcome to GRADORA.');
-      // Mentors go straight to the application/verification form to submit documents.
-      navigate(role === 'mentor' ? '/mentor/verification' : '/dashboard');
+      const u = await registerWithCredentials({
+        name: name.trim(),
+        fullName: name.trim(),
+        email: email.trim(),
+        password,
+        role: role === 'mentor' ? 'MENTOR' : 'MENTEE',
+        university,
+      });
+      toast.success('Account created successfully!');
+      navigate(u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Registration failed. Please try again.');
+      toast.error(err?.response?.data?.message ?? 'Registration failed. Please check your inputs.');
     } finally {
       setLoading(false);
     }
@@ -275,63 +265,76 @@ export function Register() {
 
   return (
     <AuthShell
-      title="Teach what you've mastered — or find the mentor you need."
-      subtitle="Join thousands of FPTU students learning safely through verified mentors and escrow-protected sessions."
+      title="Join DynForge today."
+      subtitle="Connect with verified academic mentors and accelerate your university journey."
     >
-      <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{T.createYourAccount}</h1>
-      <p className="mt-1 text-muted-foreground">{T.joinSubtitle}</p>
+      <h1 className="text-3xl text-white font-normal mb-1" style={{ fontFamily: "'Instrument Serif', serif" }}>
+        {T.createAccount}
+      </h1>
+      <p className="text-xs text-slate-400 mb-6">{T.registerSubtitle}</p>
 
-      {/* Role selector */}
-      <div className="mb-4 mt-6 grid grid-cols-2 gap-3">
-        {([
-          { key: 'mentee', label: T.iAmMentee, icon: Users },
-          { key: 'mentor', label: T.iAmMentor, icon: GraduationCap },
-        ] as const).map(({ key, label, icon: Icon }) => {
-          const active = role === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setRole(key)}
-              className={cn(
-                'flex flex-col items-center gap-2 rounded-xl border p-4 text-sm transition-colors',
-                active ? 'border-primary bg-accent text-primary' : 'border-border hover:bg-accent'
-              )}
-              style={{ fontWeight: 500 }}
-            >
-              <Icon className="size-5" />
-              {label}
-            </button>
-          );
-        })}
+      {/* Role Selection Switcher */}
+      <div className="mb-5 grid grid-cols-2 gap-2 p-1 rounded-2xl bg-white/5 border border-white/10">
+        <button
+          type="button"
+          onClick={() => setRole('mentee')}
+          className={`py-2 text-xs font-medium rounded-xl transition-all ${
+            role === 'mentee' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          🎓 {T.roleMentee}
+        </button>
+        <button
+          type="button"
+          onClick={() => setRole('mentor')}
+          className={`py-2 text-xs font-medium rounded-xl transition-all ${
+            role === 'mentor' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          🌟 {T.roleMentor}
+        </button>
       </div>
 
       <div className="mb-5"><GoogleButton /></div>
 
-      <form className="space-y-4" onSubmit={submit}>
+      <div className="my-4 flex items-center gap-3 text-xs text-slate-500">
+        <span className="h-px flex-1 bg-white/10" /> {T.orRegisterWithEmail} <span className="h-px flex-1 bg-white/10" />
+      </div>
+
+      <form className="space-y-3.5" onSubmit={submit}>
         <div>
-          <Label htmlFor="name" className="mb-1.5 block">{T.fullName}</Label>
-          <Input id="name" placeholder="Your full name" className="bg-input-background"
-            value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          <Label htmlFor="name" className="mb-1 block text-xs text-slate-300">{T.fullName}</Label>
+          <Input
+            id="name" type="text" placeholder="Nguyễn Văn A"
+            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-10 text-sm"
+            value={name} onChange={(e) => setName(e.target.value)}
+          />
         </div>
         <div>
-          <Label htmlFor="remail" className="mb-1.5 block">{T.email}</Label>
-          <Input id="remail" type="email" placeholder="you@fpt.edu.vn" className="bg-input-background"
-            value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Label htmlFor="reg-email" className="mb-1 block text-xs text-slate-300">{T.email}</Label>
+          <Input
+            id="reg-email" type="email" placeholder="you@fpt.edu.vn"
+            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-10 text-sm"
+            value={email} onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
         <div>
-          <Label htmlFor="rpassword" className="mb-1.5 block">{T.password}</Label>
-          <Input id="rpassword" type="password" placeholder="Create a strong password" className="bg-input-background"
-            value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Label htmlFor="reg-password" className="mb-1 block text-xs text-slate-300">{T.password}</Label>
+          <Input
+            id="reg-password" type="password" placeholder="••••••••"
+            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-10 text-sm"
+            value={password} onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? <Loader2 className="size-4 animate-spin" /> : T.createAccount}
+
+        <Button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl h-11 mt-2" disabled={loading}>
+          {loading ? <Loader2 className="size-4 animate-spin" /> : T.signUp}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="mt-5 text-center text-xs text-slate-400">
         {T.alreadyHaveAccount}{' '}
-        <Link to="/login" className="text-primary" style={{ fontWeight: 500 }}>{T.logIn}</Link>
+        <Link to="/login" className="text-cyan-400 font-medium hover:underline">{T.logIn}</Link>
       </p>
     </AuthShell>
   );

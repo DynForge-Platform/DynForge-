@@ -100,7 +100,7 @@ function DisputeModal({ booking, onClose, onDisputed }: { booking: BookingRespon
     setLoading(true);
     try {
       await disputeBooking(booking.id, issueType, reason.trim());
-      toast.success('Dispute opened. GRADORA will review within 48 hours.');
+      toast.success('Dispute opened. DynForge will review within 48 hours.');
       onDisputed();
       onClose();
     } catch (err: any) {
@@ -135,7 +135,7 @@ function DisputeModal({ booking, onClose, onDisputed }: { booking: BookingRespon
             </div>
             <div className="flex items-start gap-2 rounded-xl bg-accent/60 p-3 text-sm text-muted-foreground">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
-              GRADORA reviews all disputes fairly. Our team will respond within 48 hours.
+              DynForge reviews all disputes fairly. Our team will respond within 48 hours.
             </div>
             <DialogFooter className="gap-2">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
@@ -259,7 +259,7 @@ function AskModal({ booking, onClose }: { booking: BookingResponse; onClose: () 
         <div className="max-h-[45vh] space-y-3 overflow-y-auto">
           {messages.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Hỏi lại bất kỳ điều gì về buổi học này. Trợ lý Gradora AI sẽ trả lời bám sát nội dung buổi học; nếu cần kèm sâu hơn sẽ gợi ý đặt thêm buổi.
+              Hỏi lại bất kỳ điều gì về buổi học này. Trợ lý DynForge AI sẽ trả lời bám sát nội dung buổi học; nếu cần kèm sâu hơn sẽ gợi ý đặt thêm buổi.
             </p>
           )}
           {messages.map((m, i) => (

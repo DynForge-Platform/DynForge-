@@ -1,4 +1,4 @@
-// Single source of truth for GRADORA mock data.
+// Single source of truth for DynForge mock data.
 // Currency is ALWAYS Vietnamese Dong (₫). Use formatCurrency everywhere.
 
 export function formatCurrency(amount: number): string {
@@ -39,7 +39,7 @@ export interface Mentor {
   languages: string[];
   level: 'Undergraduate' | 'Graduate' | 'Postgraduate';
   expertise: string[];
-  courses: { code: string; name: string }[];
+  courses: { code: string; name: string; ratePrivate?: number; rateGroup?: number }[];
   strengths: string[];
   nextAvailable: string;
 }
@@ -368,7 +368,7 @@ export const resources: Resource[] = [
     type: 'PDF Guide',
     title: 'Mastering Dynamic Programming: A Practical Guide',
     description: 'Step-by-step patterns and worked examples to solve DP problems with confidence.',
-    source: 'GRADORA Academy',
+    source: 'DynForge Academy',
     university: 'VNU University of Science',
     subject: 'Computer Science',
     level: 'Undergraduate',
@@ -612,12 +612,12 @@ export interface AuditLog {
 }
 
 export const auditLogs: AuditLog[] = [
-  { id: 'AUD-001', action: 'Mentor approved', actor: 'admin@gradora.vn', target: 'Linh Nguyen (m1)', timestamp: '2026-06-20T10:32:00', status: 'Success' },
-  { id: 'AUD-002', action: 'Dispute resolved', actor: 'admin@gradora.vn', target: 'DSP-003', timestamp: '2026-06-19T14:15:00', status: 'Success' },
+  { id: 'AUD-001', action: 'Mentor approved', actor: 'admin@dynforge.vn', target: 'Linh Nguyen (m1)', timestamp: '2026-06-20T10:32:00', status: 'Success' },
+  { id: 'AUD-002', action: 'Dispute resolved', actor: 'admin@dynforge.vn', target: 'DSP-003', timestamp: '2026-06-19T14:15:00', status: 'Success' },
   { id: 'AUD-003', action: 'Payout processed', actor: 'system', target: 'TXN-10240', timestamp: '2026-06-18T09:00:00', status: 'Success' },
-  { id: 'AUD-004', action: 'User suspended', actor: 'admin@gradora.vn', target: 'Anh Bui (m6)', timestamp: '2026-06-17T16:44:00', status: 'Warning' },
+  { id: 'AUD-004', action: 'User suspended', actor: 'admin@dynforge.vn', target: 'Anh Bui (m6)', timestamp: '2026-06-17T16:44:00', status: 'Warning' },
   { id: 'AUD-005', action: 'Payout failed', actor: 'system', target: 'TXN-10238', timestamp: '2026-06-16T11:20:00', status: 'Failed' },
-  { id: 'AUD-006', action: 'Commission rate updated', actor: 'admin@gradora.vn', target: 'Platform settings', timestamp: '2026-06-15T08:05:00', status: 'Success' },
+  { id: 'AUD-006', action: 'Commission rate updated', actor: 'admin@dynforge.vn', target: 'Platform settings', timestamp: '2026-06-15T08:05:00', status: 'Success' },
 ];
 
 export interface AdminUser {
@@ -638,5 +638,5 @@ export const adminUsers: AdminUser[] = [
   { id: 'u5', name: 'Hoa Pham', email: 'hoa.pham@ftu.edu.vn', role: 'Mentor', university: 'Foreign Trade University', status: 'Active', joined: '2026-02-01' },
   { id: 'u6', name: 'Anh Bui', email: 'anh.bui@hust.edu.vn', role: 'Mentor', university: 'Hanoi University of Science & Technology', status: 'Suspended', joined: '2026-02-20' },
   { id: 'u7', name: 'Quynh Le', email: 'quynh@student.ftu.edu.vn', role: 'Student', university: 'Foreign Trade University', status: 'Active', joined: '2026-04-03' },
-  { id: 'u8', name: 'Admin GRADORA', email: 'admin@gradora.vn', role: 'Admin', university: '—', status: 'Active', joined: '2025-12-01' },
+  { id: 'u8', name: 'Admin DynForge', email: 'admin@dynforge.vn', role: 'Admin', university: '—', status: 'Active', joined: '2025-12-01' },
 ];

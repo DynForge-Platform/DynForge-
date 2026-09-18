@@ -51,7 +51,7 @@ export function MentorVouchers() {
   const [showCreate, setShowCreate] = useState(false);
   const [type, setType] = useState<VoucherType>('percentage');
   const [autoCode, setAutoCode] = useState(true);
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(() => `${myMentor.name.split(' ').pop()?.toUpperCase().slice(0, 4)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const activeCount = vouchers.filter((v) => v.status === 'Active').length;
@@ -115,7 +115,7 @@ export function MentorVouchers() {
             <p className="text-primary" style={{ fontWeight: 600 }}>How mentor vouchers work</p>
             <p className="text-muted-foreground">
               Vouchers you create apply only to sessions booked with you. Mentees enter the code at checkout to get a discount.
-              The discount is deducted from your session fee — not charged by GRADORA.
+              The discount is deducted from your session fee — not charged by DynForge.
             </p>
           </div>
         </div>

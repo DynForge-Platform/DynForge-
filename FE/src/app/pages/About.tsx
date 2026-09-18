@@ -1,14 +1,15 @@
 import { useNavigate } from 'react-router';
 import { useLanguage } from '../context/LanguageContext';
-import { TrendingUp, Users, Target, ShieldCheck } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { SectionHeading } from '../components/common';
+import { TrendingUp, Users, Target, ShieldCheck, ArrowRight } from 'lucide-react';
+import { EditorialPageHeader } from '../components/EditorialPageHeader';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { GsapTypewriter } from '../components/GsapTypewriter';
+import { MouseFollowLight } from '../components/MouseFollowLight';
+import { GsapCounter } from '../components/GsapCounter';
 
 export function About() {
   const navigate = useNavigate();
-  const { T } = useLanguage();
+  const { T, lang } = useLanguage();
 
   const values = [
     { icon: TrendingUp, title: T.valueMutualTitle, desc: T.valueMutualDesc },
@@ -18,78 +19,120 @@ export function About() {
   ];
 
   const stats = [
-    { value: T.stat1Value, label: T.stat1Label },
-    { value: T.stat2Value, label: T.stat2Label },
-    { value: T.stat3Value, label: T.stat3Label },
-    { value: T.stat4Value, label: T.stat4Label },
+    { target: 1200, suffix: '+', label: T.stat1Label },
+    { target: 18500, suffix: '+', label: T.stat2Label },
+    { target: 40, suffix: '+', label: T.stat3Label },
+    { target: 4.9, suffix: '/5', decimals: 1, label: T.stat4Label },
   ];
-  return (
-    <div>
-      <section className="bg-gradient-to-b from-pale-blue to-background">
-        <div className="mx-auto max-w-[900px] px-5 py-20 text-center">
-          <h1 className="text-navy" style={{ fontSize: 'clamp(2.25rem, 4.5vw, 3.5rem)', fontWeight: 800, lineHeight: 1.1 }}>
-            {T.aboutHero}
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-muted-foreground" style={{ fontSize: '1.125rem' }}>
-            {T.aboutHeroSub}
-          </p>
-          <Button size="lg" className="mt-7" onClick={() => navigate('/mentors')}>{T.meetMentors}</Button>
-        </div>
-      </section>
 
-      <section className="mx-auto max-w-[1240px] px-5 py-16">
-        <div className="overflow-hidden rounded-3xl">
+  return (
+    <div className="relative z-10 pb-24 text-slate-100">
+      {/* ── High-Performance Interactive Mouse-Following Light Effect ── */}
+      <MouseFollowLight />
+
+      {/* Editorial Header */}
+      <EditorialPageHeader
+        eyebrow={lang === 'vi' ? 'VỀ CHÚNG TÔI' : 'ABOUT DYNFORGE'}
+        title={
+          lang === 'vi' ? (
+            <GsapTypewriter
+              key="about-vi"
+              prefix="Đồng hành giúp sinh viên "
+              highlight="vượt trội."
+              duration={2}
+            />
+          ) : (
+            <GsapTypewriter
+              key="about-en"
+              prefix="Helping students "
+              highlight="move forward."
+              duration={2}
+            />
+          )
+        }
+        subtitle={T.aboutHeroSub}
+      >
+        <button
+          onClick={() => navigate('/mentors')}
+          className="rounded-full border border-white/30 bg-white/5 backdrop-blur-md px-8 py-3.5 text-sm font-semibold text-white hover:bg-white/15 hover:border-white/50 transition-all cursor-pointer shadow-lg hover:scale-[1.02] inline-flex items-center gap-2"
+        >
+          <span>{T.meetMentors}</span>
+          <ArrowRight className="size-4 text-cyan-400" />
+        </button>
+      </EditorialPageHeader>
+
+      <div className="max-w-6xl mx-auto px-6 space-y-16">
+        {/* Banner Image */}
+        <section className="overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
           <ImageWithFallback
             src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1400&q=80"
             alt="Academic mentorship session"
-            className="h-72 w-full object-cover sm:h-96"
+            className="h-72 w-full object-cover sm:h-[450px]"
           />
-        </div>
-      </section>
+        </section>
 
-      <section className="mx-auto max-w-[1240px] px-5 pb-16">
-        <div className="grid gap-10 lg:grid-cols-2">
-          <Card className="border-border p-8">
-            <h2 className="mb-3" style={{ fontSize: '1.5rem', fontWeight: 700 }}>{T.ourMission}</h2>
-            <p className="text-muted-foreground">{T.missionText}</p>
-          </Card>
-          <Card className="border-border p-8">
-            <h2 className="mb-3" style={{ fontSize: '1.5rem', fontWeight: 700 }}>{T.whyGradora}</h2>
-            <p className="text-muted-foreground">{T.whyGradoraText}</p>
-          </Card>
-        </div>
-      </section>
+        {/* Mission & Vision */}
+        <section className="grid gap-8 sm:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 shadow-xl">
+            <h2 className="mb-4 text-3xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              {T.ourMission}
+            </h2>
+            <p className="text-white/70 leading-relaxed text-sm font-normal">{T.missionText}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 shadow-xl">
+            <h2 className="mb-4 text-3xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              {lang === 'vi' ? 'Vì sao chọn DynForge' : 'Why DynForge'}
+            </h2>
+            <p className="text-white/70 leading-relaxed text-sm font-normal">{T.whyDynForgeText}</p>
+          </div>
+        </section>
 
-      <section className="bg-pale-blue/50">
-        <div className="mx-auto max-w-[1240px] px-5 py-20">
-          <SectionHeading center eyebrow={T.whatWeStandFor} title={T.communityValuesTitle} />
+        {/* Values Section */}
+        <section className="space-y-8 pt-8 border-t border-white/10">
+          <div className="text-center space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
+              {T.whatWeStandFor}
+            </span>
+            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              {T.communityValuesTitle}
+            </h2>
+          </div>
+
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {values.map((v) => {
               const Icon = v.icon;
               return (
-                <Card key={v.title} className="border-border p-6 text-center">
-                  <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <div key={v.title} className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-6 text-center transition-all hover:border-cyan-500/40 shadow-xl">
+                  <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
                     <Icon className="size-6" />
-                  </span>
-                  <h3 style={{ fontWeight: 600 }}>{v.title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{v.desc}</p>
-                </Card>
+                  </div>
+                  <h3 className="font-semibold text-white text-base">{v.title}</h3>
+                  <p className="mt-2 text-xs text-white/60 leading-relaxed">{v.desc}</p>
+                </div>
               );
             })}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="mx-auto max-w-[1240px] px-5 py-20">
-        <div className="grid gap-6 rounded-3xl bg-navy px-8 py-12 text-center text-white sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((s) => (
-            <div key={s.label}>
-              <p style={{ fontSize: '2.25rem', fontWeight: 800 }} className="text-white">{s.value}</p>
-              <p className="text-white/70">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+        {/* Stats Band with GSAP Counter */}
+        <section className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 sm:p-12 shadow-xl">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+            {stats.map((s, idx) => (
+              <div key={idx} className="space-y-1">
+                <p className="text-3xl sm:text-5xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                  <GsapCounter
+                    targetValue={s.target}
+                    suffix={s.suffix}
+                    decimals={s.decimals}
+                    duration={2}
+                  />
+                </p>
+                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

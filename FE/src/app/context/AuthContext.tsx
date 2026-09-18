@@ -18,7 +18,12 @@ interface AuthCtx {
   login: (role: AuthRole) => void;
   loginWithCredentials: (email: string, password: string) => Promise<AuthUser>;
   loginWithGoogle: (idToken: string) => Promise<AuthUser>;
-  registerWithCredentials: (fullName: string, email: string, password: string, role: 'MENTEE' | 'MENTOR') => Promise<AuthUser>;
+  registerWithCredentials: (
+    fullNameOrPayload: string | { name?: string; fullName?: string; email: string; password: string; role: string; university?: string },
+    email?: string,
+    password?: string,
+    role?: 'MENTEE' | 'MENTOR' | 'mentee' | 'mentor'
+  ) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -39,14 +44,14 @@ const demoProfiles: Record<AuthRole, AuthUser> = {
   },
   admin: {
     role: 'admin',
-    name: 'Admin · GRADORA',
+    name: 'Admin · DynForge',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80',
     dashboardPath: '/admin/dashboard',
   },
 };
 
-const ROLE_KEY = 'gradora_role';
-const USER_KEY = 'gradora_user';
+const ROLE_KEY = 'dynforge_role';
+const USER_KEY = 'dynforge_user';
 
 function roleFromBackend(roles: string[]): AuthRole {
   if (roles.includes('ADMIN')) return 'admin';
@@ -73,23 +78,29 @@ function buildUserFromTokens(tokens: AuthTokens): AuthUser {
 }
 
 function storeTokens(tokens: AuthTokens) {
-  localStorage.setItem('gradora_access_token', tokens.accessToken);
-  localStorage.setItem('gradora_refresh_token', tokens.refreshToken);
+  localStorage.setItem('dynforge_access_token', tokens.accessToken);
+  localStorage.setItem('dynforge_refresh_token', tokens.refreshToken);
+  localStorage.removeItem('gradora_access_token');
+  localStorage.removeItem('gradora_refresh_token');
 }
 
 function clearTokens() {
+  localStorage.removeItem('dynforge_access_token');
+  localStorage.removeItem('dynforge_refresh_token');
   localStorage.removeItem('gradora_access_token');
   localStorage.removeItem('gradora_refresh_token');
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem('gradora_user');
   localStorage.removeItem(ROLE_KEY);
+  localStorage.removeItem('gradora_role');
 }
 
 function loadSavedUser(): AuthUser | null {
-  const saved = localStorage.getItem(USER_KEY);
+  const saved = localStorage.getItem(USER_KEY) || localStorage.getItem('gradora_user');
   if (saved) {
     try { return JSON.parse(saved) as AuthUser; } catch { /* ignore */ }
   }
-  const role = localStorage.getItem(ROLE_KEY) as AuthRole | null;
+  const role = (localStorage.getItem(ROLE_KEY) || localStorage.getItem('gradora_role')) as AuthRole | null;
   return role && demoProfiles[role] ? demoProfiles[role] : null;
 }
 
@@ -135,11 +146,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const registerWithCredentials = async (
-    fullName: string,
-    email: string,
-    password: string,
-    role: 'MENTEE' | 'MENTOR'
+    fullNameOrPayload: string | { name?: string; fullName?: string; email: string; password: string; role: string; university?: string },
+    emailArg?: string,
+    passwordArg?: string,
+    roleArg?: 'MENTEE' | 'MENTOR' | 'mentee' | 'mentor'
   ): Promise<AuthUser> => {
+    let fullName = '';
+    let email = '';
+    let password = '';
+    let role: 'MENTEE' | 'MENTOR' = 'MENTEE';
+
+    if (typeof fullNameOrPayload === 'object' && fullNameOrPayload !== null) {
+      fullName = (fullNameOrPayload.fullName || fullNameOrPayload.name || '').trim();
+      email = (fullNameOrPayload.email || '').trim();
+      password = fullNameOrPayload.password || '';
+      const r = (fullNameOrPayload.role || '').toUpperCase();
+      role = r === 'MENTOR' ? 'MENTOR' : 'MENTEE';
+    } else {
+      fullName = (fullNameOrPayload || '').trim();
+      email = (emailArg || '').trim();
+      password = passwordArg || '';
+      const r = (roleArg || '').toUpperCase();
+      role = r === 'MENTOR' ? 'MENTOR' : 'MENTEE';
+    }
+
     const tokens = await registerApi(fullName, email, password, role);
     storeTokens(tokens);
     const u = buildUserFromTokens(tokens);
@@ -150,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    const refreshToken = localStorage.getItem('gradora_refresh_token');
+    const refreshToken = localStorage.getItem('dynforge_refresh_token') || localStorage.getItem('gradora_refresh_token');
     if (refreshToken) {
       try { await logoutApi(refreshToken); } catch { /* ignore — still clear locally */ }
     }
