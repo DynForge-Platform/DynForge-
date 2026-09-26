@@ -69,3 +69,5 @@ logs/
 *.temp
 *.swp
 *~
+
+racetest/
