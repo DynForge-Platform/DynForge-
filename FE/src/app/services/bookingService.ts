@@ -31,6 +31,13 @@ export interface BookingResponse {
   taughtAt?: string;
   disputeIssueType?: string;
   disputeReason?: string;
+  disputeMentorResponse?: string;
+  disputeMentorEvidenceUrl?: string;
+  disputeRespondedAt?: string;
+  rescheduledFrom?: string;
+  pendingStartAt?: string;
+  rescheduleCount?: number;
+  roomId?: string;
 }
 
 export interface MentorEarningsResponse {
@@ -110,6 +117,32 @@ export async function cancelBooking(id: string): Promise<BookingResponse> {
   const { data } = await api.patch(`/api/bookings/${id}/cancel`);
   return data.data as BookingResponse;
 }
+
+export async function respondDispute(
+  id: string,
+  payload: { response: string; evidenceUrl?: string }
+): Promise<BookingResponse> {
+  const { data } = await api.patch(`/api/bookings/${id}/dispute/respond`, payload);
+  return data.data as BookingResponse;
+}
+
+export async function rescheduleBooking(
+  id: string,
+  newStartAt: string
+): Promise<BookingResponse> {
+  const { data } = await api.patch(`/api/bookings/${id}/reschedule`, { newStartAt });
+  return data.data as BookingResponse;
+}
+
+export async function respondRescheduleBooking(
+  id: string,
+  accept: boolean,
+  note?: string
+): Promise<BookingResponse> {
+  const { data } = await api.patch(`/api/bookings/${id}/reschedule/respond`, { accept, note });
+  return data.data as BookingResponse;
+}
+
 
 export function mapStatusToDisplay(status: BookingStatus): string {
   const map: Record<BookingStatus, string> = {

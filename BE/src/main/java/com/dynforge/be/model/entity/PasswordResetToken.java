@@ -32,6 +32,9 @@ public class PasswordResetToken {
     @Builder.Default
     private boolean verified = false;
 
+    @Builder.Default
+    private int failedAttempts = 0;
+
     private Instant expiresAt;
 
     private Instant createdAt;

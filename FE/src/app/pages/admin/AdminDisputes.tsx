@@ -141,9 +141,40 @@ export function AdminDisputes() {
                 <p style={{ fontWeight: 500 }}>{selected.issueType ?? '—'}</p>
               </div>
               <div className="rounded-xl border border-border p-3">
-                <p className="text-muted-foreground mb-1">Student's reason</p>
+                <p className="text-muted-foreground mb-1">Student's reason (Mentee)</p>
                 <p className="whitespace-pre-wrap">{selected.reason ?? 'No reason provided.'}</p>
               </div>
+
+              {selected.mentorResponse ? (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-primary">Mentor's Counter-Response</p>
+                    {selected.mentorRespondedAt && (
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(selected.mentorRespondedAt).toLocaleString('vi-VN')}
+                      </span>
+                    )}
+                  </div>
+                  <p className="whitespace-pre-wrap text-foreground">{selected.mentorResponse}</p>
+                  {selected.mentorEvidenceUrl && (
+                    <div className="pt-1">
+                      <a
+                        href={selected.mentorEvidenceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary underline hover:text-primary/80 inline-flex items-center gap-1"
+                      >
+                        Xem tài liệu / bằng chứng đính kèm ↗
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-500">
+                  Mentor chưa gửi phản hồi hoặc giải trình đối chất cho khiếu nại này.
+                </div>
+              )}
+
               <p className="rounded-xl bg-warning/10 p-3 text-warning">
                 Choose an outcome: refund the student, or release the escrow to the mentor.
               </p>

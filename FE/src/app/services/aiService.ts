@@ -10,6 +10,7 @@ export interface MentorMatchResult {
   advice: string;
   matches: MentorMatchItem[];
   suggestedQuestions?: string[];
+  isDemo?: boolean;
 }
 
 /** AI recommends the best-fit mentors for a mentee's free-text need. */
@@ -21,6 +22,7 @@ export async function mentorMatch(query: string): Promise<MentorMatchResult> {
 export interface SessionAskResult {
   answer: string;
   suggestedQuestions?: string[];
+  isDemo?: boolean;
 }
 
 /** AI answers a mentee's follow-up question grounded in a specific session. */

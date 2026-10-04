@@ -5,10 +5,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.text.NumberFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
 /**
- * Sends transactional email via SMTP (Gmail App Password by default). When spring.mail.username
+ * Sends transactional email via SMTP (Brevo / Gmail App Password). When spring.mail.username
  * is left blank the service falls back to logging the content — same dev behaviour as before,
  * so the app keeps working without a mail account.
  */
@@ -20,15 +29,18 @@ public class MailService {
     private final String username;
     private final String fromEmail;
     private final String senderName;
+    private final String frontendBaseUrl;
 
     public MailService(JavaMailSender mailSender,
                        @Value("${spring.mail.username:}") String username,
                        @Value("${app.mail.from:}") String fromEmail,
-                       @Value("${app.mail.sender-name:DynForge Support}") String senderName) {
+                       @Value("${app.mail.sender-name:DynForge Support}") String senderName,
+                       @Value("${app.frontend.base-url:http://localhost:5173}") String frontendBaseUrl) {
         this.mailSender = mailSender;
         this.username = username;
         this.fromEmail = fromEmail;
         this.senderName = senderName;
+        this.frontendBaseUrl = frontendBaseUrl;
     }
 
     public boolean isConfigured() {
@@ -67,8 +79,848 @@ public class MailService {
             mailSender.send(message);
             log.info("OTP email sent to {} from {}", to, sender);
         } catch (Exception e) {
-            // Don't fail the request (and don't leak which emails exist) — log for ops instead.
             log.error("Failed to send OTP email to {}: {}", to, e.getMessage());
         }
     }
+
+    /**
+     * Sends an automated email to the mentee when booking and payment into escrow succeed.
+     * Contains full detailed time schedule (Vietnam Time - GMT+7), course info, mentor name,
+     * and classroom entry link.
+     */
+    @Async
+    public void sendBookingPaymentSuccessEmail(
+            String menteeEmail,
+            String menteeName,
+            String bookingId,
+            String roomId,
+            String courseCode,
+            String courseName,
+            String mentorName,
+            String formatStr,
+            Instant startAt,
+            int durationMin,
+            long price
+    ) {
+        if (menteeEmail == null || menteeEmail.isBlank()) {
+            log.warn("Cannot send booking confirmation: mentee email is empty for booking #{}", bookingId);
+            return;
+        }
+
+        // Format detailed time in Vietnam Zone (Asia/Ho_Chi_Minh - GMT+7)
+        ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZonedDateTime startVn = startAt.atZone(vnZone);
+        ZonedDateTime endVn = startAt.plus(Duration.ofMinutes(durationMin)).atZone(vnZone);
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, 'ngày' dd/MM/yyyy", Locale.forLanguageTag("vi-VN"));
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.forLanguageTag("vi-VN"));
+
+        String rawDate = startVn.format(dateFormatter);
+        String dateStr = rawDate;
+        if (rawDate != null && !rawDate.isEmpty()) {
+            dateStr = Character.toUpperCase(rawDate.charAt(0)) + rawDate.substring(1);
+        }
+        String timeRangeStr = startVn.format(timeFormatter) + " - " + endVn.format(timeFormatter) + " (Giờ Việt Nam - GMT+7)";
+
+        NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
+        String formattedPrice = currencyFormat.format(price);
+
+        String effectiveRoom = (roomId != null && !roomId.isBlank()) ? roomId : ("DynForge-" + bookingId);
+        String meetingUrl = "https://meet.jit.si/" + effectiveRoom;
+        String dashboardUrl = (frontendBaseUrl != null && !frontendBaseUrl.isBlank())
+                ? frontendBaseUrl + "/dashboard/sessions"
+                : "http://localhost:5173/dashboard/sessions";
+
+        String greetingName = (menteeName != null && !menteeName.isBlank()) ? menteeName : "Bạn";
+
+        if (!isConfigured()) {
+            log.info("[Booking Payment Email] (Mail not configured) Booking #{} confirmed for {}: Date={}, Time={}, Course={}, Mentor={}, Price={}",
+                    bookingId, menteeEmail, dateStr, timeRangeStr, courseName, mentorName, formattedPrice);
+            return;
+        }
+
+        String html = """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <meta name="color-scheme" content="light only">
+                  <meta name="supported-color-schemes" content="light only">
+                  <title>Xác nhận đặt lịch học DynForge</title>
+                  <style>
+                    :root {
+                      color-scheme: light only;
+                      supported-color-schemes: light only;
+                    }
+                    body, table, td, div, p, span, h1, h2 {
+                      -webkit-font-smoothing: antialiased;
+                    }
+                  </style>
+                </head>
+                <body style="margin:0;padding:0;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;width:100% !important;min-height:100vh;">
+                  
+                  <!-- Full-width outer wrapper with anti-inversion gradient -->
+                  <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#020b18" style="width:100%;margin:0;padding:0;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);table-layout:fixed;">
+                    <tr>
+                      <td align="center" bgcolor="#020b18" style="padding:0;margin:0;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);">
+                        
+                        <!-- Top Full-Bleed Brand Header -->
+                        <div style="width:100%;background:linear-gradient(180deg, #07152d 0%, #020b18 100%);border-bottom:2px solid #06b6d4;padding:40px 20px 32px;text-align:center;box-sizing:border-box;">
+                          <h1 style="color:#ffffff;margin:0 0 6px;font-size:28px;font-weight:900;letter-spacing:1px;text-transform:uppercase;">
+                            Dyn<span style="color:#06b6d4;">Forge</span>
+                          </h1>
+                          <p style="color:#67e8f9;margin:0;font-size:12px;text-transform:uppercase;letter-spacing:2px;font-weight:700;">
+                            Peer-to-Peer Academic Mentorship Platform
+                          </p>
+                        </div>
+
+                        <!-- Main Content Container (Spacious Full-Page feel, max-width: 880px) with anti-inversion background -->
+                        <div style="width:100%;max-width:880px;margin:0 auto;padding:40px 24px;text-align:left;box-sizing:border-box;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);">
+                          
+                          <!-- Salutation & Status Badge -->
+                          <div style="text-align:center;margin-bottom:36px;">
+                            <div style="display:inline-block;background-color:#083344;background-image:linear-gradient(180deg, #083344 0%, #083344 100%);color:#38bdf8;padding:8px 20px;border-radius:999px;font-size:13px;font-weight:700;border:1px solid #0284c7;letter-spacing:0.5px;margin-bottom:16px;">
+                              ✓ ĐẶT LỊCH & THANH TOÁN KÝ QUỸ THÀNH CÔNG
+                            </div>
+                            <h2 style="color:#ffffff;margin:0 0 10px;font-size:26px;font-weight:800;letter-spacing:-0.5px;">
+                              Thông Báo Xác Nhận Lịch Học
+                            </h2>
+                            <p style="color:#94a3b8;margin:0 auto;font-size:15px;line-height:1.6;max-width:640px;">
+                              Xin chào <strong style="color:#ffffff;">{{GREETING_NAME}}</strong>, lịch học của bạn đã được xác nhận thành công trên hệ thống DynForge. Khoản học phí đã được đưa vào Quỹ Ký Quỹ Escrow an toàn.
+                            </p>
+                          </div>
+
+                          <!-- 1. Highlight Spotlight: Detailed Session Time -->
+                          <div style="background-color:#081b38;background-image:linear-gradient(180deg, #081b38 0%, #081b38 100%);background:linear-gradient(180deg, #081b38 0%, #081b38 100%);border:2px solid #06b6d4;border-radius:20px;padding:32px;margin-bottom:30px;box-shadow:0 0 35px rgba(6,182,212,0.25);">
+                            <div style="font-size:12px;font-weight:800;color:#38bdf8;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">
+                              ⏰ THỜI GIAN HỌC CHI TIẾT (GIỜ VIỆT NAM - GMT+7)
+                            </div>
+                            
+                            <table style="width:100%;border-collapse:collapse;">
+                              <tr>
+                                <td style="padding:10px 0;width:30%;color:#94a3b8;font-size:15px;font-weight:600;vertical-align:middle;">
+                                  📅 Ngày học:
+                                </td>
+                                <td style="padding:10px 0;color:#ffffff;font-size:18px;font-weight:800;vertical-align:middle;">
+                                  {{DATE_STR}}
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;font-size:15px;font-weight:600;vertical-align:middle;">
+                                  🕐 Giờ học:
+                                </td>
+                                <td style="padding:10px 0;vertical-align:middle;">
+                                  <span style="display:inline-block;background-color:#083344;background-image:linear-gradient(180deg, #083344 0%, #083344 100%);color:#38bdf8;border:1px solid #0284c7;padding:8px 18px;border-radius:10px;font-size:18px;font-weight:800;letter-spacing:0.5px;">
+                                    {{TIME_RANGE_STR}}
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;font-size:15px;font-weight:600;vertical-align:middle;">
+                                  ⏳ Thời lượng:
+                                </td>
+                                <td style="padding:10px 0;color:#f8fafc;font-size:16px;font-weight:700;vertical-align:middle;">
+                                  {{DURATION_MIN}} phút ({{FORMAT_STR}})
+                                </td>
+                              </tr>
+                            </table>
+                          </div>
+
+                          <!-- 2. Session Info Table -->
+                          <div style="background-color:#0b152d;background-image:linear-gradient(180deg, #0b152d 0%, #0b152d 100%);background:linear-gradient(180deg, #0b152d 0%, #0b152d 100%);border:1px solid #1e293b;border-radius:20px;padding:28px 32px;margin-bottom:30px;">
+                            <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">
+                              📋 THÔNG TIN BUỔI HỌC & GIẢNG VIÊN
+                            </div>
+                            
+                            <table style="width:100%;border-collapse:collapse;font-size:15px;">
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;width:35%;border-bottom:1px solid #1e293b;">Môn học:</td>
+                                <td style="padding:10px 0;color:#ffffff;font-weight:700;border-bottom:1px solid #1e293b;">{{COURSE_NAME}}</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;border-bottom:1px solid #1e293b;">Mentor phụ trách:</td>
+                                <td style="padding:10px 0;color:#ffffff;font-weight:700;border-bottom:1px solid #1e293b;">{{MENTOR_NAME}}</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;border-bottom:1px solid #1e293b;">Hình thức học:</td>
+                                <td style="padding:10px 0;color:#ffffff;font-weight:600;border-bottom:1px solid #1e293b;">{{FORMAT_STR}}</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;border-bottom:1px solid #1e293b;">Học phí ký quỹ:</td>
+                                <td style="padding:10px 0;color:#10b981;font-weight:800;font-size:18px;border-bottom:1px solid #1e293b;">{{FORMATTED_PRICE}} VNĐ</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;">Mã lịch hẹn:</td>
+                                <td style="padding:10px 0;color:#38bdf8;font-family:monospace;font-size:14px;font-weight:700;">#{{BOOKING_ID}}</td>
+                              </tr>
+                            </table>
+                          </div>
+
+                          <!-- 3. Primary CTA Button -->
+                          <div style="text-align:center;margin:40px 0 36px;">
+                            <a href="{{MEETING_URL}}" target="_blank" style="display:inline-block;background:linear-gradient(135deg, #06b6d4 0%, #2563eb 100%);color:#ffffff;font-size:18px;font-weight:800;text-decoration:none;padding:18px 48px;border-radius:14px;box-shadow:0 6px 25px rgba(6,182,212,0.45);letter-spacing:0.5px;">
+                              🚀 VÀO PHÒNG HỌC TRỰC TUYẾN
+                            </a>
+                            <div style="margin-top:16px;">
+                              <a href="{{DASHBOARD_URL}}" target="_blank" style="color:#38bdf8;font-size:14px;font-weight:600;text-decoration:underline;">
+                                Truy cập Bảng điều khiển sinh viên DynForge →
+                              </a>
+                            </div>
+                          </div>
+
+                          <!-- 4. Escrow Protection Guarantee -->
+                          <div style="background-color:#15180c;background-image:linear-gradient(180deg, #15180c 0%, #15180c 100%);background:linear-gradient(180deg, #15180c 0%, #15180c 100%);border-left:4px solid #f59e0b;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+                            <strong style="color:#fbbf24;font-size:14px;display:block;margin-bottom:6px;">
+                              🛡️ Cam kết an toàn từ DynForge (Escrow Protection):
+                            </strong>
+                            <p style="margin:0;color:#fef3c7;font-size:13px;line-height:1.6;">
+                              Học phí của bạn hiện đang được giữ an toàn trong Quỹ Ký Quỹ. Mentor chỉ nhận được tiền khi bạn xác nhận buổi học đã diễn ra thành công. Bạn hoàn toàn có quyền mở khiếu nại (Dispute) nếu Mentor vắng mặt hoặc không đáp ứng cam kết.
+                            </p>
+                          </div>
+
+                          <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0;text-align:center;">
+                            * Vui lòng có mặt trong phòng học trước giờ bắt đầu 5 phút để kiểm tra camera, micro và đường truyền internet.
+                          </p>
+
+                        </div>
+
+                        <!-- Full-Bleed Footer -->
+                        <div style="width:100%;background-color:#010712;background-image:linear-gradient(180deg, #010712 0%, #010712 100%);background:linear-gradient(180deg, #010712 0%, #010712 100%);border-top:1px solid #1e293b;padding:36px 20px;text-align:center;box-sizing:border-box;">
+                          <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#94a3b8;">
+                            DynForge Platform — Build People. Forge Futures.
+                          </p>
+                          <p style="margin:0 0 8px;font-size:12px;color:#64748b;">
+                            Email tự động gửi từ hệ thống DynForge đến hộp thư của bạn. Vui lòng không phản hồi trực tiếp vào địa chỉ này.
+                          </p>
+                          <p style="margin:0;font-size:12px;color:#475569;">
+                            © 2026 DynForge. Mọi quyền được bảo lưu.
+                          </p>
+                        </div>
+
+                      </td>
+                    </tr>
+                  </table>
+
+                </body>
+                </html>
+                """
+                .replace("{{GREETING_NAME}}", greetingName)
+                .replace("{{DATE_STR}}", dateStr)
+                .replace("{{TIME_RANGE_STR}}", timeRangeStr)
+                .replace("{{DURATION_MIN}}", String.valueOf(durationMin))
+                .replace("{{COURSE_NAME}}", courseName)
+                .replace("{{MENTOR_NAME}}", mentorName)
+                .replace("{{FORMAT_STR}}", formatStr)
+                .replace("{{FORMATTED_PRICE}}", formattedPrice)
+                .replace("{{BOOKING_ID}}", bookingId)
+                .replace("{{MEETING_URL}}", meetingUrl)
+                .replace("{{DASHBOARD_URL}}", dashboardUrl);
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            String sender = (fromEmail != null && !fromEmail.isBlank()) ? fromEmail : username;
+            helper.setFrom(sender, senderName);
+            helper.setTo(menteeEmail);
+            helper.setSubject("[DynForge] Xác nhận đặt lịch & thanh toán thành công - Môn " + courseCode);
+            helper.setText(html, true);
+            mailSender.send(message);
+            log.info("Booking payment confirmation email sent successfully to {} for booking #{}", menteeEmail, bookingId);
+        } catch (Exception e) {
+            log.error("Failed to send booking payment confirmation email to {}: {}", menteeEmail, e.getMessage());
+        }
+    }
+
+    @Async
+    public void sendBookingPaymentSuccessEmail(
+            String menteeEmail,
+            String menteeName,
+            String bookingId,
+            String courseCode,
+            String courseName,
+            String mentorName,
+            String formatStr,
+            Instant startAt,
+            int durationMin,
+            long price
+    ) {
+        sendBookingPaymentSuccessEmail(menteeEmail, menteeName, bookingId, null, courseCode, courseName, mentorName, formatStr, startAt, durationMin, price);
+    }
+
+    /**
+     * Gửi email thông báo cho Mentor khi có Mentee đặt lịch học và thanh toán ký quỹ thành công.
+     * Chạy bất đồng bộ (@Async) song song với email của Mentee.
+     */
+    @Async
+    public void sendMentorNewBookingEmail(
+            String mentorEmail,
+            String mentorName,
+            String menteeName,
+            String menteeEmail,
+            String bookingId,
+            String roomId,
+            String courseCode,
+            String courseName,
+            String formatStr,
+            Instant startAt,
+            int durationMin,
+            long earningsAmount
+    ) {
+        if (mentorEmail == null || mentorEmail.isBlank()) {
+            log.warn("Cannot send mentor booking notification: mentor email is empty for booking #{}", bookingId);
+            return;
+        }
+
+        // Format detailed time in Vietnam Zone (Asia/Ho_Chi_Minh - GMT+7)
+        ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZonedDateTime startVn = startAt.atZone(vnZone);
+        ZonedDateTime endVn = startAt.plus(Duration.ofMinutes(durationMin)).atZone(vnZone);
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, 'ngày' dd/MM/yyyy", Locale.forLanguageTag("vi-VN"));
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.forLanguageTag("vi-VN"));
+
+        String rawDate = startVn.format(dateFormatter);
+        String dateStr = rawDate;
+        if (rawDate != null && !rawDate.isEmpty()) {
+            dateStr = Character.toUpperCase(rawDate.charAt(0)) + rawDate.substring(1);
+        }
+        String timeRangeStr = startVn.format(timeFormatter) + " - " + endVn.format(timeFormatter) + " (Giờ Việt Nam - GMT+7)";
+
+        NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
+        String formattedPrice = currencyFormat.format(earningsAmount);
+
+        String effectiveRoom = (roomId != null && !roomId.isBlank()) ? roomId : ("DynForge-" + bookingId);
+        String meetingUrl = "https://meet.jit.si/" + effectiveRoom;
+        String dashboardUrl = (frontendBaseUrl != null && !frontendBaseUrl.isBlank())
+                ? frontendBaseUrl + "/mentor/dashboard"
+                : "http://localhost:5173/mentor/dashboard";
+
+        String greetingMentor = (mentorName != null && !mentorName.isBlank()) ? mentorName : "Giảng viên";
+        String studentName = (menteeName != null && !menteeName.isBlank()) ? menteeName : "Học viên";
+        String studentMailDisplay = (menteeEmail != null && !menteeEmail.isBlank()) ? menteeEmail : "Đã bảo mật qua hệ thống";
+
+        if (!isConfigured()) {
+            log.info("[Mentor Booking Email] (Mail not configured) Booking #{} notification for mentor {}: Mentee={}, Date={}, Time={}, Course={}, Price={}",
+                    bookingId, mentorEmail, studentName, dateStr, timeRangeStr, courseName, formattedPrice);
+            return;
+        }
+
+        String html = """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <meta name="color-scheme" content="light only">
+                  <meta name="supported-color-schemes" content="light only">
+                  <title>Thông báo lịch dạy mới - DynForge</title>
+                  <style>
+                    :root {
+                      color-scheme: light only;
+                      supported-color-schemes: light only;
+                    }
+                    body, table, td, div, p, span, h1, h2 {
+                      -webkit-font-smoothing: antialiased;
+                    }
+                  </style>
+                </head>
+                <body style="margin:0;padding:0;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;width:100% !important;min-height:100vh;">
+                  
+                  <!-- Full-width outer wrapper with anti-inversion gradient -->
+                  <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#020b18" style="width:100%;margin:0;padding:0;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);table-layout:fixed;">
+                    <tr>
+                      <td align="center" bgcolor="#020b18" style="padding:0;margin:0;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);">
+                        
+                        <!-- Top Full-Bleed Brand Header -->
+                        <div style="width:100%;background:linear-gradient(180deg, #07152d 0%, #020b18 100%);border-bottom:2px solid #10b981;padding:40px 20px 32px;text-align:center;box-sizing:border-box;">
+                          <h1 style="color:#ffffff;margin:0 0 6px;font-size:28px;font-weight:900;letter-spacing:1px;text-transform:uppercase;">
+                            Dyn<span style="color:#10b981;">Forge</span>
+                          </h1>
+                          <p style="color:#6ee7b7;margin:0;font-size:12px;text-transform:uppercase;letter-spacing:2px;font-weight:700;">
+                            Cổng Quản Lý Giảng Viên & Cố Vấn Học Thuật
+                          </p>
+                        </div>
+
+                        <!-- Main Content Container (880px Spacious Cockpit View) with anti-inversion background -->
+                        <div style="width:100%;max-width:880px;margin:0 auto;padding:40px 24px;text-align:left;box-sizing:border-box;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);">
+                          
+                          <!-- Salutation & Status Badge -->
+                          <div style="text-align:center;margin-bottom:36px;">
+                            <div style="display:inline-block;background-color:#064e3b;background-image:linear-gradient(180deg, #064e3b 0%, #064e3b 100%);color:#6ee7b7;padding:8px 22px;border-radius:999px;font-size:13px;font-weight:700;border:1px solid #059669;letter-spacing:0.5px;margin-bottom:16px;">
+                              ✨ BẠN CÓ LỊCH DẠY MỚI · HỌC PHÍ ĐÃ KÝ QUỸ
+                            </div>
+                            <h2 style="color:#ffffff;margin:0 0 10px;font-size:26px;font-weight:800;letter-spacing:-0.5px;">
+                              Thông Báo Đặt Lịch Dạy Học Viên
+                            </h2>
+                            <p style="color:#94a3b8;margin:0 auto;font-size:15px;line-height:1.6;max-width:640px;">
+                              Xin chào <strong style="color:#ffffff;">{{MENTOR_NAME}}</strong>, học viên <strong style="color:#38bdf8;">{{MENTEE_NAME}}</strong> vừa hoàn tất thanh toán và đặt lịch học với bạn. Học phí đã được lưu ký an toàn trong Quỹ Ký Quỹ Escrow.
+                            </p>
+                          </div>
+
+                          <!-- 1. Highlight Spotlight: Detailed Session Time -->
+                          <div style="background-color:#081b38;background-image:linear-gradient(180deg, #081b38 0%, #081b38 100%);background:linear-gradient(180deg, #081b38 0%, #081b38 100%);border:2px solid #10b981;border-radius:20px;padding:32px;margin-bottom:30px;box-shadow:0 0 35px rgba(16,185,129,0.2);">
+                            <div style="font-size:12px;font-weight:800;color:#6ee7b7;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">
+                              ⏰ THỜI GIAN BUỔI DẠY CHI TIẾT (GIỜ VIỆT NAM - GMT+7)
+                            </div>
+                            
+                            <table style="width:100%;border-collapse:collapse;">
+                              <tr>
+                                <td style="padding:10px 0;width:30%;color:#94a3b8;font-size:15px;font-weight:600;vertical-align:middle;">
+                                  📅 Ngày dạy:
+                                </td>
+                                <td style="padding:10px 0;color:#ffffff;font-size:18px;font-weight:800;vertical-align:middle;">
+                                  {{DATE_STR}}
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;font-size:15px;font-weight:600;vertical-align:middle;">
+                                  🕐 Khung giờ:
+                                </td>
+                                <td style="padding:10px 0;vertical-align:middle;">
+                                  <span style="display:inline-block;background-color:#064e3b;background-image:linear-gradient(180deg, #064e3b 0%, #064e3b 100%);color:#6ee7b7;border:1px solid #059669;padding:8px 18px;border-radius:10px;font-size:18px;font-weight:800;letter-spacing:0.5px;">
+                                    {{TIME_RANGE_STR}}
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;font-size:15px;font-weight:600;vertical-align:middle;">
+                                  ⏳ Thời lượng:
+                                </td>
+                                <td style="padding:10px 0;color:#f8fafc;font-size:16px;font-weight:700;vertical-align:middle;">
+                                  {{DURATION_MIN}} phút ({{FORMAT_STR}})
+                                </td>
+                              </tr>
+                            </table>
+                          </div>
+
+                          <!-- 2. Mentee & Booking Info Table -->
+                          <div style="background-color:#0b152d;background-image:linear-gradient(180deg, #0b152d 0%, #0b152d 100%);background:linear-gradient(180deg, #0b152d 0%, #0b152d 100%);border:1px solid #1e293b;border-radius:20px;padding:28px 32px;margin-bottom:30px;">
+                            <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">
+                              📋 THÔNG TIN HỌC VIÊN & THÙ LAO KÝ QUỸ
+                            </div>
+                            
+                            <table style="width:100%;border-collapse:collapse;font-size:15px;">
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;width:35%;border-bottom:1px solid #1e293b;">Học viên:</td>
+                                <td style="padding:10px 0;color:#ffffff;font-weight:700;border-bottom:1px solid #1e293b;">{{MENTEE_NAME}}</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;border-bottom:1px solid #1e293b;">Email học viên:</td>
+                                <td style="padding:10px 0;color:#38bdf8;font-weight:600;border-bottom:1px solid #1e293b;">{{MENTEE_EMAIL}}</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;border-bottom:1px solid #1e293b;">Môn học:</td>
+                                <td style="padding:10px 0;color:#ffffff;font-weight:700;border-bottom:1px solid #1e293b;">{{COURSE_NAME}}</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;border-bottom:1px solid #1e293b;">Hình thức:</td>
+                                <td style="padding:10px 0;color:#ffffff;font-weight:600;border-bottom:1px solid #1e293b;">{{FORMAT_STR}}</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;border-bottom:1px solid #1e293b;">Thù lao giảng dạy:</td>
+                                <td style="padding:10px 0;color:#10b981;font-weight:800;font-size:18px;border-bottom:1px solid #1e293b;">
+                                  {{FORMATTED_PRICE}} VNĐ 
+                                  <span style="font-size:12px;font-weight:600;color:#6ee7b7;margin-left:6px;">(Đã lưu ký trong quỹ Escrow)</span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;">Mã lịch hẹn:</td>
+                                <td style="padding:10px 0;color:#38bdf8;font-family:monospace;font-size:14px;font-weight:700;">#{{BOOKING_ID}}</td>
+                              </tr>
+                            </table>
+                          </div>
+
+                          <!-- 3. Primary CTA Button -->
+                          <div style="text-align:center;margin:40px 0 36px;">
+                            <a href="{{MEETING_URL}}" target="_blank" style="display:inline-block;background:linear-gradient(135deg, #10b981 0%, #0284c7 100%);color:#ffffff;font-size:18px;font-weight:800;text-decoration:none;padding:18px 48px;border-radius:14px;box-shadow:0 6px 25px rgba(16,185,129,0.4);letter-spacing:0.5px;">
+                              🚀 VÀO PHÒNG HỌC TRỰC TUYẾN
+                            </a>
+                            <div style="margin-top:16px;">
+                              <a href="{{DASHBOARD_URL}}" target="_blank" style="color:#6ee7b7;font-size:14px;font-weight:600;text-decoration:underline;">
+                                Quản lý lịch dạy tại Bảng điều khiển Giảng viên →
+                              </a>
+                            </div>
+                          </div>
+
+                          <!-- 4. Mentor Guidance & Escrow Payout Policy -->
+                          <div style="background-color:#06231c;background-image:linear-gradient(180deg, #06231c 0%, #06231c 100%);background:linear-gradient(180deg, #06231c 0%, #06231c 100%);border-left:4px solid #10b981;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+                            <strong style="color:#6ee7b7;font-size:14px;display:block;margin-bottom:6px;">
+                              📌 Hướng dẫn dành cho Mentor:
+                            </strong>
+                            <ul style="margin:0;padding-left:18px;color:#d1fae5;font-size:13px;line-height:1.7;">
+                              <li>Vui lòng vào phòng học trực tuyến trước giờ bắt đầu <strong>5 phút</strong> để kiểm tra âm thanh, camera và chuẩn bị giáo trình.</li>
+                              <li>Sau khi buổi học kết thúc, nhắc học viên bấm <strong>"Xác nhận hoàn thành"</strong> để thù lao được giải ngân tự động vào ví giảng viên của bạn ngay lập tức.</li>
+                              <li>Nếu có sự cố phát sinh hoặc học viên vắng mặt, vui lòng liên hệ Ban Trọng tài DynForge để được đối soát và bảo vệ quyền lợi.</li>
+                            </ul>
+                          </div>
+
+                          <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0;text-align:center;">
+                            * Email này là thông báo tự động từ hệ thống DynForge xác nhận lịch dạy chính thức của bạn.
+                          </p>
+
+                        </div>
+
+                        <!-- Full-Bleed Footer -->
+                        <div style="width:100%;background-color:#010712;background-image:linear-gradient(180deg, #010712 0%, #010712 100%);background:linear-gradient(180deg, #010712 0%, #010712 100%);border-top:1px solid #1e293b;padding:36px 20px;text-align:center;box-sizing:border-box;">
+                          <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#94a3b8;">
+                            DynForge Platform — Build People. Forge Futures.
+                          </p>
+                          <p style="margin:0 0 8px;font-size:12px;color:#64748b;">
+                            Cổng thông tin giảng viên và cố vấn học thuật DynForge. Vui lòng không trả lời thư này.
+                          </p>
+                          <p style="margin:0;font-size:12px;color:#475569;">
+                            © 2026 DynForge. Mọi quyền được bảo lưu.
+                          </p>
+                        </div>
+
+                      </td>
+                    </tr>
+                  </table>
+
+                </body>
+                </html>
+                """
+                .replace("{{MENTOR_NAME}}", greetingMentor)
+                .replace("{{MENTEE_NAME}}", studentName)
+                .replace("{{MENTEE_EMAIL}}", studentMailDisplay)
+                .replace("{{DATE_STR}}", dateStr)
+                .replace("{{TIME_RANGE_STR}}", timeRangeStr)
+                .replace("{{DURATION_MIN}}", String.valueOf(durationMin))
+                .replace("{{COURSE_NAME}}", courseName)
+                .replace("{{FORMAT_STR}}", formatStr)
+                .replace("{{FORMATTED_PRICE}}", formattedPrice)
+                .replace("{{BOOKING_ID}}", bookingId)
+                .replace("{{MEETING_URL}}", meetingUrl)
+                .replace("{{DASHBOARD_URL}}", dashboardUrl);
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            String sender = (fromEmail != null && !fromEmail.isBlank()) ? fromEmail : username;
+            helper.setFrom(sender, senderName);
+            helper.setTo(mentorEmail);
+            helper.setSubject("[DynForge] Bạn có lịch dạy mới từ học viên " + studentName + " - Môn " + courseCode);
+            helper.setText(html, true);
+            mailSender.send(message);
+            log.info("Mentor booking notification email sent successfully to {} for booking #{}", mentorEmail, bookingId);
+        } catch (Exception e) {
+            log.error("Failed to send mentor booking notification email to {}: {}", mentorEmail, e.getMessage());
+        }
+    }
+
+    @Async
+    public void sendMentorNewBookingEmail(
+            String mentorEmail,
+            String mentorName,
+            String menteeName,
+            String menteeEmail,
+            String bookingId,
+            String courseCode,
+            String courseName,
+            String formatStr,
+            Instant startAt,
+            int durationMin,
+            long earningsAmount
+    ) {
+        sendMentorNewBookingEmail(mentorEmail, mentorName, menteeName, menteeEmail, bookingId, null, courseCode, courseName, formatStr, startAt, durationMin, earningsAmount);
+    }
+
+    private String formatVnDateTimeRange(Instant startAt, int durationMin) {
+        ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZonedDateTime startVn = startAt.atZone(vnZone);
+        ZonedDateTime endVn = startAt.plus(Duration.ofMinutes(durationMin)).atZone(vnZone);
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, 'ngày' dd/MM/yyyy", Locale.forLanguageTag("vi-VN"));
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.forLanguageTag("vi-VN"));
+        String dateStr = startVn.format(dateFormatter);
+        if (!dateStr.isEmpty()) {
+            dateStr = Character.toUpperCase(dateStr.charAt(0)) + dateStr.substring(1);
+        }
+        return dateStr + " | " + startVn.format(timeFormatter) + " - " + endVn.format(timeFormatter) + " (GMT+7)";
+    }
+
+    @Async
+    public void sendRescheduleNotificationToMentor(
+            String mentorEmail,
+            String mentorName,
+            String menteeName,
+            String bookingId,
+            String roomId,
+            String courseCode,
+            Instant oldStartAt,
+            Instant newStartAt,
+            int durationMin
+    ) {
+        if (mentorEmail == null || mentorEmail.isBlank()) return;
+
+        String oldTimeStr = formatVnDateTimeRange(oldStartAt, durationMin);
+        String newTimeStr = formatVnDateTimeRange(newStartAt, durationMin);
+        String effectiveRoom = (roomId != null && !roomId.isBlank()) ? roomId : ("DynForge-" + bookingId);
+        String meetingUrl = "https://meet.jit.si/" + effectiveRoom;
+
+        if (!isConfigured()) {
+            log.info("[Reschedule Notice] (Mail not configured) Booking #{} rescheduled by {}. Old: {}, New: {}",
+                    bookingId, menteeName, oldTimeStr, newTimeStr);
+            return;
+        }
+
+        String html = """
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #1e293b;border-radius:12px;background:#020b18;color:#f8fafc">
+                  <h2 style="color:#06b6d4;margin:0 0 12px">DynForge - Thông Báo Cập Nhật Lịch Học</h2>
+                  <p>Xin chào <b>%s</b>,</p>
+                  <p>Học viên <b>%s</b> đã đổi lịch buổi học môn <b>%s</b> (Booking #%s).</p>
+                  <div style="background:#081b38;border:1px solid #06b6d4;border-radius:8px;padding:16px;margin:16px 0">
+                    <p style="margin:4px 0;color:#94a3b8">Lịch học cũ: <span style="text-decoration:line-through;color:#ef4444">%s</span></p>
+                    <p style="margin:4px 0;color:#38bdf8;font-size:16px;font-weight:700">Lịch học mới: %s</p>
+                    <p style="margin:4px 0;color:#cbd5e1">Thời lượng: %d phút</p>
+                  </div>
+                  <p>Phòng học trực tuyến: <a href="%s" style="color:#06b6d4;font-weight:700">%s</a></p>
+                  <p style="color:#64748b;font-size:12px;margin-top:24px">DynForge - Peer-to-Peer Academic Mentorship Platform</p>
+                </div>
+                """.formatted(
+                mentorName != null ? mentorName : "Mentor",
+                menteeName != null ? menteeName : "Học viên",
+                courseCode, bookingId,
+                oldTimeStr, newTimeStr, durationMin, meetingUrl, meetingUrl
+        );
+
+        sendEmailDirect(mentorEmail, "[DynForge] Học viên đã đổi lịch buổi học môn " + courseCode, html);
+    }
+
+    @Async
+    public void sendRescheduleNotificationToMentor(
+            String mentorEmail,
+            String mentorName,
+            String menteeName,
+            String bookingId,
+            String courseCode,
+            Instant oldStartAt,
+            Instant newStartAt,
+            int durationMin
+    ) {
+        sendRescheduleNotificationToMentor(mentorEmail, mentorName, menteeName, bookingId, null, courseCode, oldStartAt, newStartAt, durationMin);
+    }
+
+    @Async
+    public void sendRescheduleRequestToMentor(
+            String mentorEmail,
+            String mentorName,
+            String menteeName,
+            String bookingId,
+            String courseCode,
+            Instant oldStartAt,
+            Instant pendingStartAt,
+            int durationMin
+    ) {
+        if (mentorEmail == null || mentorEmail.isBlank()) return;
+
+        String oldTimeStr = formatVnDateTimeRange(oldStartAt, durationMin);
+        String pendingTimeStr = formatVnDateTimeRange(pendingStartAt, durationMin);
+        String sessionsUrl = (frontendBaseUrl != null ? frontendBaseUrl : "http://localhost:5173") + "/mentor/sessions";
+
+        if (!isConfigured()) {
+            log.info("[Reschedule Request] (Mail not configured) Booking #{} reschedule request from {}. Old: {}, Pending: {}",
+                    bookingId, menteeName, oldTimeStr, pendingTimeStr);
+            return;
+        }
+
+        String html = """
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #1e293b;border-radius:12px;background:#020b18;color:#f8fafc">
+                  <h2 style="color:#eab308;margin:0 0 12px">DynForge - Yêu Cầu Đổi Lịch Học Chờ Phê Duyệt</h2>
+                  <p>Xin chào <b>%s</b>,</p>
+                  <p>Học viên <b>%s</b> đã gửi yêu cầu đổi lịch buổi học môn <b>%s</b> (Booking #%s) trong khung thời gian 12h - 24h trước buổi học.</p>
+                  <div style="background:#081b38;border:1px solid #eab308;border-radius:8px;padding:16px;margin:16px 0">
+                    <p style="margin:4px 0;color:#94a3b8">Lịch học hiện tại: %s</p>
+                    <p style="margin:4px 0;color:#facc15;font-size:16px;font-weight:700">Khung giờ đề xuất mới: %s</p>
+                    <p style="margin:4px 0;color:#cbd5e1">Thời lượng: %d phút</p>
+                  </div>
+                  <p>Vui lòng đăng nhập vào trang quản lý lịch dạy để Đồng ý hoặc Từ chối yêu cầu đổi lịch này:</p>
+                  <p><a href="%s" style="display:inline-block;background:#eab308;color:#000;font-weight:700;padding:10px 20px;border-radius:6px;text-decoration:none">Xem & Phản Hồi Trên Hệ Thống</a></p>
+                  <p style="color:#64748b;font-size:12px;margin-top:24px">DynForge - Peer-to-Peer Academic Mentorship Platform</p>
+                </div>
+                """.formatted(
+                mentorName != null ? mentorName : "Mentor",
+                menteeName != null ? menteeName : "Học viên",
+                courseCode, bookingId,
+                oldTimeStr, pendingTimeStr, durationMin, sessionsUrl
+        );
+
+        sendEmailDirect(mentorEmail, "[DynForge] Yêu cầu đổi lịch học môn " + courseCode + " từ " + (menteeName != null ? menteeName : "học viên"), html);
+    }
+
+    @Async
+    public void sendRescheduleResponseToMentee(
+            String menteeEmail,
+            String menteeName,
+            String mentorName,
+            String bookingId,
+            String courseCode,
+            boolean accepted,
+            Instant originalStartAt,
+            Instant newStartAt,
+            int durationMin
+    ) {
+        if (menteeEmail == null || menteeEmail.isBlank()) return;
+
+        String formattedTimeStr = formatVnDateTimeRange(newStartAt, durationMin);
+        String dashboardUrl = (frontendBaseUrl != null ? frontendBaseUrl : "http://localhost:5173") + "/dashboard/sessions";
+
+        if (!isConfigured()) {
+            log.info("[Reschedule Response] (Mail not configured) Booking #{}: Mentor {} {} reschedule. Time: {}",
+                    bookingId, mentorName, accepted ? "ACCEPTED" : "DECLINED", formattedTimeStr);
+            return;
+        }
+
+        String html = accepted ? """
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #1e293b;border-radius:12px;background:#020b18;color:#f8fafc">
+                  <h2 style="color:#10b981;margin:0 0 12px">DynForge - Yêu Cầu Đổi Lịch Đã Được Chấp Nhận</h2>
+                  <p>Xin chào <b>%s</b>,</p>
+                  <p>Mentor <b>%s</b> đã chấp nhận yêu cầu đổi lịch buổi học môn <b>%s</b> (Booking #%s).</p>
+                  <div style="background:#081b38;border:1px solid #10b981;border-radius:8px;padding:16px;margin:16px 0">
+                    <p style="margin:4px 0;color:#34d399;font-size:16px;font-weight:700">Lịch học mới chính thức: %s</p>
+                    <p style="margin:4px 0;color:#cbd5e1">Thời lượng: %d phút</p>
+                  </div>
+                  <p><a href="%s" style="color:#38bdf8;font-weight:700">Xem chi tiết trên Dashboard</a></p>
+                  <p style="color:#64748b;font-size:12px;margin-top:24px">DynForge - Peer-to-Peer Academic Mentorship Platform</p>
+                </div>
+                """.formatted(
+                menteeName != null ? menteeName : "Học viên",
+                mentorName != null ? mentorName : "Mentor",
+                courseCode, bookingId,
+                formattedTimeStr, durationMin, dashboardUrl
+        ) : """
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #1e293b;border-radius:12px;background:#020b18;color:#f8fafc">
+                  <h2 style="color:#ef4444;margin:0 0 12px">DynForge - Yêu Cầu Đổi Lịch Bị Từ Chối</h2>
+                  <p>Xin chào <b>%s</b>,</p>
+                  <p>Mentor <b>%s</b> không thể sắp xếp khung giờ mới và đã từ chối yêu cầu đổi lịch môn <b>%s</b> (Booking #%s).</p>
+                  <div style="background:#081b38;border:1px solid #ef4444;border-radius:8px;padding:16px;margin:16px 0">
+                    <p style="margin:4px 0;color:#f87171">Lịch học vẫn giữ nguyên mốc cũ:</p>
+                    <p style="margin:4px 0;color:#f8fafc;font-size:16px;font-weight:700">%s</p>
+                  </div>
+                  <p><a href="%s" style="color:#38bdf8;font-weight:700">Xem chi tiết trên Dashboard</a></p>
+                  <p style="color:#64748b;font-size:12px;margin-top:24px">DynForge - Peer-to-Peer Academic Mentorship Platform</p>
+                </div>
+                """.formatted(
+                menteeName != null ? menteeName : "Học viên",
+                mentorName != null ? mentorName : "Mentor",
+                courseCode, bookingId,
+                formattedTimeStr, dashboardUrl
+        );
+
+        String subject = accepted
+                ? "[DynForge] Mentor đã chấp nhận yêu cầu đổi lịch môn " + courseCode
+                : "[DynForge] Mentor đã từ chối yêu cầu đổi lịch môn " + courseCode;
+
+        sendEmailDirect(menteeEmail, subject, html);
+    }
+
+    @Async
+    public void sendCancellationNotification(
+            String recipientEmail,
+            String recipientName,
+            String actorName,
+            String bookingId,
+            String courseCode,
+            String refundDetail
+    ) {
+        if (recipientEmail == null || recipientEmail.isBlank()) return;
+
+        if (!isConfigured()) {
+            log.info("[Cancellation Notice] (Mail not configured) Booking #{} cancelled by {}. Details: {}",
+                    bookingId, actorName, refundDetail);
+            return;
+        }
+
+        String html = """
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #1e293b;border-radius:12px;background:#020b18;color:#f8fafc">
+                  <h2 style="color:#ef4444;margin:0 0 12px">DynForge - Thông Báo Hủy Buổi Học</h2>
+                  <p>Xin chào <b>%s</b>,</p>
+                  <p>Buổi học môn <b>%s</b> (Booking #%s) đã được hủy bởi <b>%s</b>.</p>
+                  <div style="background:#081b38;border:1px solid #ef4444;border-radius:8px;padding:16px;margin:16px 0">
+                    <p style="margin:4px 0;color:#cbd5e1">Thông tin chi tiết: <b>%s</b></p>
+                  </div>
+                  <p style="color:#64748b;font-size:12px;margin-top:24px">DynForge - Peer-to-Peer Academic Mentorship Platform</p>
+                </div>
+                """.formatted(
+                recipientName != null ? recipientName : "Bạn",
+                courseCode, bookingId,
+                actorName != null ? actorName : "Hệ thống",
+                refundDetail
+        );
+
+        sendEmailDirect(recipientEmail, "[DynForge] Thông báo hủy buổi học môn " + courseCode, html);
+    }
+
+    @Async
+    public void sendMentorMarkTaughtReminder(
+            String mentorEmail,
+            String mentorName,
+            String bookingId,
+            String courseCode,
+            int hoursElapsed
+    ) {
+        if (mentorEmail == null || mentorEmail.isBlank()) return;
+
+        if (!isConfigured()) {
+            log.info("[Mark-Taught Reminder] (Mail not configured) Booking #{} course {} past {}h for mentor {}",
+                    bookingId, courseCode, hoursElapsed, mentorEmail);
+            return;
+        }
+
+        String warningBox = hoursElapsed >= 12
+                ? """
+                  <div style="background:#450a0a;border:1px solid #ef4444;border-radius:8px;padding:16px;margin:16px 0;color:#fecaca">
+                    <p style="margin:0;font-weight:bold">CẢNH BÁO QUAN TRỌNG:</p>
+                    <p style="margin:4px 0">Buổi học đã kết thúc được 12 tiếng. Nếu bạn không bấm xác nhận trước mốc 24 tiếng sau khi buổi học kết thúc, hệ thống sẽ tự động coi là No-show (vắng mặt) và hoàn tiền 100%% cho học viên!</p>
+                  </div>
+                  """
+                : """
+                  <div style="background:#081b38;border:1px solid #38bdf8;border-radius:8px;padding:16px;margin:16px 0;color:#e0f2fe">
+                    <p style="margin:0">Vui lòng truy cập trang cá nhân của bạn để bấm <b>Xác nhận đã dạy (Mark Taught)</b> để hoàn tất buổi học và mở khóa tiền thù lao ký quỹ.</p>
+                  </div>
+                  """;
+
+        String subject = hoursElapsed >= 12
+                ? "[DynForge - CẢNH BÁO] Xác nhận buổi dạy môn " + courseCode + " trước mốc 24h (No-show)"
+                : "[DynForge] Nhắc nhở: Xác nhận đã dạy buổi học môn " + courseCode;
+
+        String sessionUrl = frontendBaseUrl + "/mentor/sessions";
+
+        String html = """
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #1e293b;border-radius:12px;background:#020b18;color:#f8fafc">
+                  <h2 style="color:#38bdf8;margin:0 0 12px">DynForge - Nhắc Nhở Xác Nhận Buổi Học</h2>
+                  <p>Xin chào Mentor <b>%s</b>,</p>
+                  <p>Buổi dạy môn <b>%s</b> (Mã booking: <b>#%s</b>) đã kết thúc được khoảng <b>%d tiếng</b>, nhưng hệ thống ghi nhận bạn chưa bấm xác nhận hoàn tất buổi dạy.</p>
+                  %s
+                  <div style="text-align:center;margin:24px 0">
+                    <a href="%s" style="background:#3b82f6;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:bold;display:inline-block">Đến Danh Sách Buổi Dạy</a>
+                  </div>
+                  <p style="color:#64748b;font-size:12px;margin-top:24px">DynForge - Peer-to-Peer Academic Mentorship Platform</p>
+                </div>
+                """.formatted(
+                mentorName != null ? mentorName : "Mentor",
+                courseCode, bookingId, hoursElapsed,
+                warningBox,
+                sessionUrl
+        );
+
+        sendEmailDirect(mentorEmail, subject, html);
+    }
+
+    private void sendEmailDirect(String to, String subject, String htmlContent) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            String sender = (fromEmail != null && !fromEmail.isBlank()) ? fromEmail : username;
+            helper.setFrom(sender, senderName);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            log.info("Email '{}' sent successfully to {}", subject, to);
+        } catch (Exception e) {
+            log.error("Failed to send email '{}' to {}: {}", subject, to, e.getMessage());
+        }
+    }
 }
+

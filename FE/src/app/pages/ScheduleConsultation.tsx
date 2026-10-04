@@ -90,7 +90,53 @@ export function ScheduleConsultation() {
     { label: T.smallGroup || T.group, format: 'GROUP' as const },
   ];
 
-  const timeSlots = ['08:00', '09:30', '11:00', '13:30', '15:00', '16:30', '19:00', '20:30'];
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const hasAvailabilityConfig = !!(mentor.availability && Object.keys(mentor.availability).length > 0);
+
+  const getMentorDaySlots = (day: number | null): string[] => {
+    if (!day) return [];
+    if (!hasAvailabilityConfig) {
+      return ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '19:00', '20:00'];
+    }
+    const d = new Date(base.getFullYear(), base.getMonth(), day);
+    const dayName = DAY_NAMES[d.getDay()];
+    for (const [key, slots] of Object.entries(mentor.availability!)) {
+      if (key.toLowerCase() === dayName.toLowerCase() || key.toLowerCase() === dayName.substring(0, 3).toLowerCase()) {
+        return slots ?? [];
+      }
+    }
+    return [];
+  };
+
+  const isDayAvailable = (day: number): boolean => {
+    if (!hasAvailabilityConfig) return true;
+    return getMentorDaySlots(day).length > 0;
+  };
+
+  const isSlotAvailableForDuration = (slot: string, durationMinutes: number, availableSlots: string[]): boolean => {
+    const [startHour, startMin] = slot.split(':').map(Number);
+    const totalStartMinutes = startHour * 60 + (startMin || 0);
+    const totalEndMinutes = totalStartMinutes + durationMinutes;
+
+    const firstHour = Math.floor(totalStartMinutes / 60);
+    const lastHour = Math.floor((totalEndMinutes - 1) / 60);
+
+    for (let h = firstHour; h <= lastHour; h++) {
+      const hourStr = `${String(h).padStart(2, '0')}:00`;
+      const hasHour = availableSlots.some((s) => s === hourStr || s.startsWith(`${String(h).padStart(2, '0')}:`));
+      if (!hasHour) return false;
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    if (selectedSlot && selectedDay) {
+      const rawSlots = getMentorDaySlots(selectedDay);
+      if (!isSlotAvailableForDuration(selectedSlot, duration, rawSlots)) {
+        setSelectedSlot(null);
+      }
+    }
+  }, [duration, selectedDay]);
 
   const now = new Date();
   const base = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
@@ -412,22 +458,28 @@ export function ScheduleConsultation() {
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1;
                   const isPast = day < todayDay;
+                  const available = isDayAvailable(day);
+                  const disabled = isPast || !available;
                   const selected = selectedDay === day;
                   return (
                     <button
                       key={day}
-                      disabled={isPast}
-                      onClick={() => setSelectedDay(day)}
+                      disabled={disabled}
+                      onClick={() => { setSelectedDay(day); setSelectedSlot(null); }}
                       className={cn(
-                        'flex h-10 sm:h-11 w-full items-center justify-center rounded-xl text-sm font-medium transition-all',
-                        isPast
-                          ? 'border border-white/[0.03] bg-white/[0.02] text-slate-600 cursor-not-allowed'
+                        'flex flex-col h-11 sm:h-12 w-full items-center justify-center rounded-xl text-sm font-medium transition-all relative',
+                        disabled
+                          ? 'border border-white/[0.03] bg-white/[0.02] text-slate-600 cursor-not-allowed opacity-40'
                           : selected
                           ? 'border border-cyan-400 bg-cyan-500 text-white font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)] scale-105 z-10'
                           : 'border border-white/10 bg-white/5 text-slate-200 hover:border-cyan-400/40 hover:bg-white/10 hover:text-white cursor-pointer'
                       )}
+                      title={!available ? 'Mentor không có lịch rảnh vào ngày này' : undefined}
                     >
-                      {day}
+                      <span>{day}</span>
+                      {available && !isPast && (
+                        <span className={cn('size-1 rounded-full mt-0.5', selected ? 'bg-white' : 'bg-cyan-400')} />
+                      )}
                     </button>
                   );
                 })}
@@ -452,22 +504,37 @@ export function ScheduleConsultation() {
                 <div className="rounded-2xl border border-white/5 bg-white/5 py-8 text-center text-sm text-slate-400">
                   {T.selectDateFirst}
                 </div>
+              ) : getMentorDaySlots(selectedDay).length === 0 ? (
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 py-8 text-center text-sm text-amber-300">
+                  ⚠️ Mentor không có lịch rảnh vào ngày đã chọn. Vui lòng chọn một ngày khác có chấm xanh.
+                </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {timeSlots.map((slot) => {
+                  {[...getMentorDaySlots(selectedDay)].sort().map((slot) => {
+                    const rawSlots = getMentorDaySlots(selectedDay);
+                    const fitsDuration = isSlotAvailableForDuration(slot, duration, rawSlots);
                     const selected = selectedSlot === slot;
                     return (
                       <button
                         key={slot}
+                        disabled={!fitsDuration}
                         onClick={() => setSelectedSlot(slot)}
                         className={cn(
-                          'rounded-xl border py-3 text-sm font-medium transition-all cursor-pointer text-center',
-                          selected
-                            ? 'border-cyan-400 bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.35)] font-semibold scale-[1.02]'
-                            : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10'
+                          'rounded-xl border py-3 px-2 text-sm font-medium transition-all text-center',
+                          !fitsDuration
+                            ? 'border-white/5 bg-white/[0.02] text-slate-600 cursor-not-allowed opacity-50'
+                            : selected
+                            ? 'border-cyan-400 bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.35)] font-semibold scale-[1.02] cursor-pointer'
+                            : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10 cursor-pointer'
                         )}
+                        title={!fitsDuration ? `Buổi học ${duration} phút vượt quá khung rảnh của Mentor` : undefined}
                       >
-                        {slot}
+                        <span className={cn(!fitsDuration && 'line-through')}>{slot}</span>
+                        {!fitsDuration && (
+                          <span className="block text-[10px] text-amber-400/80 font-normal no-underline mt-0.5">
+                            Quá giờ ({duration}m)
+                          </span>
+                        )}
                       </button>
                     );
                   })}

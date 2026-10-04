@@ -7,6 +7,8 @@ export interface BackendCourse {
   grade: string;
   ratePrivate: number;
   rateGroup: number;
+  verified?: boolean;
+  generalEducation?: boolean;
 }
 
 export interface MentorProfileResponse {
@@ -30,6 +32,8 @@ export interface MentorProfileResponse {
   ratingAvg: number;
   ratingCount: number;
   sessionsCount: number;
+  mentorCancelCount?: number;
+  mentorNoShowCount?: number;
 }
 
 export async function listMentors(course?: string): Promise<MentorProfileResponse[]> {
@@ -165,8 +169,11 @@ export function backendToMentor(p: MentorProfileResponse): Mentor {
       name: c.name,
       ratePrivate: c.ratePrivate,
       rateGroup: c.rateGroup,
+      grade: c.grade,
+      verified: c.verified,
     })),
     strengths: skills,
     nextAvailable: nextAvailableDate(p.availability ?? {}),
+    availability: p.availability ?? {},
   };
 }

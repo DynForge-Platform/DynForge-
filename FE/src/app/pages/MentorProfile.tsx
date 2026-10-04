@@ -18,7 +18,9 @@ import {
   MapPin,
   Loader2,
   ArrowLeft,
+  CheckCircle2,
 } from 'lucide-react';
+import { cn } from '../components/ui/utils';
 import { getMentor, reviews as mockReviews, formatCurrency, type Mentor, type Review } from '../data/mockData';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -176,11 +178,31 @@ export function MentorProfile() {
                 <h2 className="mb-3 text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
                   {T.coursesSupported}
                 </h2>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2.5">
                   {mentor.courses.map((c) => (
-                    <Badge key={c.code} className="bg-white/5 text-cyan-300 border border-white/10 px-3 py-1 text-xs rounded-lg font-normal">
-                      {c.code} · {c.name}
-                    </Badge>
+                    <div
+                      key={c.code}
+                      className={cn(
+                        'inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-xl border font-normal transition-all',
+                        c.verified
+                          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 shadow-sm shadow-emerald-500/10'
+                          : 'bg-white/5 text-cyan-300 border-white/10'
+                      )}
+                    >
+                      <span className="font-semibold text-white">{c.code}</span>
+                      <span className="text-slate-400">·</span>
+                      <span>{c.name}</span>
+                      {c.grade && (
+                        <span className="font-bold text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-slate-200">
+                          {c.grade}
+                        </span>
+                      )}
+                      {c.verified && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold" title="Môn học đã được xác thực bảng điểm học tập">
+                          <CheckCircle2 className="size-3.5" /> Đã xác thực
+                        </span>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

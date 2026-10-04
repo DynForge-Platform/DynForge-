@@ -23,6 +23,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.UUID;
@@ -104,7 +107,14 @@ public class AuthService {
     }
 
     public AuthResponse refresh(RefreshRequest request) {
-        RefreshToken stored = refreshTokenRepository.findByToken(request.refreshToken())
+        String rawToken = request.refreshToken();
+        if (rawToken == null || rawToken.isBlank()) {
+            throw new BadRequestException("Invalid refresh token");
+        }
+
+        String tokenHash = hashToken(rawToken);
+        RefreshToken stored = refreshTokenRepository.findByToken(tokenHash)
+                .or(() -> refreshTokenRepository.findByToken(rawToken))
                 .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
 
         if (stored.getExpiresAt().isBefore(Instant.now())) {
@@ -121,8 +131,16 @@ public class AuthService {
     }
 
     public void logout(RefreshRequest request) {
-        refreshTokenRepository.findByToken(request.refreshToken())
-                .ifPresent(refreshTokenRepository::delete);
+        String rawToken = request.refreshToken();
+        if (rawToken == null || rawToken.isBlank()) {
+            return;
+        }
+        String tokenHash = hashToken(rawToken);
+        refreshTokenRepository.findByToken(tokenHash)
+                .ifPresentOrElse(
+                        refreshTokenRepository::delete,
+                        () -> refreshTokenRepository.findByToken(rawToken).ifPresent(refreshTokenRepository::delete)
+                );
     }
 
     private AuthResponse buildAuthResponse(User user) {
@@ -132,14 +150,32 @@ public class AuthService {
     }
 
     private String issueRefreshToken(User user) {
-        String token = UUID.randomUUID().toString();
+        String rawToken = UUID.randomUUID().toString();
+        String tokenHash = hashToken(rawToken);
         RefreshToken refreshToken = RefreshToken.builder()
                 .userId(new ObjectId(user.getId()))
-                .token(token)
+                .token(tokenHash)
                 .expiresAt(Instant.now().plusMillis(refreshExpirationMs))
                 .createdAt(Instant.now())
                 .build();
         refreshTokenRepository.save(refreshToken);
-        return token;
+        return rawToken;
+    }
+
+    private String hashToken(String rawToken) {
+        if (rawToken == null) return null;
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
     }
 }

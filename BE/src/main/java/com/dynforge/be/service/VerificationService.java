@@ -3,9 +3,11 @@ package com.dynforge.be.service;
 import com.dynforge.be.exception.BadRequestException;
 import com.dynforge.be.exception.ResourceNotFoundException;
 import com.dynforge.be.mapper.VerificationMapper;
+import com.dynforge.be.util.UrlValidator;
 import com.dynforge.be.model.dto.VerificationDecisionRequest;
 import com.dynforge.be.model.dto.VerificationRequestDto;
 import com.dynforge.be.model.dto.VerificationResponse;
+import com.dynforge.be.model.entity.Course;
 import com.dynforge.be.model.entity.MentorProfile;
 import com.dynforge.be.model.entity.User;
 import com.dynforge.be.model.entity.VerificationRequest;
@@ -17,6 +19,7 @@ import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -28,12 +31,16 @@ public class VerificationService {
     private final VerificationMapper verificationMapper;
 
     public VerificationResponse submit(User user, VerificationRequestDto dto) {
+        UrlValidator.validateHttpUrl(dto.transcriptUrl(), "transcriptUrl");
+        UrlValidator.validateHttpUrl(dto.alumniProofUrl(), "alumniProofUrl");
+
         VerificationRequest request = VerificationRequest.builder()
                 .userId(new ObjectId(user.getId()))
                 .universityId(user.getUniversityId())
                 .course(dto.course())
                 .claimedGrade(dto.claimedGrade())
                 .transcriptUrl(dto.transcriptUrl())
+                .alumniProofUrl(dto.alumniProofUrl())
                 .status(VerificationStatus.PENDING)
                 .createdAt(Instant.now())
                 .build();
@@ -77,8 +84,37 @@ public class VerificationService {
                     .orElseGet(() -> MentorProfile.builder()
                             .userId(mentorUserId)
                             .universityId(mentorUniversityId)
+                            .courses(new ArrayList<>())
                             .build());
             profile.setVerified(true);
+
+            // Mark the specific course as verified (Course-level KYC)
+            if (profile.getCourses() == null) {
+                profile.setCourses(new ArrayList<>());
+            }
+            String targetCode = request.getCourse();
+            boolean found = false;
+            for (Course c : profile.getCourses()) {
+                if (c.getCode() != null && c.getCode().equalsIgnoreCase(targetCode)) {
+                    c.setVerified(true);
+                    if (request.getClaimedGrade() != null && !request.getClaimedGrade().isBlank()) {
+                        c.setGrade(request.getClaimedGrade());
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && targetCode != null && !targetCode.isBlank()) {
+                profile.getCourses().add(Course.builder()
+                        .code(targetCode)
+                        .name(targetCode)
+                        .grade(request.getClaimedGrade() != null ? request.getClaimedGrade() : "A")
+                        .ratePrivate(150000)
+                        .rateGroup(100000)
+                        .verified(true)
+                        .build());
+            }
+
             mentorRepository.save(profile);
         }
 

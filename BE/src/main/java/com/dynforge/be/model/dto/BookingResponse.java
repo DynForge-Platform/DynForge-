@@ -23,6 +23,13 @@ public record BookingResponse(
         Instant acceptedAt,
         Instant taughtAt,
         String disputeIssueType,
-        String disputeReason
+        String disputeReason,
+        String disputeMentorResponse,
+        String disputeMentorEvidenceUrl,
+        Instant disputeRespondedAt,
+        Instant rescheduledFrom,
+        Instant pendingStartAt,
+        int rescheduleCount,
+        String roomId
 ) {
 }

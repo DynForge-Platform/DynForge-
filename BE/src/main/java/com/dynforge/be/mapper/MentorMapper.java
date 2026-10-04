@@ -27,7 +27,9 @@ public class MentorMapper {
                 profile.isVerified(),
                 profile.getRatingAvg(),
                 profile.getRatingCount(),
-                profile.getSessionsCount()
+                profile.getSessionsCount(),
+                profile.getMentorCancelCount(),
+                profile.getMentorNoShowCount()
         );
     }
 }

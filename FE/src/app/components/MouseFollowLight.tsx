@@ -12,14 +12,39 @@ export function MouseFollowLight({ size = 260, className = '' }: MouseFollowLigh
     const light = lightRef.current;
     if (!light) return;
 
+    let rafId: number | null = null;
+    let targetX = -999;
+    let targetY = -999;
+    let isVisible = false;
+
+    const render = () => {
+      if (light && isVisible) {
+        light.style.transform = `translate3d(${targetX}px, ${targetY}px, 0px) translate(-50%, -50%)`;
+      }
+      rafId = null;
+    };
+
     const onMouseMove = (e: MouseEvent) => {
-      // Direct viewport coordinates
-      light.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0px) translate(-50%, -50%)`;
-      light.style.opacity = '1';
+      targetX = e.clientX;
+      targetY = e.clientY;
+
+      if (!isVisible) {
+        isVisible = true;
+        light.style.opacity = '1';
+      }
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(render);
+      }
     };
 
     const onMouseLeave = () => {
+      isVisible = false;
       light.style.opacity = '0';
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
     };
 
     window.addEventListener('mousemove', onMouseMove, { passive: true });
@@ -28,6 +53,9 @@ export function MouseFollowLight({ size = 260, className = '' }: MouseFollowLigh
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseleave', onMouseLeave);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
     };
   }, []);
 
@@ -39,7 +67,7 @@ export function MouseFollowLight({ size = 260, className = '' }: MouseFollowLigh
         width: `${size}px`,
         height: `${size}px`,
         transform: 'translate3d(-999px, -999px, 0px) translate(-50%, -50%)',
-        transition: 'transform 0.06s ease-out, opacity 0.25s ease-out',
+        transition: 'opacity 0.25s ease-out',
       }}
       aria-hidden="true"
     >

@@ -17,6 +17,11 @@ import com.dynforge.be.repository.WalletTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -29,6 +34,7 @@ public class WalletService {
     private final WalletTransactionRepository txnRepository;
     private final UserRepository userRepository;
     private final PayOsClient payOsClient;
+    private final MongoTemplate mongoTemplate;
 
     @Value("${app.frontend.base-url:http://localhost:5173}")
     private String frontendBaseUrl;
@@ -106,14 +112,16 @@ public class WalletService {
      * (Demo: no real bank transfer — settlement is assumed instant.)
      */
     public TransactionResponse withdraw(User user, WithdrawRequest request) {
-        if (user.getWalletBalance() < request.amount()) {
-            throw new BadRequestException(
-                    "Insufficient balance. Requested: " + request.amount()
-                            + ", available: " + user.getWalletBalance());
-        }
+        // Atomic wallet deduction (Anti race-condition)
+        Query debitQuery = new Query(Criteria.where("_id").is(new ObjectId(user.getId()))
+                .and("walletBalance").gte(request.amount()));
+        Update debitUpdate = new Update().inc("walletBalance", -request.amount());
+        User updated = mongoTemplate.findAndModify(debitQuery, debitUpdate,
+                FindAndModifyOptions.options().returnNew(true), User.class);
 
-        user.setWalletBalance(user.getWalletBalance() - request.amount());
-        userRepository.save(user);
+        if (updated == null) {
+            throw new BadRequestException("Số dư khả dụng không đủ để thực hiện yêu cầu rút tiền.");
+        }
 
         WalletTransaction txn = WalletTransaction.builder()
                 .userId(new ObjectId(user.getId()))
@@ -155,10 +163,11 @@ public class WalletService {
     }
 
     private void creditWallet(ObjectId userId, long amount) {
-        User user = userRepository.findById(userId.toHexString())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
-        user.setWalletBalance(user.getWalletBalance() + amount);
-        userRepository.save(user);
+        mongoTemplate.updateFirst(
+                new Query(Criteria.where("_id").is(userId)),
+                new Update().inc("walletBalance", amount),
+                User.class
+        );
     }
 
     private TransactionResponse toResponse(WalletTransaction txn) {

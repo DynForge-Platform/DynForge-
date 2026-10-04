@@ -18,11 +18,11 @@ import { MeetRoomOverlay } from '../../components/MeetRoomOverlay';
 import { CalendarCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  getMentorSchedule, markTaught, acceptBooking, declineBooking, mapStatusToDisplay,
+  getMentorSchedule, markTaught, acceptBooking, declineBooking, mapStatusToDisplay, respondRescheduleBooking,
   type BookingResponse, type BookingStatus,
 } from '../../services/bookingService';
 
-const tabs = ['All', 'Requests', 'Accepted', 'Taught', 'Completed', 'Cancelled'];
+const tabs = ['All', 'Requests', 'Reschedule', 'Accepted', 'Taught', 'Completed', 'Cancelled'];
 
 function mentorStatusTab(status: BookingStatus): string {
   switch (status) {
@@ -91,8 +91,41 @@ export function TeacherSessions() {
     }
   };
 
+  const handleAcceptReschedule = async (b: BookingResponse) => {
+    setActingId(b.id);
+    try {
+      await respondRescheduleBooking(b.id, true);
+      toast.success('Đã chấp nhận yêu cầu đổi lịch! Lịch dạy mới đã được cập nhật.');
+      fetchBookings();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Chấp nhận đổi lịch thất bại.');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const handleDeclineReschedule = async (b: BookingResponse) => {
+    setActingId(b.id);
+    try {
+      await respondRescheduleBooking(b.id, false);
+      toast.info('Đã từ chối yêu cầu đổi lịch. Buổi học giữ nguyên lịch ban đầu.');
+      fetchBookings();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Từ chối đổi lịch thất bại.');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const pendingRescheduleCount = bookings.filter((b) => !!b.pendingStartAt).length;
+
   const withTab = bookings.map((b) => ({ ...b, tabStatus: mentorStatusTab(b.status) }));
-  const filtered = tab === 'All' ? withTab : withTab.filter((b) => b.tabStatus === tab);
+  const filtered = tab === 'All'
+    ? withTab
+    : tab === 'Reschedule'
+    ? withTab.filter((b) => !!b.pendingStartAt)
+    : withTab.filter((b) => b.tabStatus === tab);
+
 
   const handleMarkDone = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,9 +158,30 @@ export function TeacherSessions() {
       <Card className="border-border p-5">
         <Tabs value={tab} onValueChange={setTab} className="mb-4">
           <TabsList className="flex-wrap">
-            {tabs.map((t) => <TabsTrigger key={t} value={t}>{t}</TabsTrigger>)}
+            {tabs.map((t) => (
+              <TabsTrigger key={t} value={t} className="relative">
+                {t}
+                {t === 'Reschedule' && pendingRescheduleCount > 0 && (
+                  <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-bold text-[10px]">
+                    {pendingRescheduleCount}
+                  </span>
+                )}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
+
+        {pendingRescheduleCount > 0 && tab !== 'Reschedule' && (
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-amber-300 text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🔔</span>
+              <span>Bạn có <strong>{pendingRescheduleCount}</strong> yêu cầu đổi lịch từ học viên cần phê duyệt.</span>
+            </div>
+            <Button size="sm" variant="outline" className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 text-xs h-7" onClick={() => setTab('Reschedule')}>
+              Xem yêu cầu
+            </Button>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
@@ -149,19 +203,57 @@ export function TeacherSessions() {
               </TableHeader>
               <TableBody>
                 {filtered.map((b) => (
-                  <TableRow key={b.id}>
-                    <TableCell style={{ fontWeight: 500 }}>{b.courseCode}</TableCell>
+                  <TableRow key={b.id} className={b.pendingStartAt ? 'bg-amber-950/10 border-amber-500/20' : ''}>
+                    <TableCell style={{ fontWeight: 500 }}>
+                      <div>{b.courseCode}</div>
+                      {b.pendingStartAt && (
+                        <span className="inline-block mt-1 text-[11px] font-semibold text-amber-400 bg-amber-950/40 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                          Đang xin đổi lịch
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {new Date(b.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                      {' · '}
-                      {new Date(b.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      <div>
+                        {new Date(b.startAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                        {' · '}
+                        {new Date(b.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      {b.pendingStartAt && (
+                        <div className="mt-1 text-xs text-amber-400 font-semibold flex items-center gap-1">
+                          <span>↳ Đề xuất:</span>
+                          <span>{new Date(b.pendingStartAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{b.durationMin} min</TableCell>
                     <TableCell className="text-muted-foreground">{b.format.replace('_', '-')}</TableCell>
                     <TableCell style={{ fontWeight: 600 }}>{formatCurrency(b.price)}</TableCell>
                     <TableCell><StatusBadge status={b.tabStatus} /></TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1.5">
+                      <div className="flex justify-end gap-1.5 items-center flex-wrap">
+                        {b.pendingStartAt && (
+                          <div className="flex items-center gap-1 bg-amber-950/30 border border-amber-500/30 p-1 rounded-lg">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-400 border-red-500/30 hover:bg-red-500/10 text-xs h-7 px-2"
+                              disabled={actingId === b.id}
+                              onClick={() => handleDeclineReschedule(b)}
+                              title="Từ chối yêu cầu đổi lịch"
+                            >
+                              <X className="size-3" /> Từ chối dời
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-amber-600 hover:bg-amber-500 text-white text-xs h-7 px-2"
+                              disabled={actingId === b.id}
+                              onClick={() => handleAcceptReschedule(b)}
+                              title="Đồng ý đổi sang giờ mới"
+                            >
+                              {actingId === b.id ? <Loader2 className="size-3 animate-spin" /> : <><Check className="size-3" /> Đồng ý dời</>}
+                            </Button>
+                          </div>
+                        )}
                         {b.status === 'ESCROW_HELD' && (
                           <>
                             <Button
@@ -227,6 +319,7 @@ export function TeacherSessions() {
       {meetBooking && (
         <MeetRoomOverlay
           bookingId={meetBooking.id}
+          roomId={meetBooking.roomId}
           course={meetBooking.courseCode}
           partnerName={meetBooking.menteeName ?? 'Student'}
           durationMinutes={meetBooking.durationMin}

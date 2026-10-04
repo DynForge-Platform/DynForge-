@@ -26,4 +26,10 @@ public class Course {
      */
     @Builder.Default
     private boolean generalEducation = false;
+
+    /**
+     * Whether this specific course has been verified via transcript / academic credentials.
+     */
+    @Builder.Default
+    private boolean verified = false;
 }

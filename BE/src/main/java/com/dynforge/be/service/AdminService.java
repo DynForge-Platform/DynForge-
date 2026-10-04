@@ -146,7 +146,10 @@ public class AdminService {
                 b.getDisputeIssueType(),
                 b.getDisputeReason(),
                 b.getStartAt(),
-                b.getCreatedAt()
+                b.getCreatedAt(),
+                b.getDisputeMentorResponse(),
+                b.getDisputeMentorEvidenceUrl(),
+                b.getDisputeRespondedAt()
         );
     }
 

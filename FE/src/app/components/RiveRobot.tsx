@@ -72,8 +72,13 @@ export function RiveRobot({
       }
     };
 
+    let rafId: number | null = null;
+    let lastClientX = 0;
+    let lastClientY = 0;
+
     // Calculate mouse position relative to entire screen and project into Rive canvas
-    const handleMouseMove = (e: MouseEvent) => {
+    const processMouseMove = () => {
+      rafId = null;
       if (!canvasRef.current) return;
       const rect = canvasRef.current.getBoundingClientRect();
 
@@ -82,14 +87,8 @@ export function RiveRobot({
       const robotCenterY = rect.top + rect.height / 2;
 
       // Distance from cursor to robot across the screen
-      const deltaX = e.clientX - robotCenterX;
-      const deltaY = e.clientY - robotCenterY;
-
-      // Map entire window coordinates into Rive canvas local coordinate system
-      // By projecting from window bounds to canvas bounds, mouse movement anywhere
-      // on the page will reach the tracking zone of the Rive robot!
-      const scaleX = rect.width / window.innerWidth;
-      const scaleY = rect.height / window.innerHeight;
+      const deltaX = lastClientX - robotCenterX;
+      const deltaY = lastClientY - robotCenterY;
 
       // Project the cursor proportionally so even far away it moves inside the robot's perception range
       const projectedCanvasX = (rect.width / 2) + (deltaX / (window.innerWidth / 2)) * (rect.width * 0.48);
@@ -101,8 +100,6 @@ export function RiveRobot({
           const pointerEvent = new PointerEvent('pointermove', {
             clientX: rect.left + projectedCanvasX,
             clientY: rect.top + projectedCanvasY,
-            screenX: e.screenX,
-            screenY: e.screenY,
             bubbles: true,
             cancelable: true,
           });
@@ -125,6 +122,14 @@ export function RiveRobot({
             });
           }
         } catch { }
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      lastClientX = e.clientX;
+      lastClientY = e.clientY;
+      if (!rafId) {
+        rafId = requestAnimationFrame(processMouseMove);
       }
     };
 
@@ -153,6 +158,9 @@ export function RiveRobot({
     return () => {
       isMounted = false;
       window.removeEventListener('mousemove', handleMouseMove);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
       if (riveInstanceRef.current) {
         try {
           riveInstanceRef.current.cleanup();

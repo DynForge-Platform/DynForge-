@@ -16,6 +16,9 @@ public record AdminDisputeResponse(
         String issueType,
         String reason,
         Instant startAt,
-        Instant createdAt
+        Instant createdAt,
+        String mentorResponse,
+        String mentorEvidenceUrl,
+        Instant mentorRespondedAt
 ) {
 }

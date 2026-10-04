@@ -28,6 +28,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@org.springframework.context.annotation.Profile("!test")
 @Order(0)
 @RequiredArgsConstructor
 public class UniversityMigration implements CommandLineRunner {

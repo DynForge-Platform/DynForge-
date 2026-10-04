@@ -96,7 +96,7 @@ public class AiMenteeService {
                 suggestions = generateDefaultSuggestions(query, matches);
             }
 
-            return new MentorMatchResponse(advice, matches, suggestions);
+            return new MentorMatchResponse(advice, matches, suggestions, false);
         } catch (Exception e) {
             log.warn("Gemini API call failed ({}), activating Smart Java Stream Fallback Engine.", e.getMessage());
             return smartStreamFallbackMatch(query, allMentors);
@@ -136,7 +136,7 @@ public class AiMenteeService {
         if (isGreeting) {
             String advice = "Chào bạn! Bạn đang cần tìm gia sư môn học nào (ví dụ: PRJ301, MAL301, CSD201...) hoặc đang gặp khó khăn gì trong học tập? Hãy nhập môn học để mình chọn gia sư phù hợp nhất nhé!";
             List<String> suggestions = List.of("Gia sư môn PRJ301", "Gia sư học phí tốt nhất", "Gia sư đánh giá 5 sao");
-            return new MentorMatchResponse(advice, List.of(), suggestions);
+            return new MentorMatchResponse(advice, List.of(), suggestions, true);
         }
 
         boolean wantCheap = q.contains("rẻ") || q.contains("thấp") || q.contains("học phí ít") || q.contains("giá tốt");
@@ -195,11 +195,11 @@ public class AiMenteeService {
         if (matches.isEmpty()) {
             advice = new StringBuilder("Hiện chưa tìm thấy gia sư nào khớp chính xác với tiêu chí này.");
         }
-        advice.append("\n───────────────\n💡 *Smart Fallback Engine (Java Stream Active).*");
+        advice.append("\n───────────────\n💡 *[Chế độ Demo Fallback] Hệ thống trả kết quả phân tích theo bộ lọc dự phòng do AI đang bảo trì.*");
 
         List<String> suggestedQuestions = generateDefaultSuggestions(query, matches);
 
-        return new MentorMatchResponse(advice.toString(), matches, suggestedQuestions);
+        return new MentorMatchResponse(advice.toString(), matches, suggestedQuestions, true);
     }
 
     private List<String> extractKeywords(String text) {
@@ -313,9 +313,9 @@ public class AiMenteeService {
 
     public SessionAskResponse generalChat(String message) {
         if (!geminiClient.isConfigured()) {
-            String answer = "Chào bạn! Mình là Trợ lý AI DynForge. Bạn đang muốn tìm gia sư môn học nào hay cần hướng dẫn sử dụng tính năng gì trên hệ thống?";
+            String answer = "Chào bạn! Mình là Trợ lý AI DynForge (Chế độ Demo). Bạn đang muốn tìm gia sư môn học nào hay cần hướng dẫn sử dụng tính năng gì trên hệ thống?";
             List<String> suggestions = List.of("Tìm gia sư môn PRJ301", "Quy trình thanh toán ký quỹ", "Học phí gia sư bao nhiêu?");
-            return new SessionAskResponse(answer, suggestions);
+            return new SessionAskResponse(answer, suggestions, true);
         }
         try {
             String rawText = geminiClient.complete(GENERAL_CHAT_SYSTEM, message, 2048).trim();
@@ -324,12 +324,12 @@ public class AiMenteeService {
             if (suggestions.isEmpty()) {
                 suggestions = List.of("Tìm gia sư môn PRJ301", "Cách nạp tiền ví PayOS", "Thanh toán ký quỹ hoạt động thế nào?");
             }
-            return new SessionAskResponse(answer, suggestions);
+            return new SessionAskResponse(answer, suggestions, false);
         } catch (Exception e) {
             log.warn("Gemini API generalChat failed (quota/rate limit/error): {}. Falling back.", e.getMessage());
-            String answer = "Chào bạn! Mình là Trợ lý AI DynForge. Bạn đang muốn tìm gia sư môn học nào hay cần hướng dẫn sử dụng tính năng gì trên hệ thống?";
+            String answer = "Chào bạn! Mình là Trợ lý AI DynForge (Chế độ Demo). Bạn đang muốn tìm gia sư môn học nào hay cần hướng dẫn sử dụng tính năng gì trên hệ thống?";
             List<String> suggestions = List.of("Tìm gia sư môn PRJ301", "Quy trình thanh toán ký quỹ", "Học phí gia sư bao nhiêu?");
-            return new SessionAskResponse(answer, suggestions);
+            return new SessionAskResponse(answer, suggestions, true);
         }
     }
 
@@ -373,7 +373,7 @@ public class AiMenteeService {
                 );
             }
 
-            return new SessionAskResponse(answer, suggestions);
+            return new SessionAskResponse(answer, suggestions, false);
         } catch (Exception e) {
             log.warn("Gemini API askAboutSession failed: {}. Falling back.", e.getMessage());
             return mockAsk(b, question);
@@ -387,14 +387,14 @@ public class AiMenteeService {
                 "Bạn nên kiểm tra lại phần ghi chú buổi học hoặc đặt thêm một câu hỏi chi tiết hơn cho gia sư.",
                 "",
                 "───────────────",
-                "💡 *Smart Fallback Engine Active: Hệ thống tự động phản hồi mượt mà.*"
+                "💡 *[Chế độ Demo Fallback] Trả lời từ động cơ dự phòng do AI đang bảo trì.*"
         );
         List<String> suggestions = List.of(
                 "Tóm tắt các kiến thức cốt lõi môn " + nz(b.getCourseCode()),
                 "Các dạng bài tập hay xuất hiện trong đề thi?",
                 "Hỏi thêm gia sư qua khung tin nhắn 1-1"
         );
-        return new SessionAskResponse(answer, suggestions);
+        return new SessionAskResponse(answer, suggestions, true);
     }
 
     // ── #3 In-meeting note rewrite ─────────────────────────────────────────────

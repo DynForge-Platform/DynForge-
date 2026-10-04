@@ -36,7 +36,14 @@ public class BookingMapper {
                 booking.getAcceptedAt(),
                 booking.getTaughtAt(),
                 booking.getDisputeIssueType(),
-                booking.getDisputeReason()
+                booking.getDisputeReason(),
+                booking.getDisputeMentorResponse(),
+                booking.getDisputeMentorEvidenceUrl(),
+                booking.getDisputeRespondedAt(),
+                booking.getRescheduledFrom(),
+                booking.getPendingStartAt(),
+                booking.getRescheduleCount(),
+                booking.getEffectiveRoomId()
         );
     }
 }

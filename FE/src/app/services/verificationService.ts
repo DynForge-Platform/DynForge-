@@ -10,6 +10,7 @@ export interface VerificationItem {
   course: string;
   claimedGrade: string;
   transcriptUrl?: string;
+  alumniProofUrl?: string;
   status: VerificationStatus;
   reviewedBy?: string;
   reviewedAt?: string;
@@ -21,6 +22,7 @@ export interface SubmitVerificationPayload {
   course: string;
   claimedGrade: 'A' | 'A+';
   transcriptUrl?: string;
+  alumniProofUrl?: string;
 }
 
 export async function submitVerification(payload: SubmitVerificationPayload): Promise<VerificationItem> {

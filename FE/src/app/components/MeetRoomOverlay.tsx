@@ -6,6 +6,7 @@ import { askSession, rewriteNote } from '../services/aiService';
 
 interface MeetProps {
   bookingId: string;
+  roomId?: string;
   course: string;
   partnerName: string;
   durationMinutes: number;
@@ -148,7 +149,7 @@ function AiChatPopup({ bookingId, course, onClose }: { bookingId: string; course
   );
 }
 
-export function MeetRoomOverlay({ bookingId, course, partnerName, durationMinutes, displayName, onClose }: MeetProps) {
+export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durationMinutes, displayName, onClose }: MeetProps) {
   const [elapsed, setElapsed] = useState('00:00');
   const [recording, setRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -166,7 +167,7 @@ export function MeetRoomOverlay({ bookingId, course, partnerName, durationMinute
   }, []);
 
   // Both participants join the same per-booking room, so they meet each other.
-  const room = `dynforge-${bookingId}`;
+  const room = roomId && roomId.trim() ? roomId.trim() : `DynForge-${bookingId}`;
   const name = encodeURIComponent(displayName ?? 'Guest');
   const jitsiUrl = `https://meet.jit.si/${room}#userInfo.displayName=%22${name}%22&config.prejoinPageEnabled=false&config.disableDeepLinking=true`;
 

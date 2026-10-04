@@ -1,5 +1,6 @@
 package com.dynforge.be.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
@@ -9,10 +10,19 @@ import java.util.List;
  * @param matches            recommended mentors, each linkable to its profile
  * @param suggestedQuestions dynamic follow-up prompt suggestions for UX click-throughs
  */
-public record MentorMatchResponse(String advice, List<Item> matches, List<String> suggestedQuestions) {
+public record MentorMatchResponse(
+        String advice,
+        List<Item> matches,
+        List<String> suggestedQuestions,
+        @JsonProperty("isDemo") boolean isDemo
+) {
+
+    public MentorMatchResponse(String advice, List<Item> matches, List<String> suggestedQuestions) {
+        this(advice, matches, suggestedQuestions, false);
+    }
 
     public MentorMatchResponse(String advice, List<Item> matches) {
-        this(advice, matches, List.of());
+        this(advice, matches, List.of(), false);
     }
 
     /**

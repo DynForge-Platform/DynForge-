@@ -50,6 +50,9 @@ export interface AdminDispute {
   reason?: string;
   startAt: string;
   createdAt: string;
+  mentorResponse?: string;
+  mentorEvidenceUrl?: string;
+  mentorRespondedAt?: string;
 }
 
 export async function getAdminDashboard(): Promise<AdminDashboard> {

@@ -1,16 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import {
   CalendarCheck, CheckCircle2, TrendingUp, Star, Clock, BadgeCheck, ArrowRight, Video,
-  Loader2, Check, X, BookOpen,
+  Loader2, Check, X, BookOpen, Sparkles, ShieldCheck, ArrowUpRight, Calendar, UserCheck
 } from 'lucide-react';
 import { formatCurrency } from '../../data/mockData';
-import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { KpiCard } from '../../components/cards';
 import { MeetRoomOverlay } from '../../components/MeetRoomOverlay';
 import { StatusBadge } from '../../components/common';
 import { toast } from 'sonner';
@@ -20,6 +17,7 @@ import {
   type MentorEarningsResponse, type BookingResponse,
 } from '../../services/bookingService';
 import { getMyMentorProfile } from '../../services/mentorService';
+import { cn } from '../../components/ui/utils';
 
 const UPCOMING = ['ACCEPTED', 'TAUGHT'];
 
@@ -44,11 +42,10 @@ export function TeacherDashboard() {
       setEarnings(e);
       setSchedule(s);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to load dashboard.');
+      toast.error(err?.response?.data?.message ?? 'Không thể tải bảng điều khiển giảng dạy.');
     } finally {
       setLoading(false);
     }
-    // Rating/verified come from the mentor profile; ignore if not a mentor yet
     try {
       const profile = await getMyMentorProfile();
       setRating(profile.ratingAvg);
@@ -66,14 +63,14 @@ export function TeacherDashboard() {
     try {
       if (kind === 'accept') {
         await acceptBooking(b.id);
-        toast.success('Request accepted. The student has been notified.');
+        toast.success('Đã chấp nhận lịch học. Học viên đã được thông báo.');
       } else {
         await declineBooking(b.id);
-        toast.success('Request declined. The student has been refunded.');
+        toast.success('Đã từ chối lịch học. Học phí đã được hoàn trả lại cho học viên.');
       }
       fetchData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Action failed.');
+      toast.error(err?.response?.data?.message ?? 'Thao tác không thành công.');
     } finally {
       setActingId(null);
     }
@@ -81,138 +78,238 @@ export function TeacherDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
-        <Loader2 className="size-5 animate-spin" /> Loading dashboard…
+      <div className="flex flex-col items-center justify-center py-32 text-slate-400 gap-3">
+        <Loader2 className="size-7 animate-spin text-cyan-400" />
+        <p className="text-xs uppercase tracking-wider font-semibold">Đang tải không gian làm việc của Mentor…</p>
       </div>
     );
   }
 
-  const firstName = (user?.fullName ?? '').split(' ').pop() ?? '';
+  const firstName = (user?.fullName ?? '').split(' ').pop() ?? 'Mentor';
 
   return (
-    <div className="mx-auto max-w-[1100px]">
-      {/* Welcome */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>
-            {T.welcomeBack2}, {firstName} 👋
-          </h1>
-          <p className="mt-1 text-muted-foreground">Here's what's happening with your tutoring activity.</p>
-        </div>
-        <Button onClick={() => navigate('/mentor/availability')}>{T.updateAvailability}</Button>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-8 pb-16">
+      
+      {/* ── Hero Welcome Banner ───────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-900/90 via-slate-950/80 to-indigo-950/40 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl">
+        <div className="absolute -right-20 -top-20 size-72 rounded-full bg-cyan-500/10 blur-[90px] pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+                <Sparkles className="size-3 text-cyan-400" />
+                Cổng Giảng Dạy & Kèm Cặp Học Thuật
+              </span>
+              {verified && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs font-bold text-emerald-400">
+                  <BadgeCheck className="size-3.5 text-emerald-400" />
+                  Mentor Đã Xác Thực
+                </span>
+              )}
+            </div>
 
-      {/* Verification badge */}
-      {verified && (
-        <Alert className="mb-6 border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
-          <BadgeCheck className="h-4 w-4 text-emerald-400" />
-          <AlertTitle className="text-emerald-300 font-semibold">{T.verifiedMentorBadge}</AlertTitle>
-          <AlertDescription className="text-emerald-300/80">{T.verifiedMentorDesc}</AlertDescription>
-        </Alert>
-      )}
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Chào mừng trở lại, <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">{firstName}</span>! 👋
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300">
+              Tổng quan hoạt động kèm học thuật, quản lý lịch rảnh và xử lý yêu cầu đặt lịch của sinh viên.
+            </p>
+          </div>
 
-      {/* KPIs */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label={T.upcomingSessions} value={String(earnings?.upcomingSessions ?? 0)} icon={CalendarCheck} />
-        <KpiCard label={T.completedSessions} value={String(earnings?.completedSessions ?? 0)} icon={CheckCircle2} tone="success" />
-        <KpiCard label={T.netEarnings} value={formatCurrency(earnings?.totalEarned ?? 0)} icon={TrendingUp} tone="success" />
-        <KpiCard label={T.avgRating} value={rating != null ? `${rating.toFixed(1)} / 5` : '—'} icon={Star} tone="warning" />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        {/* Upcoming schedule */}
-        <Card className="border-border p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{T.todaySchedule}</h2>
-            <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/mentor/sessions')}>
-              {T.viewAll} <ArrowRight className="size-4" />
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              onClick={() => navigate('/mentor/availability')}
+              className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-blue-500"
+            >
+              <Clock className="size-4" /> Cập nhật lịch rảnh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/mentor/sessions')}
+              className="rounded-2xl border-slate-700 bg-slate-900/80 px-4 py-3 text-xs sm:text-sm font-semibold text-slate-200 hover:bg-slate-800"
+            >
+              Lịch giảng dạy
             </Button>
           </div>
+        </div>
+      </div>
+
+      {/* ── KPI Bento Metrics ────────────────────────────────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-3xl border border-slate-800/80 bg-slate-950/60 p-5 backdrop-blur-xl">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span>Lịch dạy sắp tới</span>
+            <CalendarCheck className="size-4 text-cyan-400" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-white tracking-tight">{earnings?.upcomingSessions ?? 0}</p>
+          <p className="mt-1 text-[11px] text-cyan-400/90 font-medium">Buổi học đã xác nhận</p>
+        </div>
+
+        <div className="rounded-3xl border border-slate-800/80 bg-slate-950/60 p-5 backdrop-blur-xl">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span>Đã hoàn thành</span>
+            <CheckCircle2 className="size-4 text-emerald-400" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-emerald-400 tracking-tight">{earnings?.completedSessions ?? 0}</p>
+          <p className="mt-1 text-[11px] text-emerald-400/90 font-medium">Buổi học thành công</p>
+        </div>
+
+        <div className="rounded-3xl border border-slate-800/80 bg-slate-950/60 p-5 backdrop-blur-xl">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span>Thu nhập thực nhận</span>
+            <TrendingUp className="size-4 text-emerald-400" />
+          </div>
+          <p className="mt-3 text-2xl font-extrabold text-emerald-400 tracking-tight">{formatCurrency(earnings?.totalEarned ?? 0)}</p>
+          <p className="mt-1 text-[11px] text-slate-400">Sau khi khấu trừ phí nền tảng 15%</p>
+        </div>
+
+        <div className="rounded-3xl border border-slate-800/80 bg-slate-950/60 p-5 backdrop-blur-xl">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span>Đánh giá trung bình</span>
+            <Star className="size-4 text-amber-400 fill-amber-400" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-amber-300 tracking-tight">{rating != null ? `${rating.toFixed(1)} / 5` : '5.0'}</p>
+          <p className="mt-1 text-[11px] text-amber-400/90 font-medium">Từ nhận xét của học viên</p>
+        </div>
+      </div>
+
+      {/* ── Two-column: Schedule & Pending Requests ──────────────────── */}
+      <div className="grid gap-6 lg:grid-cols-12 items-start">
+        
+        {/* Today / Upcoming Schedule (7 cols) */}
+        <div className="lg:col-span-7 rounded-3xl border border-slate-800/80 bg-slate-950/60 p-6 backdrop-blur-xl shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Calendar className="size-4 text-cyan-400" />
+                Lịch giảng dạy sắp tới
+              </h2>
+              <p className="text-xs text-slate-400">Các buổi học đã được xác nhận và sẵn sàng diễn ra.</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-cyan-400 hover:text-cyan-300 text-xs"
+              onClick={() => navigate('/mentor/sessions')}
+            >
+              Xem tất cả <ArrowRight className="size-3.5 ml-1" />
+            </Button>
+          </div>
+
           {upcoming.length ? (
             <div className="space-y-3">
-              {upcoming.slice(0, 4).map((b) => (
-                <div key={b.id} className="flex items-center justify-between rounded-xl border border-border p-4">
+              {upcoming.slice(0, 5).map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition-all hover:border-cyan-500/30"
+                >
                   <div className="flex items-center gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                       <BookOpen className="size-5" />
                     </span>
                     <div>
-                      <p style={{ fontWeight: 500 }}>{b.courseCode}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {b.format.replace('_', '-')} · {b.durationMin} min
+                      <p className="text-sm font-bold text-white">{b.courseCode}</p>
+                      <p className="text-xs text-slate-400">
+                        {b.format === 'ONE_ON_ONE' ? '1-kèm-1' : 'Học nhóm'} · {b.durationMin} phút · {b.menteeName || 'Học viên'}
                       </p>
                     </div>
                   </div>
+
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground" style={{ fontWeight: 500 }}>
-                      {new Date(b.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                      {' · '}
-                      {new Date(b.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                    <p className="text-xs text-slate-300 font-semibold">
+                      {new Date(b.startAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} · {new Date(b.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </p>
-                    <Button size="sm" className="mt-1 gap-1.5" onClick={() => setMeetBooking(b)}>
-                      <Video className="size-3.5" /> Join
+                    <Button
+                      size="sm"
+                      onClick={() => setMeetBooking(b)}
+                      className="mt-1.5 h-8 gap-1 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-3 text-xs font-bold text-white hover:from-cyan-400 hover:to-blue-500"
+                    >
+                      <Video className="size-3.5" /> Vào lớp
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">{T.noSessionsToday}</p>
+            <div className="py-12 text-center text-slate-400 space-y-2">
+              <Calendar className="size-8 mx-auto text-slate-600" />
+              <p className="text-xs">Không có buổi học nào sắp tới.</p>
+            </div>
           )}
-        </Card>
+        </div>
 
-        {/* Pending requests */}
-        <Card className="border-border p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{T.pendingRequests}</h2>
-            <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/mentor/sessions')}>
-              {T.viewAll} <ArrowRight className="size-4" />
-            </Button>
+        {/* Pending Requests Waiting for Mentor (5 cols) */}
+        <div className="lg:col-span-5 rounded-3xl border border-slate-800/80 bg-slate-950/60 p-6 backdrop-blur-xl shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Clock className="size-4 text-amber-400" />
+                Yêu cầu đặt lịch ({pending.length})
+              </h2>
+              <p className="text-xs text-slate-400">Học viên đã thanh toán ký quỹ.</p>
+            </div>
           </div>
+
           {pending.length ? (
             <div className="space-y-3">
               {pending.map((b) => (
-                <div key={b.id} className="rounded-xl border border-border p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p style={{ fontWeight: 500 }}>{b.courseCode}</p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {b.format.replace('_', '-')} · {b.durationMin} min · {formatCurrency(b.price)}
+                <div
+                  key={b.id}
+                  className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-bold text-white">{b.courseCode}</p>
+                      <p className="text-xs text-slate-400">
+                        {new Date(b.startAt).toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' })} · {new Date(b.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <p className="text-xs font-semibold text-emerald-400 mt-1">
+                        Học phí: {formatCurrency(b.price)}
                       </p>
                     </div>
                     <StatusBadge status={mapStatusToDisplay(b.status)} />
                   </div>
-                  <div className="flex gap-2">
+
+                  <div className="flex gap-2 pt-1 border-t border-slate-800/60">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-danger border-danger/30 hover:bg-danger/5"
                       disabled={actingId === b.id}
                       onClick={() => act(b, 'decline')}
+                      className="flex-1 rounded-xl border-slate-800 text-red-400 hover:bg-red-950/30 text-xs"
                     >
-                      <X className="size-3.5" /> Decline
+                      <X className="size-3.5 mr-1" /> Từ chối
                     </Button>
-                    <Button size="sm" className="flex-1" disabled={actingId === b.id} onClick={() => act(b, 'accept')}>
-                      {actingId === b.id ? <Loader2 className="size-3.5 animate-spin" /> : <><Check className="size-3.5" /> Accept</>}
+                    <Button
+                      size="sm"
+                      disabled={actingId === b.id}
+                      onClick={() => act(b, 'accept')}
+                      className="flex-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs"
+                    >
+                      {actingId === b.id ? <Loader2 className="size-3.5 animate-spin" /> : <><Check className="size-3.5 mr-1" /> Chấp nhận</>}
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="size-4" /> {T.noPendingRequests}
+            <div className="py-12 text-center text-slate-400 space-y-2">
+              <CheckCircle2 className="size-8 mx-auto text-slate-600" />
+              <p className="text-xs">Không có yêu cầu đặt lịch nào đang chờ duyệt.</p>
             </div>
           )}
-        </Card>
+        </div>
+
       </div>
 
-      {/* Meet room overlay */}
+      {/* Jitsi Meet Overlay */}
       {meetBooking && (
         <MeetRoomOverlay
           bookingId={meetBooking.id}
+          roomId={meetBooking.roomId}
           course={meetBooking.courseCode}
-          partnerName={meetBooking.menteeName ?? 'Student'}
+          partnerName={meetBooking.menteeName ?? 'Học viên'}
           durationMinutes={meetBooking.durationMin}
           displayName={user?.name}
           onClose={() => setMeetBooking(null)}

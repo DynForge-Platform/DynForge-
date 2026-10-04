@@ -39,9 +39,10 @@ export interface Mentor {
   languages: string[];
   level: 'Undergraduate' | 'Graduate' | 'Postgraduate';
   expertise: string[];
-  courses: { code: string; name: string; ratePrivate?: number; rateGroup?: number }[];
+  courses: { code: string; name: string; ratePrivate?: number; rateGroup?: number; grade?: string; verified?: boolean }[];
   strengths: string[];
   nextAvailable: string;
+  availability?: Record<string, string[]>;
 }
 
 export interface Review {

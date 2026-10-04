@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ import java.util.Set;
 
 @Slf4j
 @Component
+@Profile("!prod & !test")
 @Order(1)
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
@@ -59,7 +61,7 @@ public class DataSeeder implements CommandLineRunner {
                             .build());
                 });
 
-        if (userRepository.existsByEmail("khoa.tran@dynforge.vn") || userRepository.existsByEmail("khoa.tran@gradora.vn")) {
+        if (userRepository.existsByEmail("admin@dynforge.vn")) {
             log.info("Seed data already present — skipping demo accounts.");
             return;
         }

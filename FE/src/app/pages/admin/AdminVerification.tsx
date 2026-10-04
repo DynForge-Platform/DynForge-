@@ -173,9 +173,34 @@ export function AdminVerification() {
                 </div>
                 <div className="rounded-xl border border-border p-3">
                   <p className="text-muted-foreground">Transcript</p>
-                  <p style={{ fontWeight: 500 }} className="truncate">{selected.transcriptUrl ?? '—'}</p>
+                  {selected.transcriptUrl ? (
+                    <a
+                      href={selected.transcriptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline text-xs truncate block pt-0.5"
+                    >
+                      {selected.transcriptUrl}
+                    </a>
+                  ) : (
+                    <p style={{ fontWeight: 500 }} className="truncate">—</p>
+                  )}
                 </div>
               </div>
+
+              {selected.alumniProofUrl && (
+                <div className="rounded-xl border border-border p-3 text-sm">
+                  <p className="text-muted-foreground">Alumni Proof</p>
+                  <a
+                    href={selected.alumniProofUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline text-xs truncate block pt-0.5"
+                  >
+                    {selected.alumniProofUrl}
+                  </a>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label>Rejection note (required when rejecting)</Label>

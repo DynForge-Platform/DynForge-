@@ -13,6 +13,7 @@ import java.util.List;
 
 @Slf4j
 @Component
+@org.springframework.context.annotation.Profile("!test")
 @Order(2)
 @RequiredArgsConstructor
 public class ResourceSeeder implements CommandLineRunner {

@@ -4,7 +4,10 @@ import com.dynforge.be.model.dto.ApiResponse;
 import com.dynforge.be.model.dto.BookingRequest;
 import com.dynforge.be.model.dto.BookingResponse;
 import com.dynforge.be.model.dto.DisputeRequest;
+import com.dynforge.be.model.dto.MentorDisputeResponseRequest;
 import com.dynforge.be.model.dto.MentorEarningsResponse;
+import com.dynforge.be.model.dto.RescheduleRequest;
+import com.dynforge.be.model.dto.RescheduleRespondRequest;
 import com.dynforge.be.model.dto.ResolveRequest;
 import com.dynforge.be.security.UserPrincipal;
 import com.dynforge.be.service.BookingService;
@@ -80,6 +83,26 @@ public class BookingController {
         return ApiResponse.ok("Booking cancelled", bookingService.cancel(principal.getUser(), id));
     }
 
+    @PatchMapping("/{id}/reschedule")
+    public ApiResponse<BookingResponse> reschedule(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String id,
+            @Valid @RequestBody RescheduleRequest request
+    ) {
+        return ApiResponse.ok("Booking rescheduled", bookingService.reschedule(principal.getUser(), id, request));
+    }
+
+    @PatchMapping("/{id}/reschedule/respond")
+    public ApiResponse<BookingResponse> respondReschedule(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String id,
+            @Valid @RequestBody RescheduleRespondRequest request
+    ) {
+        return ApiResponse.ok("Reschedule response recorded",
+                bookingService.respondReschedule(principal.getUser(), id, request));
+    }
+
+
     @PatchMapping("/{id}/accept")
     public ApiResponse<BookingResponse> accept(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -120,6 +143,16 @@ public class BookingController {
     ) {
         return ApiResponse.ok("Dispute opened",
                 escrowService.dispute(principal.getUser(), id, request.issueType(), request.reason()));
+    }
+
+    @PatchMapping("/{id}/dispute/respond")
+    public ApiResponse<BookingResponse> respondDispute(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String id,
+            @Valid @RequestBody MentorDisputeResponseRequest request
+    ) {
+        return ApiResponse.ok("Dispute response recorded",
+                escrowService.respondDispute(principal.getUser(), id, request.response(), request.evidenceUrl()));
     }
 
     @PatchMapping("/{id}/resolve")

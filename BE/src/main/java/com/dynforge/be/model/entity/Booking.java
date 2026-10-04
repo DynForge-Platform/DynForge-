@@ -66,4 +66,40 @@ public class Booking {
     private String disputeIssueType;
 
     private String disputeReason;
+
+    /** Mentor counter-argument and evidence in response to a dispute. */
+    private String disputeMentorResponse;
+
+    private String disputeMentorEvidenceUrl;
+
+    private Instant disputeRespondedAt;
+
+    /** If rescheduled, records the previous startAt timestamp. */
+    private Instant rescheduledFrom;
+
+    /** Pending rescheduled start time awaiting mentor approval (for 12h-24h window). */
+    private Instant pendingStartAt;
+
+    /** Number of times this booking has been rescheduled (max 2). */
+    @Builder.Default
+    private int rescheduleCount = 0;
+
+    /** Flag indicating 2h post-session mark-taught reminder email has been sent. */
+    @Builder.Default
+    private boolean reminder2hSent = false;
+
+    /** Flag indicating 12h post-session mark-taught warning email has been sent. */
+    @Builder.Default
+    private boolean reminder12hSent = false;
+
+    /** Random room ID (UUID) for Jitsi video classroom; avoids guessing meeting rooms. */
+    private String roomId;
+
+    /**
+     * Returns the random roomId if present, or falls back to "DynForge-{id}" for legacy bookings.
+     */
+    public String getEffectiveRoomId() {
+        return (roomId != null && !roomId.isBlank()) ? roomId : ("DynForge-" + id);
+    }
 }
+

@@ -42,15 +42,12 @@ public class GeminiClient {
      * Total pool: >1,100 requests/day completely free.
      */
     private static final List<String> MODEL_CASCADE = List.of(
-            "gemini-3.5-flash-lite",   // 500 RPD, 15 RPM (Đang hoạt động tốt)
-            "gemini-3.1-flash-lite",   // 500 RPD, 15 RPM (Dự phòng 500 RPD)
-            "gemini-3.8-flash",        //  20 RPD,  5 RPM (Flash mạnh nhất)
-            "gemini-3.7-flash",        //  20 RPD,  5 RPM
-            "gemini-3.6-flash",        //  20 RPD,  5 RPM
-            "gemini-3.5-flash",        //  20 RPD,  5 RPM
-            "gemini-3-flash",          //  20 RPD,  5 RPM
-            "gemini-2.5-flash-lite",   //  20 RPD, 10 RPM
-            "gemini-2.5-flash"         //  20 RPD,  5 RPM
+            "gemini-3.5-flash-lite",   // Primary fast & efficient model (active)
+            "gemini-3.1-flash-lite",   // Fallback fast model (active)
+            "gemini-3.5-flash",        // High capability model (active)
+            "gemini-3.6-flash",        // High capability model (active)
+            "gemini-flash-lite-latest",// Alias latest lite model (active)
+            "gemini-3.8-flash"         // Latest flash model
     );
 
     public GeminiClient(
@@ -117,16 +114,11 @@ public class GeminiClient {
             } catch (Exception e) {
                 lastException = e;
                 String msg = e.getMessage() != null ? e.getMessage() : "";
-                if (msg.contains("429") || msg.contains("RESOURCE_EXHAUSTED")
-                        || msg.contains("503") || msg.contains("UNAVAILABLE")
-                        || msg.contains("high demand") || msg.contains("500")
-                        || msg.contains("502") || msg.contains("504")) {
-                    log.warn("⚡ Model [{}] unavailable or quota exceeded ({}) → switching to next model in cascade...", model, msg);
-                } else {
-                    // Non-transient error (e.g. 400 Bad Request, 401 Unauthorized) — don't cascade, throw immediately
-                    log.error("DynForge AI call failed on model [{}]: {}", model, msg);
-                    throw new BadRequestException("Không thể kết nối với DynForge AI: " + msg);
+                if (msg.contains("401") || msg.contains("API_KEY_INVALID")) {
+                    log.error("Gemini API key is invalid: {}", msg);
+                    throw new BadRequestException("Gemini API key không hợp lệ hoặc đã hết hạn: " + msg);
                 }
+                log.warn("⚡ Model [{}] unavailable or error ({}) → switching to next model in cascade...", model, msg);
             }
         }
 

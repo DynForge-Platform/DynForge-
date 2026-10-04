@@ -23,6 +23,8 @@ public record MentorProfileResponse(
         boolean verified,
         double ratingAvg,
         int ratingCount,
-        int sessionsCount
+        int sessionsCount,
+        int mentorCancelCount,
+        int mentorNoShowCount
 ) {
 }

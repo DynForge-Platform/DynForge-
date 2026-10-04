@@ -76,4 +76,12 @@ public class MentorProfile {
 
     @Builder.Default
     private int sessionsCount = 0;
+
+    /** Number of times the mentor has cancelled accepted/escrowed bookings. */
+    @Builder.Default
+    private int mentorCancelCount = 0;
+
+    /** Number of times the mentor was flagged for no-show (auto-refunded). */
+    @Builder.Default
+    private int mentorNoShowCount = 0;
 }
