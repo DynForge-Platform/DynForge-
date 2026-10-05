@@ -17,10 +17,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
@@ -30,6 +32,12 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${app.frontend.base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
+
+    @Value("${app.cors.allowed-origins:}")
+    private String additionalAllowedOrigins;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -51,14 +59,48 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of(
+        List<String> allowedPatterns = new ArrayList<>(List.of(
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "https://*.vercel.app",
-                "https://*.azurewebsites.net",
-                "https://dynforge.tech",
-                "https://*.dynforge.tech"
+                "https://*.azurewebsites.net"
         ));
+
+        // Nạp tự động từ biến môi trường APP_FRONTEND_BASE_URL (ví dụ: https://dynforge.tech hoặc https://www.dynforge.tech)
+        if (frontendBaseUrl != null && !frontendBaseUrl.isBlank()) {
+            String trimmed = frontendBaseUrl.trim().replaceAll("/+$", "");
+            if (!allowedPatterns.contains(trimmed)) {
+                allowedPatterns.add(trimmed);
+            }
+            // Tự động cho phép cả bản có www và không có www
+            if (trimmed.startsWith("https://www.")) {
+                String nonWww = trimmed.replace("https://www.", "https://");
+                if (!allowedPatterns.contains(nonWww)) {
+                    allowedPatterns.add(nonWww);
+                }
+            } else if (trimmed.startsWith("https://")) {
+                String withWww = trimmed.replace("https://", "https://www.");
+                if (!allowedPatterns.contains(withWww)) {
+                    allowedPatterns.add(withWww);
+                }
+            }
+        }
+
+        // Hỗ trợ thêm biến môi trường APP_CORS_ALLOWED_ORIGINS (danh sách domain cách nhau bằng dấu phẩy)
+        if (additionalAllowedOrigins != null && !additionalAllowedOrigins.isBlank()) {
+            for (String origin : additionalAllowedOrigins.split(",")) {
+                String o = origin.trim().replaceAll("/+$", "");
+                if (!o.isEmpty() && !allowedPatterns.contains(o)) {
+                    allowedPatterns.add(o);
+                }
+            }
+        }
+
+        // Cho phép các subdomain của domain chính
+        allowedPatterns.add("https://dynforge.tech");
+        allowedPatterns.add("https://*.dynforge.tech");
+
+        config.setAllowedOriginPatterns(allowedPatterns);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
