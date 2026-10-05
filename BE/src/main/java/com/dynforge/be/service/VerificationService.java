@@ -37,8 +37,8 @@ public class VerificationService {
     private final MailService mailService;
 
     public VerificationResponse submit(User user, VerificationRequestDto dto) {
-        UrlValidator.validateHttpUrl(dto.transcriptUrl(), "transcriptUrl");
-        UrlValidator.validateHttpUrl(dto.alumniProofUrl(), "alumniProofUrl");
+        validateDocumentProof(dto.transcriptUrl(), "transcriptUrl");
+        validateDocumentProof(dto.alumniProofUrl(), "alumniProofUrl");
 
         VerificationRequest request = VerificationRequest.builder()
                 .userId(new ObjectId(user.getId()))
@@ -159,5 +159,25 @@ public class VerificationService {
         }
 
         return verificationMapper.toResponse(request);
+    }
+
+    private void validateDocumentProof(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        String trimmed = value.trim();
+        // If it looks like a URL (contains scheme or starts with http/https/etc.)
+        if (trimmed.contains("://") || trimmed.toLowerCase().startsWith("http:") || trimmed.toLowerCase().startsWith("https:")
+                || trimmed.toLowerCase().startsWith("javascript:") || trimmed.toLowerCase().startsWith("ftp:") || trimmed.toLowerCase().startsWith("file:")) {
+            UrlValidator.validateHttpUrl(trimmed, fieldName);
+        } else {
+            // It's an uploaded file name / document proof identifier
+            if (trimmed.length() > 255) {
+                throw new BadRequestException(fieldName + " tên tệp quá dài (tối đa 255 ký tự).");
+            }
+            if (trimmed.contains("..") || trimmed.contains("/") || trimmed.contains("\\")) {
+                throw new BadRequestException(fieldName + " chứa ký tự không hợp lệ.");
+            }
+        }
     }
 }

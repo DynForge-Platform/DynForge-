@@ -287,10 +287,15 @@ export function TeacherVerification() {
         toast.success('Courses updated. They are now visible to students.');
       } else {
         // Submit a verification request (representative course) for admin review.
+        const allUploaded = Object.values(uploadedFiles).flat();
+        const primaryDoc = (uploadedFiles['transcript'] ?? [])[0] ?? allUploaded[0];
+        const alumniDoc = (uploadedFiles['id'] ?? [])[0] ?? (uploadedFiles['certificate'] ?? [])[0];
+
         const result = await submitVerification({
           course: valid[0].code,
           claimedGrade: valid[0].grade,
-          transcriptUrl: transcriptFile?.name,
+          transcriptUrl: primaryDoc?.name,
+          alumniProofUrl: alumniDoc && alumniDoc !== primaryDoc ? alumniDoc.name : undefined,
         });
         setExisting(result);
         toast.success('Application submitted! DynForge will review within 2–3 business days.');

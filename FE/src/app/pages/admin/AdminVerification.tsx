@@ -11,7 +11,7 @@ import {
 } from '../../components/ui/dialog';
 import { ImageWithFallback } from '../../components/figma/ImageWithFallback';
 import { StatusBadge } from '../../components/common';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileText, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   listVerifications,
@@ -113,14 +113,22 @@ export function AdminVerification() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {item.transcriptUrl ? (
-                        <a
-                          href={item.transcriptUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline max-w-[180px] truncate block"
-                        >
-                          {item.transcriptUrl}
-                        </a>
+                        item.transcriptUrl.startsWith('http://') || item.transcriptUrl.startsWith('https://') ? (
+                          <a
+                            href={item.transcriptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:underline max-w-[180px] truncate"
+                          >
+                            <ExternalLink className="size-3 shrink-0" />
+                            <span className="truncate">{item.transcriptUrl}</span>
+                          </a>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-foreground font-mono bg-muted/60 px-2 py-0.5 rounded max-w-[180px] truncate" title={item.transcriptUrl}>
+                            <FileText className="size-3.5 text-primary shrink-0" />
+                            <span className="truncate">{item.transcriptUrl}</span>
+                          </span>
+                        )
                       ) : (
                         '—'
                       )}
@@ -174,14 +182,22 @@ export function AdminVerification() {
                 <div className="rounded-xl border border-border p-3">
                   <p className="text-muted-foreground">Transcript</p>
                   {selected.transcriptUrl ? (
-                    <a
-                      href={selected.transcriptUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary underline text-xs truncate block pt-0.5"
-                    >
-                      {selected.transcriptUrl}
-                    </a>
+                    selected.transcriptUrl.startsWith('http://') || selected.transcriptUrl.startsWith('https://') ? (
+                      <a
+                        href={selected.transcriptUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-primary underline text-xs truncate pt-0.5"
+                      >
+                        <ExternalLink className="size-3 shrink-0" />
+                        <span className="truncate">{selected.transcriptUrl}</span>
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-foreground font-mono bg-muted/60 px-2 py-1 rounded mt-1 truncate" title={selected.transcriptUrl}>
+                        <FileText className="size-3.5 text-primary shrink-0" />
+                        <span className="truncate">{selected.transcriptUrl}</span>
+                      </span>
+                    )
                   ) : (
                     <p style={{ fontWeight: 500 }} className="truncate">—</p>
                   )}
@@ -191,14 +207,22 @@ export function AdminVerification() {
               {selected.alumniProofUrl && (
                 <div className="rounded-xl border border-border p-3 text-sm">
                   <p className="text-muted-foreground">Alumni Proof</p>
-                  <a
-                    href={selected.alumniProofUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline text-xs truncate block pt-0.5"
-                  >
-                    {selected.alumniProofUrl}
-                  </a>
+                  {selected.alumniProofUrl.startsWith('http://') || selected.alumniProofUrl.startsWith('https://') ? (
+                    <a
+                      href={selected.alumniProofUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary underline text-xs truncate pt-0.5"
+                    >
+                      <ExternalLink className="size-3 shrink-0" />
+                      <span className="truncate">{selected.alumniProofUrl}</span>
+                    </a>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-foreground font-mono bg-muted/60 px-2 py-1 rounded mt-1 truncate" title={selected.alumniProofUrl}>
+                      <FileText className="size-3.5 text-primary shrink-0" />
+                      <span className="truncate">{selected.alumniProofUrl}</span>
+                    </span>
+                  )}
                 </div>
               )}
 
