@@ -21,6 +21,7 @@ export type MentorRole =
 
 export interface Mentor {
   id: string;
+  userId?: string;
   name: string;
   avatar: string;
   role: MentorRole;

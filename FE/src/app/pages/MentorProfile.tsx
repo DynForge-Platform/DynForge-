@@ -19,6 +19,8 @@ import {
   Loader2,
   ArrowLeft,
   CheckCircle2,
+  LayoutDashboard,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 import { getMentor, reviews as mockReviews, formatCurrency, type Mentor, type Review } from '../data/mockData';
@@ -40,6 +42,15 @@ export function MentorProfile() {
   const [profileLoading, setProfileLoading] = useState(isObjectId(id ?? ''));
   const [reviews, setReviews] = useState<Review[]>(isObjectId(id ?? '') ? [] : mockReviews);
   const [mentorUserId, setMentorUserId] = useState<string | null>(null);
+
+  const isOwnProfile = Boolean(
+    user && (
+      (mentorUserId && user.id === mentorUserId) ||
+      (mentor?.userId && user.id === mentor.userId) ||
+      (mentor?.id && user.id === mentor.id) ||
+      (id && user.id === id)
+    )
+  );
 
   useEffect(() => {
     if (!id || !isObjectId(id)) return;
@@ -129,13 +140,31 @@ export function MentorProfile() {
                     <span>{mentor.sessionsCompleted} {T.sessionCompleted}</span>
                     <span>{T.respondsLabel} {mentor.responseTime.toLowerCase()}</span>
                   </div>
-                  <div className="pt-4 flex flex-wrap gap-3">
-                    <Button className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl h-11 px-6" onClick={() => requireAuth(`/mentors/${mentor.id}/schedule`) && navigate(`/mentors/${mentor.id}/schedule`)}>
-                      <Calendar className="size-4 mr-2" /> {T.bookSession}
-                    </Button>
-                    <Button variant="outline" className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 rounded-xl h-11 px-5" onClick={openMessages}>
-                      <MessageSquare className="size-4 mr-2 text-cyan-400" /> {T.messageMentor}
-                    </Button>
+                  <div className="pt-4 flex flex-wrap items-center gap-3">
+                    {isOwnProfile ? (
+                      <>
+                        <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-xs font-medium">
+                          <CheckCircle2 className="size-4 text-cyan-400 shrink-0" />
+                          <span>{lang === 'vi' ? 'Đây là hồ sơ Mentor của bạn' : 'This is your Mentor Profile'}</span>
+                        </div>
+                        <Button
+                          className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl h-11 px-5 shadow-lg shadow-cyan-900/30 cursor-pointer"
+                          onClick={() => navigate('/mentor/dashboard')}
+                        >
+                          <LayoutDashboard className="size-4 mr-2" />
+                          {lang === 'vi' ? 'Quản lý hồ sơ Mentor' : 'Manage Mentor Profile'}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl h-11 px-6 cursor-pointer" onClick={() => requireAuth(`/mentors/${mentor.id}/schedule`) && navigate(`/mentors/${mentor.id}/schedule`)}>
+                          <Calendar className="size-4 mr-2" /> {T.bookSession}
+                        </Button>
+                        <Button variant="outline" className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 rounded-xl h-11 px-5 cursor-pointer" onClick={openMessages}>
+                          <MessageSquare className="size-4 mr-2 text-cyan-400" /> {T.messageMentor}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -268,9 +297,29 @@ export function MentorProfile() {
                 </div>
               </div>
 
-              <Button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl h-11" onClick={() => requireAuth(`/mentors/${mentor.id}/schedule`) && navigate(`/mentors/${mentor.id}/schedule`)}>
-                <Calendar className="size-4 mr-2" /> {T.bookSession}
-              </Button>
+              {isOwnProfile ? (
+                <div className="space-y-3 pt-2">
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs leading-relaxed flex items-start gap-2">
+                    <AlertCircle className="size-4 text-amber-400 shrink-0 mt-0.5" />
+                    <span>
+                      {lang === 'vi'
+                        ? 'Bạn đang xem hồ sơ của chính mình. Bạn không thể tự book lịch học với bản thân.'
+                        : 'You are viewing your own profile. You cannot book sessions with yourself.'}
+                    </span>
+                  </div>
+                  <Button
+                    className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl h-11 shadow-lg shadow-cyan-900/30 cursor-pointer"
+                    onClick={() => navigate('/mentor/dashboard')}
+                  >
+                    <LayoutDashboard className="size-4 mr-2" />
+                    {lang === 'vi' ? 'Vào bảng điều khiển Mentor' : 'Go to Mentor Dashboard'}
+                  </Button>
+                </div>
+              ) : (
+                <Button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl h-11 cursor-pointer" onClick={() => requireAuth(`/mentors/${mentor.id}/schedule`) && navigate(`/mentors/${mentor.id}/schedule`)}>
+                  <Calendar className="size-4 mr-2" /> {T.bookSession}
+                </Button>
+              )}
             </div>
           </aside>
         </div>

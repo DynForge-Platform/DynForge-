@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, useSearchParams, Link } from 'reac
 import {
   ShieldCheck, ChevronRight, CheckCircle2, X, Loader2,
   Wallet, Zap, RefreshCw, ExternalLink, AlertCircle, Building2,
-  ArrowRight
+  ArrowRight, AlertTriangle, LayoutDashboard
 } from 'lucide-react';
 import { getMentor, formatCurrency, type Mentor } from '../data/mockData';
 import { Button } from '../components/ui/button';
@@ -519,6 +519,15 @@ export function OrderSummary() {
   const isInsufficient = walletBalance !== null && walletBalance < total;
   const shortfall = Math.max(0, total - (walletBalance ?? 0));
 
+  const isSelfBooking = Boolean(
+    user && (
+      (mentor?.userId && user.id === mentor.userId) ||
+      (mentor?.id && user.id === mentor.id) ||
+      (id && user.id === id) ||
+      (state?.mentorId && user.id === state.mentorId)
+    )
+  );
+
   const applyVoucher = () => {
     const code = voucherInput.trim().toUpperCase();
     if (!code) return;
@@ -548,6 +557,15 @@ export function OrderSummary() {
   };
 
   const confirm = async () => {
+    if (isSelfBooking) {
+      toast.error(
+        lang === 'vi'
+          ? 'Bạn không thể tự thanh toán hoặc đặt lịch với chính mình!'
+          : 'You cannot book or pay for a session with yourself!'
+      );
+      return;
+    }
+
     // If balance is already known to be insufficient, guide user directly to top-up
     if (walletBalance !== null && walletBalance < total) {
       setShowTopUpModal(true);
@@ -677,6 +695,33 @@ export function OrderSummary() {
       />
 
       <div className="mx-auto max-w-6xl px-6">
+        {isSelfBooking && (
+          <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 backdrop-blur-md p-5 text-amber-200 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+                <AlertTriangle className="size-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-semibold text-white text-base">
+                  {lang === 'vi' ? 'Không thể tự thanh toán buổi học của chính mình' : 'Cannot pay for your own session'}
+                </h4>
+                <p className="text-xs text-amber-200/80 leading-relaxed max-w-2xl">
+                  {lang === 'vi'
+                    ? 'Bạn đang truy cập trang thanh toán cho hồ sơ mentor của bản thân. Tính năng tự đặt lịch học với chính mình đã bị khóa để đảm bảo tính minh bạch.'
+                    : 'You are on the payment page for your own mentor profile. Self-booking is restricted to ensure platform integrity.'}
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/mentor/dashboard"
+              className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-cyan-900/40 transition-all"
+            >
+              <LayoutDashboard className="size-4" />
+              {lang === 'vi' ? 'Bảng điều khiển Mentor' : 'Mentor Dashboard'}
+            </Link>
+          </div>
+        )}
+
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-2 text-sm text-slate-400">
           <Link to={`/mentors/${mentor.id}/schedule`} className="hover:text-cyan-300">Calendar</Link>
@@ -876,16 +921,20 @@ export function OrderSummary() {
 
                 <Button
                   onClick={confirm}
-                  disabled={paying}
+                  disabled={paying || isSelfBooking}
                   className={cn(
                     "w-full h-12 font-semibold rounded-xl text-base transition-all",
-                    isInsufficient
+                    isSelfBooking
+                      ? "border border-amber-500/30 bg-amber-500/10 text-amber-300 cursor-not-allowed opacity-60"
+                      : isInsufficient
                       ? "border border-cyan-500/30 bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-300"
                       : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-xl shadow-cyan-500/25 hover:scale-[1.01] active:scale-[0.99]"
                   )}
                 >
                   {paying ? (
                     <><Loader2 className="size-5 animate-spin mr-2" /> Processing Payment…</>
+                  ) : isSelfBooking ? (
+                    (lang === 'vi' ? 'Không thể tự thanh toán' : 'Cannot Book Yourself')
                   ) : isInsufficient ? (
                     <span className="flex items-center gap-2 text-sm text-slate-300">
                       {lang === 'vi' ? 'Cần nạp thêm tiền để thanh toán Escrow' : 'Top up required to Pay via Escrow'}

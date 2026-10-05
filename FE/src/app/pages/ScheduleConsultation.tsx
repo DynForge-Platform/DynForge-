@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { ChevronLeft, ChevronRight, ShieldCheck, Video, MapPin, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShieldCheck, Video, MapPin, Loader2, AlertTriangle, LayoutDashboard } from 'lucide-react';
+import { toast } from 'sonner';
 import { getMentor, formatCurrency, type Mentor } from '../data/mockData';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
@@ -145,8 +146,25 @@ export function ScheduleConsultation() {
   const activeRate = bookingFormat === 'GROUP' ? courseGroupRate : courseHourlyRate;
   const price = Math.round((activeRate * (duration || 60)) / 60);
 
+  const isSelfBooking = Boolean(
+    user && (
+      (realMentorUserId && user.id === realMentorUserId) ||
+      (mentor?.userId && user.id === mentor.userId) ||
+      (mentor?.id && user.id === mentor.id) ||
+      (id && user.id === id)
+    )
+  );
+
   const cont = () => {
     if (!mentor) return;
+    if (isSelfBooking) {
+      toast.error(
+        lang === 'vi'
+          ? 'Bạn không thể tự đặt lịch học với chính mình!'
+          : 'You cannot book a session with yourself!'
+      );
+      return;
+    }
     const mentorId = realMentorUserId ?? mentor.id;
     navigate(`/mentors/${mentor.id}/order`, {
       state: {
@@ -209,7 +227,33 @@ export function ScheduleConsultation() {
         subtitle={lang === 'vi' ? 'Chọn môn học, thời lượng, ngày và khung giờ học phù hợp nhất với bạn.' : 'Pick your course, duration, date, and preferred time slot.'}
       />
 
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-6xl px-6 space-y-6">
+        {isSelfBooking && (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 backdrop-blur-md p-5 text-amber-200 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+                <AlertTriangle className="size-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-semibold text-white text-base">
+                  {lang === 'vi' ? 'Bạn đang xem lịch của chính mình' : 'You are viewing your own schedule'}
+                </h4>
+                <p className="text-xs text-amber-200/80 leading-relaxed max-w-2xl">
+                  {lang === 'vi'
+                    ? 'Bạn không thể tự đặt lịch học với bản thân. Để xem các yêu cầu đặt lịch từ học viên hoặc quản lý khung giờ rảnh, vui lòng truy cập Bảng điều khiển Mentor.'
+                    : 'You cannot book a consultation with yourself. To view student bookings or manage your availability slots, please visit your Mentor Dashboard.'}
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/mentor/dashboard"
+              className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-cyan-900/40 transition-all"
+            >
+              <LayoutDashboard className="size-4" />
+              {lang === 'vi' ? 'Vào Bảng điều khiển Mentor' : 'Mentor Dashboard'}
+            </Link>
+          </div>
+        )}
         <div className="grid gap-8 lg:grid-cols-[340px_1fr]">
           {/* Summary sidebar (Dark Glass) */}
           <aside className="lg:sticky lg:top-[88px] lg:h-fit order-last lg:order-first">
@@ -336,10 +380,12 @@ export function ScheduleConsultation() {
 
                   <Button
                     onClick={cont}
-                    disabled={!selectedDay || !selectedSlot}
+                    disabled={!selectedDay || !selectedSlot || isSelfBooking}
                     className="w-full py-3 h-12 text-sm font-semibold rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 disabled:opacity-40 transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                   >
-                    {T.continueToOrder}
+                    {isSelfBooking
+                      ? (lang === 'vi' ? 'Không thể tự đặt lịch' : 'Cannot Book Yourself')
+                      : T.continueToOrder}
                   </Button>
 
                   <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-300">
@@ -565,10 +611,12 @@ export function ScheduleConsultation() {
               </Link>
               <Button
                 onClick={cont}
-                disabled={!selectedDay || !selectedSlot}
+                disabled={!selectedDay || !selectedSlot || isSelfBooking}
                 className="py-2.5 px-6 text-sm font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 disabled:opacity-40 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               >
-                {T.continueToOrder}
+                {isSelfBooking
+                  ? (lang === 'vi' ? 'Không thể tự đặt lịch' : 'Cannot Book Yourself')
+                  : T.continueToOrder}
               </Button>
             </div>
           </div>

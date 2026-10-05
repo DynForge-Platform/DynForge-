@@ -6,6 +6,8 @@ import { Badge } from './ui/badge';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { StarRating, VerifiedBadge } from './common';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { cn } from './ui/utils';
 
 const roleKeyMap: Record<string, keyof ReturnType<typeof useLanguage>['T']> = {
   'Senior Student': 'roleSeniorStudent',
@@ -15,7 +17,11 @@ const roleKeyMap: Record<string, keyof ReturnType<typeof useLanguage>['T']> = {
 };
 
 export function MentorCard({ mentor }: { mentor: Mentor }) {
-  const { T } = useLanguage();
+  const { T, lang } = useLanguage();
+  const { user } = useAuth();
+  const isOwnProfile = Boolean(
+    user?.id && (user.id === mentor.id || (mentor.userId && user.id === mentor.userId))
+  );
   const roleLabel = (T[roleKeyMap[mentor.role] as keyof typeof T] as string) ?? mentor.role;
 
   return (
@@ -27,9 +33,16 @@ export function MentorCard({ mentor }: { mentor: Mentor }) {
           className="size-16 shrink-0 rounded-2xl object-cover border border-white/15"
         />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-semibold text-white text-base">
-            {mentor.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="truncate font-semibold text-white text-base">
+              {mentor.name}
+            </h3>
+            {isOwnProfile && (
+              <span className="shrink-0 rounded-md border border-cyan-400/40 bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-300">
+                {lang === 'vi' ? 'Bạn' : 'You'}
+              </span>
+            )}
+          </div>
           <p className="text-sm font-medium text-cyan-300">
             {roleLabel}
           </p>
@@ -75,9 +88,14 @@ export function MentorCard({ mentor }: { mentor: Mentor }) {
         </div>
         <Link
           to={`/mentors/${mentor.id}`}
-          className="liquid-glass flex w-full items-center justify-center rounded-xl bg-cyan-600/30 border border-cyan-400/40 py-2.5 text-sm font-medium text-white hover:scale-[1.02] transition-transform shadow-md"
+          className={cn(
+            'liquid-glass flex w-full items-center justify-center rounded-xl py-2.5 text-sm font-medium transition-all shadow-md hover:scale-[1.02]',
+            isOwnProfile
+              ? 'bg-amber-500/15 border border-amber-400/40 text-amber-200 hover:bg-amber-500/25'
+              : 'bg-cyan-600/30 border border-cyan-400/40 text-white hover:bg-cyan-600/40'
+          )}
         >
-          {T.viewProfile}
+          {isOwnProfile ? (lang === 'vi' ? 'Hồ sơ của bạn' : 'Your Profile') : T.viewProfile}
         </Link>
       </div>
     </Card>

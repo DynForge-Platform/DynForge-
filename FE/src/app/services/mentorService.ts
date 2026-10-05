@@ -146,6 +146,7 @@ export function backendToMentor(p: MentorProfileResponse): Mentor {
   const groupRate  = courses.length > 0 ? Math.min(...courses.map((c) => c.rateGroup))   : 0;
   return {
     id: p.id,
+    userId: p.userId,
     name: p.fullName,
     avatar: p.avatarUrl ?? '',
     role: (p.teachingRole?.trim() ? (p.teachingRole as MentorRole) : titleToRole(p.title ?? '')),

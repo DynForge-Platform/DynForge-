@@ -127,14 +127,21 @@ public class BookingService {
         if (!ObjectId.isValid(request.mentorId())) {
             throw new BadRequestException("Invalid mentor id: " + request.mentorId());
         }
-        ObjectId mentorUserId = new ObjectId(request.mentorId());
+        ObjectId requestedId = new ObjectId(request.mentorId());
 
-        if (mentorUserId.toHexString().equals(mentee.getId())) {
-            throw new BadRequestException("You cannot book a session with yourself");
-        }
-
-        MentorProfile mentor = mentorRepository.findByUserId(mentorUserId)
+        MentorProfile mentor = mentorRepository.findByUserId(requestedId)
+                .or(() -> mentorRepository.findById(request.mentorId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Mentor not found: " + request.mentorId()));
+
+        ObjectId mentorUserId = mentor.getUserId() != null ? mentor.getUserId() : requestedId;
+
+        if (mentee.getId() != null && (
+                mentee.getId().equalsIgnoreCase(mentorUserId.toHexString())
+                || (mentor.getId() != null && mentee.getId().equalsIgnoreCase(mentor.getId()))
+                || mentee.getId().equalsIgnoreCase(requestedId.toHexString())
+        )) {
+            throw new BadRequestException("Bạn không thể tự đặt lịch học với chính mình (You cannot book a session with yourself)");
+        }
 
         if (!mentor.isVerified()) {
             throw new BadRequestException("This mentor has not been verified yet");
