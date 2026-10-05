@@ -201,7 +201,7 @@ export function ScheduleConsultation() {
   }
 
   return (
-    <div className="relative z-10 pb-24 text-slate-100 min-h-screen">
+    <div className="relative z-10 pb-32 lg:pb-24 text-slate-100 min-h-screen">
       <MouseFollowLight />
 
       {/* Editorial Page Header */}
@@ -227,9 +227,9 @@ export function ScheduleConsultation() {
         subtitle={lang === 'vi' ? 'Chọn môn học, thời lượng, ngày và khung giờ học phù hợp nhất với bạn.' : 'Pick your course, duration, date, and preferred time slot.'}
       />
 
-      <div className="mx-auto max-w-6xl px-6 space-y-6">
+      <div className="mx-auto max-w-6xl px-3.5 sm:px-6 space-y-6">
         {isSelfBooking && (
-          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 backdrop-blur-md p-5 text-amber-200 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 backdrop-blur-md p-4 sm:p-5 text-amber-200 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
                 <AlertTriangle className="size-6" />
@@ -257,7 +257,7 @@ export function ScheduleConsultation() {
         <div className="grid gap-8 lg:grid-cols-[340px_1fr]">
           {/* Summary sidebar (Dark Glass) */}
           <aside className="lg:sticky lg:top-[88px] lg:h-fit order-last lg:order-first">
-            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-6 text-slate-100 shadow-2xl rounded-3xl">
+            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-4 sm:p-6 text-slate-100 shadow-2xl rounded-3xl">
               <div className="flex items-center gap-3">
                 <ImageWithFallback src={mentorAvatar} alt={mentor.name} className="size-14 rounded-2xl object-cover border border-white/15" />
                 <div>
@@ -400,7 +400,7 @@ export function ScheduleConsultation() {
           {/* Main selection area */}
           <div className="space-y-6">
             {/* Step 1: Duration */}
-            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-6 sm:p-8 text-slate-100 shadow-2xl rounded-3xl">
+            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-4 sm:p-8 text-slate-100 shadow-2xl rounded-3xl">
               <div className="flex items-center gap-3 mb-2">
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
                   01
@@ -412,13 +412,13 @@ export function ScheduleConsultation() {
               <p className="mb-5 text-sm text-slate-400 leading-relaxed">
                 {T.stepDurationDesc}
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5 sm:gap-3">
                 {durations.map((d) => (
                   <button
                     key={d}
                     onClick={() => { setDuration(d); setShowCustom(false); }}
                     className={cn(
-                      'rounded-xl border px-5 py-2.5 text-sm font-medium transition-all cursor-pointer',
+                      'rounded-xl border px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-medium transition-all cursor-pointer',
                       duration === d && !showCustom
                         ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.25)]'
                         : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10'
@@ -430,7 +430,7 @@ export function ScheduleConsultation() {
                 <button
                   onClick={() => setShowCustom(true)}
                   className={cn(
-                    'rounded-xl border px-5 py-2.5 text-sm font-medium transition-all cursor-pointer',
+                    'rounded-xl border px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-medium transition-all cursor-pointer',
                     showCustom
                       ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.25)]'
                       : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10'
@@ -441,13 +441,13 @@ export function ScheduleConsultation() {
               </div>
 
               {showCustom && (
-                <div className="mt-4 flex flex-wrap gap-2.5 border-t border-white/10 pt-4">
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
                   {customDurations.map((d) => (
                     <button
                       key={d}
                       onClick={() => setDuration(d)}
                       className={cn(
-                        'rounded-xl border px-4 py-2 text-xs font-medium transition-all cursor-pointer',
+                        'rounded-xl border px-3.5 py-2 text-xs font-medium transition-all cursor-pointer',
                         duration === d
                           ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-md'
                           : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10'
@@ -461,7 +461,7 @@ export function ScheduleConsultation() {
             </Card>
 
             {/* Step 2: Date */}
-            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-6 sm:p-8 text-slate-100 shadow-2xl rounded-3xl">
+            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-4 sm:p-8 text-slate-100 shadow-2xl rounded-3xl">
               <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
@@ -474,18 +474,18 @@ export function ScheduleConsultation() {
                     <p className="text-sm text-slate-400 leading-relaxed">{T.stepDateDesc}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 self-end sm:self-center">
+                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="icon"
                     disabled={monthOffset === 0}
                     onClick={() => { setMonthOffset((m) => m - 1); setSelectedDay(null); }}
-                    className="size-9 rounded-xl border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:border-white/20"
+                    className="size-9 rounded-xl border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:border-white/20 shrink-0"
                   >
                     <ChevronLeft className="size-4" />
                   </Button>
 
-                  <span className="min-w-36 text-center text-sm font-semibold text-white">
+                  <span className="flex-1 sm:min-w-36 text-center text-sm font-semibold text-white">
                     {base.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { month: 'long', year: 'numeric' })}
                   </span>
 
@@ -494,7 +494,7 @@ export function ScheduleConsultation() {
                     size="icon"
                     disabled={monthOffset === 2}
                     onClick={() => { setMonthOffset((m) => m + 1); setSelectedDay(null); }}
-                    className="size-9 rounded-xl border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:border-white/20"
+                    className="size-9 rounded-xl border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:border-white/20 shrink-0"
                   >
                     <ChevronRight className="size-4" />
                   </Button>
@@ -502,13 +502,13 @@ export function ScheduleConsultation() {
               </div>
 
               {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-xs font-semibold text-slate-400 mb-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs font-semibold text-slate-400 mb-2">
                 {[T.sun, T.mon, T.tue, T.wed, T.thu, T.fri, T.sat].map((d, i) => (
                   <div key={i} className="py-1 uppercase tracking-wider">{d}</div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {Array.from({ length: firstWeekday }).map((_, i) => (
                   <div key={`empty-${i}`} className="h-10 sm:h-11" />
                 ))}
@@ -525,7 +525,7 @@ export function ScheduleConsultation() {
                       disabled={disabled}
                       onClick={() => { setSelectedDay(day); setSelectedSlot(null); }}
                       className={cn(
-                        'flex flex-col h-11 sm:h-12 w-full items-center justify-center rounded-xl text-sm font-medium transition-all relative',
+                        'flex flex-col h-10 sm:h-12 w-full items-center justify-center rounded-xl text-xs sm:text-sm font-medium transition-all relative',
                         disabled
                           ? 'border border-white/[0.03] bg-white/[0.02] text-slate-600 cursor-not-allowed opacity-40'
                           : selected
@@ -545,7 +545,7 @@ export function ScheduleConsultation() {
             </Card>
 
             {/* Step 3: Time Slot */}
-            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-6 sm:p-8 text-slate-100 shadow-2xl rounded-3xl">
+            <Card className="border border-white/10 bg-[#090f1e]/80 backdrop-blur-xl p-4 sm:p-8 text-slate-100 shadow-2xl rounded-3xl">
               <div className="flex items-center gap-3 mb-2">
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
                   03
@@ -601,10 +601,10 @@ export function ScheduleConsultation() {
             </Card>
 
             {/* Navigation bottom buttons */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
               <Link
                 to={`/mentors/${mentor.id}`}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-all"
               >
                 <ChevronLeft className="size-4" />
                 {T.backToProfile}
@@ -612,7 +612,7 @@ export function ScheduleConsultation() {
               <Button
                 onClick={cont}
                 disabled={!selectedDay || !selectedSlot || isSelfBooking}
-                className="py-2.5 px-6 text-sm font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 disabled:opacity-40 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full sm:w-auto py-2.5 px-6 text-sm font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 disabled:opacity-40 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isSelfBooking
                   ? (lang === 'vi' ? 'Không thể tự đặt lịch' : 'Cannot Book Yourself')
@@ -621,6 +621,31 @@ export function ScheduleConsultation() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Sticky Mobile Bottom Booking Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 p-3.5 px-4 bg-[#090f1e]/95 backdrop-blur-xl border-t border-white/10 flex items-center justify-between gap-3 lg:hidden shadow-2xl">
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-1">
+            <span className="text-base font-bold text-cyan-300">{formatCurrency(price)}</span>
+            <span className="text-[11px] text-slate-400">({duration}m)</span>
+          </div>
+          <p className="text-[11px] text-slate-400 truncate">
+            {selectedDay && selectedSlot
+              ? `${selectedDay}/${base.getMonth() + 1} lúc ${selectedSlot}`
+              : (lang === 'vi' ? 'Chưa chọn ngày/giờ' : 'Select date & time')}
+          </p>
+        </div>
+
+        <Button
+          onClick={cont}
+          disabled={!selectedDay || !selectedSlot || isSelfBooking}
+          className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-xl h-10 px-5 text-xs shrink-0 shadow-lg shadow-cyan-900/30 disabled:opacity-40"
+        >
+          {isSelfBooking
+            ? (lang === 'vi' ? 'Không thể đặt' : 'Unavailable')
+            : (lang === 'vi' ? 'Tiếp tục' : 'Continue')}
+        </Button>
       </div>
     </div>
   );

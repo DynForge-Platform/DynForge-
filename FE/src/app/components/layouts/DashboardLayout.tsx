@@ -313,20 +313,20 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
       <div className="flex min-w-0 flex-1 flex-col z-10">
         
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-800/80 bg-slate-950/60 px-4 sm:px-8 backdrop-blur-2xl">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-800/80 bg-slate-950/60 px-3 sm:px-8 backdrop-blur-2xl">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 lg:hidden hover:bg-white/10"
+              className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 lg:hidden hover:bg-white/10 shrink-0"
               aria-label="Open menu"
             >
               <Menu className="size-5" />
             </button>
             
             {/* Breadcrumb / Title display */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="hidden sm:inline-block size-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent truncate">
                 {portalLabel}
               </span>
               {profile?.universityName && (
@@ -339,13 +339,13 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
           </div>
 
           {/* Right Controls */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             
             {/* Live Wallet Pill (Student) */}
             {role === 'student' && (
               <Link
                 to="/dashboard/wallet"
-                className="group flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/20 px-3 py-1.5 transition-all hover:bg-emerald-950/40 hover:border-emerald-500/50 hover:scale-[1.02]"
+                className="group flex items-center gap-1.5 sm:gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/20 px-2.5 sm:px-3 py-1.5 transition-all hover:bg-emerald-950/40 hover:border-emerald-500/50 hover:scale-[1.02]"
                 title="Quản lý ví và nạp tiền"
               >
                 <div className="size-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -389,7 +389,7 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 sm:p-8 overflow-x-hidden">
+        <main className="flex-1 p-3 sm:p-8 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

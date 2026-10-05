@@ -106,8 +106,8 @@ export function MentorProfile() {
   }
 
   return (
-    <div className="relative z-10 pb-24 text-slate-100">
-      <div className="mx-auto max-w-6xl px-6 py-8">
+    <div className="relative z-10 pb-28 lg:pb-24 text-slate-100">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
         <button
           onClick={() => navigate('/mentors')}
           className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white mb-6 transition-colors"
@@ -119,16 +119,16 @@ export function MentorProfile() {
         <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
           <div className="space-y-8">
             {/* Header Glass Card */}
-            <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-6 sm:p-8 shadow-xl">
-              <div className="flex flex-col gap-6 sm:flex-row">
+            <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-5 sm:p-8 shadow-xl">
+              <div className="flex flex-col gap-5 sm:flex-row">
                 <ImageWithFallback
                   src={mentor.avatar}
                   alt={mentor.name}
-                  className="size-28 shrink-0 rounded-2xl object-cover border border-white/15"
+                  className="size-24 sm:size-28 shrink-0 rounded-2xl object-cover border border-white/15"
                 />
                 <div className="flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-4xl sm:text-5xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                    <h1 className="text-3xl sm:text-5xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
                       {mentor.name}
                     </h1>
                     <VerifiedBadge verified={mentor.verified} />
@@ -323,6 +323,39 @@ export function MentorProfile() {
             </div>
           </aside>
         </div>
+      </div>
+
+      {/* Sticky Mobile Bottom Booking Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 p-3.5 px-4 bg-[#090f1e]/95 backdrop-blur-xl border-t border-white/10 flex items-center justify-between gap-3 lg:hidden shadow-2xl">
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-1">
+            <span className="text-base font-bold text-cyan-300">{formatCurrency(mentor.hourlyRate)}</span>
+            <span className="text-[11px] text-slate-400">/h</span>
+          </div>
+          <p className="text-[11px] text-slate-400 truncate">
+            ⭐ {mentor.rating} · {mentor.reviewsCount} {lang === 'vi' ? 'đánh giá' : 'reviews'}
+          </p>
+        </div>
+
+        {isOwnProfile ? (
+          <Button
+            size="sm"
+            className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl h-10 px-4 text-xs shrink-0"
+            onClick={() => navigate('/mentor/dashboard')}
+          >
+            <LayoutDashboard className="size-3.5 mr-1.5" />
+            {lang === 'vi' ? 'Quản lý hồ sơ' : 'Dashboard'}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-xl h-10 px-5 text-xs shrink-0 shadow-lg shadow-cyan-900/30"
+            onClick={() => requireAuth(`/mentors/${mentor.id}/schedule`) && navigate(`/mentors/${mentor.id}/schedule`)}
+          >
+            <Calendar className="size-3.5 mr-1.5" />
+            {T.bookSession}
+          </Button>
+        )}
       </div>
     </div>
   );

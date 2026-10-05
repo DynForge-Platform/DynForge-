@@ -694,9 +694,9 @@ export function OrderSummary() {
         subtitle={lang === 'vi' ? 'Khoản thanh toán của bạn sẽ được giữ an toàn trong ví Ký quỹ DynForge.' : 'Your payment is held safely in DynForge escrow until your session is completed.'}
       />
 
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-6xl px-3.5 sm:px-6">
         {isSelfBooking && (
-          <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 backdrop-blur-md p-5 text-amber-200 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 backdrop-blur-md p-4 sm:p-5 text-amber-200 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
                 <AlertTriangle className="size-6" />
@@ -732,7 +732,7 @@ export function OrderSummary() {
         <div className="grid gap-8 lg:grid-cols-12">
           {/* Main summary details */}
           <div className="space-y-6 lg:col-span-7">
-            <Card className="border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-6 text-slate-100 shadow-2xl rounded-2xl">
+            <Card className="border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-4 sm:p-6 text-slate-100 shadow-2xl rounded-2xl">
               <h2 className="mb-4 text-xl font-bold text-white tracking-tight">
                 Session Details
               </h2>
@@ -756,7 +756,7 @@ export function OrderSummary() {
             </Card>
 
             {/* Voucher input */}
-            <Card className="border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-6 text-slate-100 shadow-2xl rounded-2xl">
+            <Card className="border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-4 sm:p-6 text-slate-100 shadow-2xl rounded-2xl">
               <h2 className="mb-2 text-xl font-bold text-white tracking-tight">
                 Apply Voucher
               </h2>
@@ -778,7 +778,7 @@ export function OrderSummary() {
                     value={voucherInput}
                     onChange={(e) => setVoucherInput(e.target.value)}
                     placeholder="Enter code (e.g. DYNFORGE20)"
-                    className="bg-[#020b18] border-white/10 text-white uppercase placeholder:normal-case placeholder:text-slate-500"
+                    className="bg-[#020b18] border-white/10 text-white uppercase placeholder:normal-case placeholder:text-slate-500 text-base sm:text-sm"
                   />
                   <Button onClick={applyVoucher} disabled={applying || !voucherInput.trim()} className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-5 rounded-xl">
                     {applying ? <Loader2 className="size-4 animate-spin" /> : 'Apply'}
@@ -791,7 +791,7 @@ export function OrderSummary() {
 
           {/* Pricing Sidebar */}
           <div className="lg:col-span-5">
-            <Card className="border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-6 text-slate-100 shadow-2xl rounded-2xl">
+            <Card className="border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-4 sm:p-6 text-slate-100 shadow-2xl rounded-2xl">
               <h2 className="mb-4 text-xl font-bold text-white tracking-tight">
                 Payment Summary
               </h2>

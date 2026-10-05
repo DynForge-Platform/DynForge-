@@ -124,6 +124,14 @@ export function MentorListing() {
     !!activeUniversity &&
     (activeUniversity.status === 'WAITLIST' || total === 0);
 
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  const activeFilterCount =
+    (activeCode && activeCode !== 'all' ? 1 : 0) +
+    (selectedMajor !== 'all' ? 1 : 0) +
+    (selectedRole !== 'all' ? 1 : 0) +
+    (maxPrice < 250000 ? 1 : 0);
+
   return (
     <div className="relative z-10 pb-24 text-slate-100 min-h-screen">
       <MouseFollowLight />
@@ -144,7 +152,7 @@ export function MentorListing() {
         }
       />
 
-      <div className="max-w-6xl mx-auto px-6 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 sm:space-y-8">
         {/* Floating Search Bar */}
         <div className="relative max-w-2xl mx-auto">
           <div className="flex items-center rounded-full border border-white/20 bg-[#090f1e]/80 backdrop-blur-xl p-1.5 shadow-2xl transition-all focus-within:border-cyan-400/60 focus-within:ring-2 focus-within:ring-cyan-500/20">
@@ -152,7 +160,7 @@ export function MentorListing() {
             <input
               type="text"
               placeholder={lang === 'vi' ? 'Tìm theo mã môn (PRJ301, CSD201...), tên gia sư, chuyên ngành...' : 'Search by course code (PRJ301...), mentor name, major...'}
-              className="w-full bg-transparent border-none text-white placeholder:text-slate-500 outline-none text-sm py-2"
+              className="w-full bg-transparent border-none text-white placeholder:text-slate-500 outline-none text-base sm:text-sm py-2"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -164,8 +172,152 @@ export function MentorListing() {
           </div>
         </div>
 
-        {/* Compact Floating Horizontal Filter Bar */}
-        <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        {/* MOBILE FILTER BAR (< md) */}
+        <div className="block md:hidden space-y-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-all',
+                mobileFilterOpen || activeFilterCount > 0
+                  ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300'
+                  : 'border-white/10 bg-[#090f1e]/80 text-white hover:bg-white/10'
+              )}
+            >
+              <SlidersHorizontal className="size-4 text-cyan-400" />
+              <span>{lang === 'vi' ? 'Bộ lọc nâng cao' : 'Filters'}</span>
+              {activeFilterCount > 0 && (
+                <span className="flex size-5 items-center justify-center rounded-full bg-cyan-500 text-white text-[10px] font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger className="flex-1 bg-[#090f1e]/80 border-white/10 text-white text-xs rounded-xl h-10">
+                <SelectValue placeholder={lang === 'vi' ? 'Sắp xếp' : 'Sort'} />
+              </SelectTrigger>
+              <SelectContent className="bg-[#090f1e] text-white border-white/10">
+                <SelectItem value="rating">{lang === 'vi' ? 'Đánh giá cao nhất' : 'Top Rated'}</SelectItem>
+                <SelectItem value="priceLow">{lang === 'vi' ? 'Giá thấp đến cao' : 'Price: Low to High'}</SelectItem>
+                <SelectItem value="priceHigh">{lang === 'vi' ? 'Giá cao đến thấp' : 'Price: High to Low'}</SelectItem>
+                <SelectItem value="sessions">{lang === 'vi' ? 'Nhiều buổi dạy nhất' : 'Most Sessions'}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {activeFilterCount > 0 && (
+              <button
+                onClick={reset}
+                className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-[#090f1e]/80 text-slate-300 hover:text-white"
+                title={lang === 'vi' ? 'Đặt lại bộ lọc' : 'Reset filters'}
+              >
+                <RotateCcw className="size-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Expandable Mobile Filter Drawer */}
+          {mobileFilterOpen && (
+            <div className="rounded-2xl border border-white/10 bg-[#090f1e]/95 backdrop-blur-xl p-4 shadow-2xl space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  {lang === 'vi' ? 'Tuỳ chỉnh bộ lọc' : 'Filter Options'}
+                </span>
+                <button
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="text-xs text-cyan-400 font-semibold"
+                >
+                  {lang === 'vi' ? 'Đóng' : 'Close'}
+                </button>
+              </div>
+
+              {/* University Select */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-slate-400 font-medium">{lang === 'vi' ? 'Trường Đại học' : 'University'}</label>
+                <Select
+                  value={activeCode ?? 'all'}
+                  onValueChange={(v) => setSelectedCode(v === 'all' ? null : v)}
+                  disabled={!!routeCode}
+                >
+                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white text-xs rounded-xl h-10">
+                    <GraduationCap className="size-4 text-cyan-400 mr-2 shrink-0" />
+                    <SelectValue placeholder={T.selectUniversity} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#090f1e] text-white border-white/10">
+                    <SelectItem value="all">{T.allUniversities}</SelectItem>
+                    {universities.map((u) => (
+                      <SelectItem key={u.code} value={u.code}>{u.shortName || u.name}</SelectItem>
+                    ))}
+                    {lockedUni && !universities.some((u) => u.code === lockedUni.code) && (
+                      <SelectItem value={lockedUni.code}>{lockedUni.shortName || lockedUni.name}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Major Select */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-slate-400 font-medium">{lang === 'vi' ? 'Chuyên ngành' : 'Major'}</label>
+                <Select value={selectedMajor} onValueChange={setSelectedMajor}>
+                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white text-xs rounded-xl h-10">
+                    <SelectValue placeholder={lang === 'vi' ? 'Chuyên ngành' : 'All Majors'} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#090f1e] text-white border-white/10">
+                    <SelectItem value="all">{lang === 'vi' ? 'Tất cả Chuyên ngành' : 'All Majors'}</SelectItem>
+                    {majors.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Role Select */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-slate-400 font-medium">{lang === 'vi' ? 'Loại gia sư' : 'Role'}</label>
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white text-xs rounded-xl h-10">
+                    <SelectValue placeholder={lang === 'vi' ? 'Loại gia sư' : 'All Roles'} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#090f1e] text-white border-white/10">
+                    <SelectItem value="all">{lang === 'vi' ? 'Tất cả Loại gia sư' : 'All Roles'}</SelectItem>
+                    {roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Max Price Slider */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">{lang === 'vi' ? 'Học phí tối đa / giờ:' : 'Max hourly rate:'}</span>
+                  <span className="font-bold text-cyan-300">{formatCurrency(maxPrice)}</span>
+                </div>
+                <input
+                  type="range" min="50000" max="250000" step="10000"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
+                  className="w-full accent-cyan-400 cursor-pointer h-2 bg-white/10 rounded-lg"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center gap-2">
+                <Button
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-xl h-10"
+                >
+                  {lang === 'vi' ? 'Áp dụng bộ lọc' : 'Apply Filters'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={reset}
+                  className="border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 text-xs rounded-xl h-10 px-4"
+                >
+                  {lang === 'vi' ? 'Đặt lại' : 'Reset'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* DESKTOP FILTER BAR (>= md) */}
+        <div className="hidden md:flex rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-4 shadow-xl flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 flex-1">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mr-2">
               <SlidersHorizontal className="size-4 text-cyan-400" />
@@ -270,7 +422,7 @@ export function MentorListing() {
         )}
 
         {/* AI Mentor Advisor Floating Section */}
-        <div className="rounded-2xl border border-white/10 bg-[#090f1e]/70 backdrop-blur-md p-6 shadow-2xl relative overflow-hidden">
+        <div className="rounded-2xl border border-white/10 bg-[#090f1e]/70 backdrop-blur-md p-4 sm:p-6 shadow-2xl relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="size-5 text-cyan-400" />
@@ -289,18 +441,18 @@ export function MentorListing() {
               : 'Describe your learning goals, course difficulties, or project prep, and AI will suggest top mentors.'}
           </p>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Input
               value={aiQuery}
               onChange={(e) => setAiQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && runAdvisor()}
               placeholder={lang === 'vi' ? 'VD: Mình đang rớt Giải tích 1, cần luyện thi cuối kỳ trong 2 tuần...' : 'e.g., Need help passing Java PRJ301 project in 2 weeks...'}
-              className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 text-sm rounded-xl h-11"
+              className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 text-base sm:text-sm rounded-xl h-11 flex-1"
             />
             <Button
               onClick={() => runAdvisor()}
               disabled={aiLoading}
-              className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl h-11 px-6 shrink-0"
+              className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl h-11 px-6 shrink-0 w-full sm:w-auto"
             >
               {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4 mr-2" />}
               {lang === 'vi' ? 'Tư vấn AI' : 'Ask AI'}
