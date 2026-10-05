@@ -269,14 +269,86 @@ public class MailService {
                             </div>
                           </div>
 
-                          <!-- 4. Escrow Protection Guarantee -->
-                          <div style="background-color:#15180c;background-image:linear-gradient(180deg, #15180c 0%, #15180c 100%);background:linear-gradient(180deg, #15180c 0%, #15180c 100%);border-left:4px solid #f59e0b;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-                            <strong style="color:#fbbf24;font-size:14px;display:block;margin-bottom:6px;">
-                              🛡️ Cam kết an toàn từ DynForge (Escrow Protection):
-                            </strong>
-                            <p style="margin:0;color:#fef3c7;font-size:13px;line-height:1.6;">
-                              Học phí của bạn hiện đang được giữ an toàn trong Quỹ Ký Quỹ. Mentor chỉ nhận được tiền khi bạn xác nhận buổi học đã diễn ra thành công. Bạn hoàn toàn có quyền mở khiếu nại (Dispute) nếu Mentor vắng mặt hoặc không đáp ứng cam kết.
-                            </p>
+                          <!-- 4. Mentee Refund & Protection Policy -->
+                          <div style="background-color:#081b38;background-image:linear-gradient(180deg, #081b38 0%, #051226 100%);background:linear-gradient(180deg, #081b38 0%, #051226 100%);border:1px solid #1e3a8a;border-radius:18px;padding:24px 26px;margin-bottom:28px;box-shadow:0 8px 30px rgba(2,6,23,0.5);">
+                            
+                            <div style="border-bottom:1px solid #1e293b;padding-bottom:12px;margin-bottom:16px;">
+                              <h3 style="color:#38bdf8;font-size:15px;font-weight:800;margin:0;letter-spacing:0.3px;text-transform:uppercase;">
+                                🛡️ CHÍNH SÁCH HOÀN TIỀN & BẢO VỆ HỌC VIÊN (MENTEE)
+                              </h3>
+                              <p style="color:#94a3b8;font-size:12px;margin:4px 0 0;">
+                                Quy định riêng dành cho Học viên theo Chính sách Ký quỹ DynForge Escrow
+                              </p>
+                            </div>
+
+                            <!-- Escrow Status Notice -->
+                            <div style="background:rgba(6,182,212,0.1);border-left:4px solid #06b6d4;border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+                              <p style="margin:0;color:#e0f2fe;font-size:13px;line-height:1.6;">
+                                🔒 <strong>Học phí được bảo vệ:</strong> Khoản tiền <strong>{{FORMATTED_PRICE}} VNĐ</strong> đang được tạm giữ an toàn trong <strong>Quỹ Ký Quỹ DynForge Escrow</strong>. Tiền chưa chuyển cho Mentor và chỉ được giải ngân khi bạn xác nhận buổi học hoàn thành trọn vẹn.
+                              </p>
+                            </div>
+
+                            <!-- 2 Columns: Khi nào hoàn vs Khi nào không hoàn -->
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+                              <tr>
+                                <td style="width:50%;vertical-align:top;padding-right:8px;">
+                                  <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:14px;box-sizing:border-box;">
+                                    <div style="color:#34d399;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+                                      ✅ KHI NÀO BẠN ĐƯỢC HOÀN TIỀN?
+                                    </div>
+                                    <ul style="margin:0;padding-left:14px;color:#d1fae5;font-size:12px;line-height:1.65;">
+                                      <li style="margin-bottom:5px;">
+                                        <strong style="color:#ffffff;">Hoàn 100%:</strong> Mentor chủ động hủy lịch học vì bất kỳ lý do nào.
+                                      </li>
+                                      <li style="margin-bottom:5px;">
+                                        <strong style="color:#ffffff;">Hoàn 100%:</strong> Mentor vắng mặt (No-show) hoặc buổi học không diễn ra đúng cam kết.
+                                      </li>
+                                      <li style="margin-bottom:5px;">
+                                        <strong style="color:#ffffff;">Hoàn 100%:</strong> Bạn hủy lịch khi Mentor <em>chưa bấm nhận lớp</em>.
+                                      </li>
+                                      <li style="margin-bottom:5px;">
+                                        <strong style="color:#ffffff;">Hoàn 100%:</strong> Bạn tự hủy lịch <strong>trước giờ học ≥ 24 giờ</strong>.
+                                      </li>
+                                      <li>
+                                        <strong style="color:#fde047;">Hoàn 70%:</strong> Bạn hủy lịch trong khoảng <strong>12 giờ đến 24 giờ</strong> trước giờ học (30% bồi thường thời gian chuẩn bị của Mentor).
+                                      </li>
+                                    </ul>
+                                  </div>
+                                </td>
+                                <td style="width:50%;vertical-align:top;padding-left:8px;">
+                                  <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:14px;box-sizing:border-box;">
+                                    <div style="color:#f87171;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+                                      ❌ KHI NÀO KHÔNG ĐƯỢC HOÀN?
+                                    </div>
+                                    <ul style="margin:0;padding-left:14px;color:#fee2e2;font-size:12px;line-height:1.65;">
+                                      <li style="margin-bottom:8px;">
+                                        <strong style="color:#ffffff;">Hủy dưới 12 giờ:</strong> Hệ thống <em>khóa tính năng hủy trực tiếp</em> để đảm bảo quyền lợi thời gian của Mentor.
+                                      </li>
+                                      <li style="margin-bottom:8px;">
+                                        <strong style="color:#ffffff;">Học viên vắng mặt:</strong> Tự ý không tham gia phòng học (No-show) mà không báo trước hoặc không có lý do bất khả kháng.
+                                      </li>
+                                      <li>
+                                        <strong style="color:#ffffff;">Đã xác nhận hoàn thành:</strong> Sau khi bạn đã bấm xác nhận hoàn tất buổi học, thù lao đã được chuyển cho Mentor.
+                                      </li>
+                                    </ul>
+                                  </div>
+                                </td>
+                              </tr>
+                            </table>
+
+                            <!-- Quyền đổi lịch & Khiếu nại -->
+                            <div style="background:#0b1329;border:1px solid #1e293b;border-radius:10px;padding:12px 14px;">
+                              <div style="color:#fbbf24;font-size:12px;font-weight:700;margin-bottom:4px;">
+                                ⚖️ QUYỀN ĐỔI LỊCH & KHIẾU NẠI (DISPUTE):
+                              </div>
+                              <p style="margin:0 0 4px;color:#cbd5e1;font-size:12px;line-height:1.6;">
+                                • <strong>Đổi lịch học:</strong> Bạn được yêu cầu đổi lịch tối đa <strong>2 lần</strong> trước giờ học (hoàn toàn miễn phí).
+                              </p>
+                              <p style="margin:0;color:#cbd5e1;font-size:12px;line-height:1.6;">
+                                • <strong>Mở Khiếu Nại (Dispute):</strong> Sau khi buổi học bắt đầu <strong>15 phút</strong> (nếu Mentor không vào) hoặc trong vòng <strong>24 giờ</strong> sau buổi học, bạn có quyền mở Khiếu nại. Quỹ Escrow sẽ lập tức phong tỏa để Ban Quản Trị đối soát và hoàn tiền.
+                              </p>
+                            </div>
+
                           </div>
 
                           <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0;text-align:center;">
@@ -543,16 +615,80 @@ public class MailService {
                             </div>
                           </div>
 
-                          <!-- 4. Mentor Guidance & Escrow Payout Policy -->
-                          <div style="background-color:#06231c;background-image:linear-gradient(180deg, #06231c 0%, #06231c 100%);background:linear-gradient(180deg, #06231c 0%, #06231c 100%);border-left:4px solid #10b981;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-                            <strong style="color:#6ee7b7;font-size:14px;display:block;margin-bottom:6px;">
-                              📌 Hướng dẫn dành cho Mentor:
-                            </strong>
-                            <ul style="margin:0;padding-left:18px;color:#d1fae5;font-size:13px;line-height:1.7;">
-                              <li>Vui lòng vào phòng học trực tuyến trước giờ bắt đầu <strong>5 phút</strong> để kiểm tra âm thanh, camera và chuẩn bị giáo trình.</li>
-                              <li>Sau khi buổi học kết thúc, nhắc học viên bấm <strong>"Xác nhận hoàn thành"</strong> để thù lao được giải ngân tự động vào ví giảng viên của bạn ngay lập tức.</li>
-                              <li>Nếu có sự cố phát sinh hoặc học viên vắng mặt, vui lòng liên hệ Ban Trọng tài DynForge để được đối soát và bảo vệ quyền lợi.</li>
-                            </ul>
+                          <!-- 4. Mentor Payout, Compensation & Penalty Policy -->
+                          <div style="background-color:#041a18;background-image:linear-gradient(180deg, #041a18 0%, #020f0e 100%);background:linear-gradient(180deg, #041a18 0%, #020f0e 100%);border:1px solid #065f46;border-radius:18px;padding:24px 26px;margin-bottom:28px;box-shadow:0 8px 30px rgba(2,6,23,0.5);">
+                            
+                            <div style="border-bottom:1px solid #064e3b;padding-bottom:12px;margin-bottom:16px;">
+                              <h3 style="color:#6ee7b7;font-size:15px;font-weight:800;margin:0;letter-spacing:0.3px;text-transform:uppercase;">
+                                💼 CHÍNH SÁCH THÙ LAO & CAM KẾT DÀNH CHO MENTOR
+                              </h3>
+                              <p style="color:#94a3b8;font-size:12px;margin:4px 0 0;">
+                                Quy định riêng dành cho Giảng viên theo Chính sách Ký quỹ DynForge Escrow
+                              </p>
+                            </div>
+
+                            <!-- Escrow Payout Notice -->
+                            <div style="background:rgba(16,185,129,0.1);border-left:4px solid #10b981;border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+                              <p style="margin:0;color:#d1fae5;font-size:13px;line-height:1.6;">
+                                💰 <strong>Thù lao đảm bảo trong Quỹ Escrow:</strong> Học viên đã thanh toán vào Quỹ Ký Quỹ. Thù lao của bạn được tính bằng <strong>85% học phí</strong> (DynForge giữ 15% hoa hồng vận hành phòng học trực tuyến và bảo vệ giao dịch).
+                              </p>
+                            </div>
+
+                            <!-- 2 Columns: Khi nào nhận tiền/bồi thường vs Khi nào không được nhận/bị phạt -->
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+                              <tr>
+                                <td style="width:50%;vertical-align:top;padding-right:8px;">
+                                  <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:14px;box-sizing:border-box;">
+                                    <div style="color:#34d399;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+                                      💵 KHI NÀO MENTOR NHẬN ĐƯỢC TIỀN?
+                                    </div>
+                                    <ul style="margin:0;padding-left:14px;color:#d1fae5;font-size:12px;line-height:1.65;">
+                                      <li style="margin-bottom:6px;">
+                                        <strong style="color:#ffffff;">Giải ngân tức thì:</strong> Khi học viên bấm <em>"Xác nhận hoàn thành"</em> sau buổi học, thù lao chuyển ngay vào ví của bạn.
+                                      </li>
+                                      <li style="margin-bottom:6px;">
+                                        <strong style="color:#ffffff;">Tự động giải ngân sau 24h:</strong> Sau khi bạn đánh dấu <em>"Đã dạy xong"</em>, nếu học viên không khiếu nại trong 24h, tiền tự động vào ví.
+                                      </li>
+                                      <li>
+                                        <strong style="color:#fde047;">Được bồi thường 30%:</strong> Nếu học viên hủy lịch trong khoảng <strong>12h - 24h</strong> trước giờ học, bạn nhận 30% học phí bồi thường (sau khi trừ 15% hoa hồng) vào ví để bù đắp thời gian đã giữ lịch.
+                                      </li>
+                                    </ul>
+                                  </div>
+                                </td>
+                                <td style="width:50%;vertical-align:top;padding-left:8px;">
+                                  <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:14px;box-sizing:border-box;">
+                                    <div style="color:#f87171;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+                                      ⚠️ KHÔNG ĐƯỢC NHẬN TIỀN & XỬ PHẠT
+                                    </div>
+                                    <ul style="margin:0;padding-left:14px;color:#fee2e2;font-size:12px;line-height:1.65;">
+                                      <li style="margin-bottom:8px;">
+                                        <strong style="color:#ffffff;">Mentor tự ý hủy lịch:</strong> Bạn <em>không nhận được tiền</em>, 100% học phí hoàn trả cho học viên. Đồng thời tài khoản bị ghi nhận <strong>+1 lần hủy lịch</strong>, làm giảm uy tín và thứ hạng hiển thị.
+                                      </li>
+                                      <li style="margin-bottom:8px;">
+                                        <strong style="color:#ffffff;">Vắng mặt (No-show):</strong> Không vào phòng dạy hoặc vào trễ quá 15 phút không báo trước, học viên có quyền khiếu nại và nhận hoàn 100% tiền.
+                                      </li>
+                                      <li>
+                                        <strong style="color:#ffffff;">Dạy sai môn / không đúng cam kết:</strong> Nếu học viên khiếu nại thành công, thù lao sẽ bị hủy bỏ hoàn trả cho học viên.
+                                      </li>
+                                    </ul>
+                                  </div>
+                                </td>
+                              </tr>
+                            </table>
+
+                            <!-- Quyền giải trình & Đối soát -->
+                            <div style="background:#021714;border:1px solid #065f46;border-radius:10px;padding:12px 14px;">
+                              <div style="color:#6ee7b7;font-size:12px;font-weight:700;margin-bottom:4px;">
+                                🛡️ QUYỀN GIẢI TRÌNH & ĐỐI SOÁT KHIẾU NẠI:
+                              </div>
+                              <p style="margin:0 0 4px;color:#a7f3d0;font-size:12px;line-height:1.6;">
+                                • Nếu học viên mở khiếu nại, bạn có quyền gửi giải trình và cung cấp bằng chứng (ảnh chụp màn hình, nhật ký phòng học) trực tiếp trên Bảng điều khiển Mentor.
+                              </p>
+                              <p style="margin:0;color:#a7f3d0;font-size:12px;line-height:1.6;">
+                                • Ban Trọng tài DynForge sẽ đối soát khách quan dữ liệu phòng học (telemetry) để bảo vệ tối đa quyền lợi và công sức giảng dạy của bạn.
+                              </p>
+                            </div>
+
                           </div>
 
                           <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0;text-align:center;">
