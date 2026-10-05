@@ -34,6 +34,7 @@ import java.util.Map;
 public class GeminiClient {
 
     private final RestClient restClient;
+    private final String baseUrl;
     private final String apiKey;
 
     /**
@@ -54,10 +55,11 @@ public class GeminiClient {
             @Value("${gemini.base-url:https://generativelanguage.googleapis.com}") String baseUrl,
             @Value("${gemini.api-key:}") String apiKey
     ) {
-        this.restClient = RestClient.create(baseUrl);
+        this.baseUrl = baseUrl.trim().replaceAll("/+$", "");
+        this.restClient = RestClient.builder().build();
         this.apiKey = apiKey;
-        log.info("GeminiClient initialized — Auto Model Cascade enabled with {} models: {}",
-                MODEL_CASCADE.size(), MODEL_CASCADE);
+        log.info("GeminiClient initialized with baseUrl [{}] — Auto Model Cascade enabled with {} models: {}",
+                this.baseUrl, MODEL_CASCADE.size(), MODEL_CASCADE);
     }
 
     /** Returns true if a valid Google Gemini API key is configured. */
@@ -132,8 +134,9 @@ public class GeminiClient {
 
     /** Calls the Gemini generateContent endpoint for a specific model. */
     private Map<?, ?> callGemini(String model, Map<String, Object> body) {
+        String endpoint = baseUrl + "/v1beta/models/" + model + ":generateContent";
         Map<?, ?> resp = restClient.post()
-                .uri("/v1beta/models/{model}:generateContent", model)
+                .uri(endpoint)
                 .header("X-goog-api-key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
