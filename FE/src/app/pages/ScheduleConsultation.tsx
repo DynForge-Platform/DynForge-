@@ -66,25 +66,8 @@ export function ScheduleConsultation() {
     }
   }, [mentor, selectedCourse]);
 
-  if (mentorLoading) {
-    return (
-      <div className="bg-[#020B18] min-h-screen flex items-center justify-center py-32 text-slate-400 gap-2">
-        <Loader2 className="size-5 animate-spin text-cyan-400" /> Loading booking calendar…
-      </div>
-    );
-  }
-
-  if (!mentor) {
-    return (
-      <div className="bg-[#020B18] min-h-screen mx-auto max-w-[1240px] px-5 py-20 text-center text-slate-100">
-        <h1 className="text-3xl font-bold">{T.mentorNotFound}</h1>
-        <Link to="/mentors" className="mt-4 inline-block liquid-glass rounded-full px-6 py-2.5 text-sm font-medium text-white border border-cyan-400/40 bg-cyan-600/30">{T.backToMentors}</Link>
-      </div>
-    );
-  }
-
   const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
-  const mentorAvatar = mentor.avatar?.trim() ? mentor.avatar : defaultAvatar;
+  const mentorAvatar = mentor?.avatar?.trim() ? mentor.avatar : defaultAvatar;
 
   const learningModes = [
     { label: T.oneOnOne, format: 'ONE_ON_ONE' as const },
@@ -163,6 +146,7 @@ export function ScheduleConsultation() {
   const price = Math.round((activeRate * (duration || 60)) / 60);
 
   const cont = () => {
+    if (!mentor) return;
     const mentorId = realMentorUserId ?? mentor.id;
     navigate(`/mentors/${mentor.id}/order`, {
       state: {
@@ -180,6 +164,23 @@ export function ScheduleConsultation() {
       },
     });
   };
+
+  if (mentorLoading) {
+    return (
+      <div className="bg-[#020B18] min-h-screen flex items-center justify-center py-32 text-slate-400 gap-2">
+        <Loader2 className="size-5 animate-spin text-cyan-400" /> Loading booking calendar…
+      </div>
+    );
+  }
+
+  if (!mentor) {
+    return (
+      <div className="bg-[#020B18] min-h-screen mx-auto max-w-[1240px] px-5 py-20 text-center text-slate-100">
+        <h1 className="text-3xl font-bold">{T.mentorNotFound}</h1>
+        <Link to="/mentors" className="mt-4 inline-block liquid-glass rounded-full px-6 py-2.5 text-sm font-medium text-white border border-cyan-400/40 bg-cyan-600/30">{T.backToMentors}</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="relative z-10 pb-24 text-slate-100 min-h-screen">
