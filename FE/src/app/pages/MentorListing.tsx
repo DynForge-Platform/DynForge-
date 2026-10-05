@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+import { cn } from '../components/ui/utils';
 import { MentorCard } from '../components/MentorCard';
 import { EditorialPageHeader } from '../components/EditorialPageHeader';
 import { GsapTypewriter } from '../components/GsapTypewriter';
