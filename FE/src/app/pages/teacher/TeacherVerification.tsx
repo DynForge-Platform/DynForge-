@@ -259,6 +259,8 @@ export function TeacherVerification() {
         grade: c.grade,
         ratePrivate: Number(c.ratePrivate) || 0,
         rateGroup: Number(c.rateGroup) || 0,
+        generalEducation: false,
+        verified: false,
       }));
 
     if (!major) { toast.error('Please select your major.'); return; }

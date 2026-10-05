@@ -25,11 +25,19 @@ public class Course {
      * such courses are NOT filtered out by university.
      */
     @Builder.Default
-    private boolean generalEducation = false;
+    private Boolean generalEducation = false;
 
     /**
      * Whether this specific course has been verified via transcript / academic credentials.
      */
     @Builder.Default
-    private boolean verified = false;
+    private Boolean verified = false;
+
+    public boolean isGeneralEducation() {
+        return Boolean.TRUE.equals(generalEducation);
+    }
+
+    public boolean isVerified() {
+        return Boolean.TRUE.equals(verified);
+    }
 }
