@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useRouteError } from 'react-router';
 import { GraduationCap, ShieldX, LifeBuoy } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Logo } from '../components/Logo';
@@ -54,11 +54,27 @@ export function PermissionDeniedPage() {
 }
 
 export function GlobalErrorBoundary() {
+  const error: any = useRouteError();
+  console.error('GlobalErrorBoundary caught error:', error);
+  const errorMessage = error?.message || error?.statusText || (typeof error === 'string' ? error : JSON.stringify(error));
+  const errorStack = error?.stack;
+
   return (
     <ErrorShell>
       <h1 className="text-center text-white font-normal text-4xl" style={{ fontFamily: "'Instrument Serif', serif" }}>Application Error</h1>
       <p className="mt-3 max-w-md text-center text-slate-400 text-sm">An unexpected error occurred. Please try returning to home.</p>
-      <a href="/" className="mt-8 inline-block bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-8 py-3 rounded-xl text-sm">
+      {errorMessage && (
+        <div className="mt-4 max-w-xl w-full text-left rounded-xl border border-red-500/30 bg-red-950/40 p-4">
+          <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-1">Error Details:</p>
+          <p className="text-xs font-mono text-red-200 break-words">{errorMessage}</p>
+          {errorStack && (
+            <pre className="mt-2 text-[10px] font-mono text-red-300/70 overflow-x-auto max-h-40 whitespace-pre-wrap">
+              {errorStack}
+            </pre>
+          )}
+        </div>
+      )}
+      <a href="/" className="mt-6 inline-block bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-8 py-3 rounded-xl text-sm">
         Reload Home
       </a>
     </ErrorShell>

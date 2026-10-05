@@ -61,7 +61,8 @@ export function ScheduleConsultation() {
 
   useEffect(() => {
     if (mentor && mentor.courses && mentor.courses.length > 0 && !selectedCourse) {
-      setSelectedCourse(mentor.courses[0].code);
+      const firstCode = mentor.courses[0]?.code;
+      if (firstCode) setSelectedCourse(firstCode);
     }
   }, [mentor, selectedCourse]);
 
@@ -90,8 +91,18 @@ export function ScheduleConsultation() {
     { label: T.smallGroup || T.group, format: 'GROUP' as const },
   ];
 
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  const firstWeekday = new Date(base.getFullYear(), base.getMonth(), 1).getDay();
+  const todayDay = monthOffset === 0 ? now.getDate() : 0;
+
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const hasAvailabilityConfig = !!(mentor.availability && Object.keys(mentor.availability).length > 0);
+  const hasAvailabilityConfig = !!(
+    mentor?.availability &&
+    typeof mentor.availability === 'object' &&
+    Object.keys(mentor.availability).length > 0
+  );
 
   const getMentorDaySlots = (day: number | null): string[] => {
     if (!day) return [];
@@ -100,9 +111,13 @@ export function ScheduleConsultation() {
     }
     const d = new Date(base.getFullYear(), base.getMonth(), day);
     const dayName = DAY_NAMES[d.getDay()];
-    for (const [key, slots] of Object.entries(mentor.availability!)) {
-      if (key.toLowerCase() === dayName.toLowerCase() || key.toLowerCase() === dayName.substring(0, 3).toLowerCase()) {
-        return slots ?? [];
+    for (const [key, slots] of Object.entries(mentor?.availability || {})) {
+      if (
+        key &&
+        (key.toLowerCase() === dayName.toLowerCase() ||
+          key.toLowerCase() === dayName.substring(0, 3).toLowerCase())
+      ) {
+        return Array.isArray(slots) ? slots : [];
       }
     }
     return [];
@@ -114,8 +129,9 @@ export function ScheduleConsultation() {
   };
 
   const isSlotAvailableForDuration = (slot: string, durationMinutes: number, availableSlots: string[]): boolean => {
+    if (!slot || !Array.isArray(availableSlots)) return false;
     const [startHour, startMin] = slot.split(':').map(Number);
-    const totalStartMinutes = startHour * 60 + (startMin || 0);
+    const totalStartMinutes = (Number(startHour) || 0) * 60 + (Number(startMin) || 0);
     const totalEndMinutes = totalStartMinutes + durationMinutes;
 
     const firstHour = Math.floor(totalStartMinutes / 60);
@@ -138,18 +154,13 @@ export function ScheduleConsultation() {
     }
   }, [duration, selectedDay]);
 
-  const now = new Date();
-  const base = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-
-  const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
-  const firstWeekday = new Date(base.getFullYear(), base.getMonth(), 1).getDay();
-  const todayDay = monthOffset === 0 ? now.getDate() : 0;
-
-  const chosenCourse = mentor.courses?.find((c) => c.code.toLowerCase() === (selectedCourse || '').toLowerCase());
-  const courseHourlyRate = chosenCourse?.ratePrivate ?? mentor.hourlyRate;
-  const courseGroupRate = chosenCourse?.rateGroup ?? mentor.groupRate;
+  const chosenCourse = (mentor?.courses || []).find(
+    (c) => (c?.code || '').toLowerCase() === (selectedCourse || '').toLowerCase()
+  );
+  const courseHourlyRate = Number(chosenCourse?.ratePrivate) || Number(mentor?.hourlyRate) || 100000;
+  const courseGroupRate = Number(chosenCourse?.rateGroup) || Number(mentor?.groupRate) || 60000;
   const activeRate = bookingFormat === 'GROUP' ? courseGroupRate : courseHourlyRate;
-  const price = Math.round((activeRate * duration) / 60);
+  const price = Math.round((activeRate * (duration || 60)) / 60);
 
   const cont = () => {
     const mentorId = realMentorUserId ?? mentor.id;
@@ -264,8 +275,8 @@ export function ScheduleConsultation() {
                     <div className="flex flex-wrap gap-2">
                       {mentor.courses.map((c) => (
                         <button
-                          key={c.code}
-                          onClick={() => setSelectedCourse(c.code)}
+                          key={c.code || c.name}
+                          onClick={() => c.code && setSelectedCourse(c.code)}
                           className={cn(
                             'rounded-xl border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer',
                             selectedCourse === c.code
