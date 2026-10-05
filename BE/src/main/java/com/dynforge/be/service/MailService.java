@@ -907,6 +907,297 @@ public class MailService {
         sendEmailDirect(mentorEmail, subject, html);
     }
 
+    /**
+     * Sends an automated email to a mentor when their verification application is approved by admin,
+     * confirming their official mentor status, course approval, and next steps.
+     */
+    @Async
+    public void sendMentorApprovalSuccessEmail(
+            String mentorEmail,
+            String mentorName,
+            String courseCode,
+            String claimedGrade,
+            String adminNote
+    ) {
+        if (mentorEmail == null || mentorEmail.isBlank()) {
+            log.warn("Cannot send mentor approval email: mentor email is empty");
+            return;
+        }
+
+        ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZonedDateTime nowVn = ZonedDateTime.now(vnZone);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm - EEEE, 'ngày' dd/MM/yyyy", Locale.forLanguageTag("vi-VN"));
+        String rawApprovedAt = nowVn.format(formatter);
+        String approvedAtStr = rawApprovedAt;
+        if (rawApprovedAt != null && !rawApprovedAt.isEmpty()) {
+            approvedAtStr = Character.toUpperCase(rawApprovedAt.charAt(0)) + rawApprovedAt.substring(1);
+        }
+
+        String greetingMentor = (mentorName != null && !mentorName.isBlank()) ? mentorName : "Giảng viên";
+        String effectiveCourse = (courseCode != null && !courseCode.isBlank()) ? courseCode : "Chuyên môn học thuật";
+        String effectiveGrade = (claimedGrade != null && !claimedGrade.isBlank()) ? claimedGrade : "Đạt chuẩn";
+        String effectiveNote = (adminNote != null && !adminNote.isBlank())
+                ? adminNote
+                : "Hồ sơ và chứng chỉ của bạn đã được kiểm tra tính hợp lệ và đáp ứng đầy đủ tiêu chuẩn giảng dạy của DynForge.";
+
+        String dashboardUrl = (frontendBaseUrl != null && !frontendBaseUrl.isBlank())
+                ? frontendBaseUrl + "/mentor/dashboard"
+                : "http://localhost:5173/mentor/dashboard";
+        String availabilityUrl = (frontendBaseUrl != null && !frontendBaseUrl.isBlank())
+                ? frontendBaseUrl + "/mentor/availability"
+                : "http://localhost:5173/mentor/availability";
+        String profileUrl = (frontendBaseUrl != null && !frontendBaseUrl.isBlank())
+                ? frontendBaseUrl + "/mentor/profile"
+                : "http://localhost:5173/mentor/profile";
+
+        if (!isConfigured()) {
+            log.info("[Mentor Approval Email] (Mail not configured) Mentor {} ({}) approved for course {} with grade {}",
+                    greetingMentor, mentorEmail, effectiveCourse, effectiveGrade);
+            return;
+        }
+
+        String html = """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <meta name="color-scheme" content="light only">
+                  <meta name="supported-color-schemes" content="light only">
+                  <title>Chúc mừng! Bạn đã trở thành Mentor chính thức của DynForge</title>
+                  <style>
+                    :root {
+                      color-scheme: light only;
+                      supported-color-schemes: light only;
+                    }
+                    body, table, td, div, p, span, h1, h2 {
+                      -webkit-font-smoothing: antialiased;
+                    }
+                  </style>
+                </head>
+                <body style="margin:0;padding:0;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;width:100% !important;min-height:100vh;">
+                  
+                  <!-- Full-width outer wrapper with anti-inversion gradient -->
+                  <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#020b18" style="width:100%;margin:0;padding:0;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);table-layout:fixed;">
+                    <tr>
+                      <td align="center" bgcolor="#020b18" style="padding:0;margin:0;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);">
+                        
+                        <!-- Top Full-Bleed Brand Header -->
+                        <div style="width:100%;background:linear-gradient(180deg, #07152d 0%, #020b18 100%);border-bottom:2px solid #10b981;padding:40px 20px 32px;text-align:center;box-sizing:border-box;">
+                          <h1 style="color:#ffffff;margin:0 0 6px;font-size:28px;font-weight:900;letter-spacing:1px;text-transform:uppercase;">
+                            Dyn<span style="color:#10b981;">Forge</span>
+                          </h1>
+                          <p style="color:#6ee7b7;margin:0;font-size:12px;text-transform:uppercase;letter-spacing:2px;font-weight:700;">
+                            Cổng Quản Lý Giảng Viên & Cố Vấn Học Thuật
+                          </p>
+                        </div>
+
+                        <!-- Main Content Container (880px Spacious Cockpit View) with anti-inversion background -->
+                        <div style="width:100%;max-width:880px;margin:0 auto;padding:40px 24px;text-align:left;box-sizing:border-box;background-color:#020b18;background-image:linear-gradient(180deg, #020b18 0%, #020b18 100%);background:linear-gradient(180deg, #020b18 0%, #020b18 100%);">
+                          
+                          <!-- Salutation & Status Badge -->
+                          <div style="text-align:center;margin-bottom:36px;">
+                            <div style="display:inline-block;background-color:#064e3b;background-image:linear-gradient(180deg, #064e3b 0%, #064e3b 100%);color:#6ee7b7;padding:8px 24px;border-radius:999px;font-size:13px;font-weight:700;border:1px solid #059669;letter-spacing:0.5px;margin-bottom:16px;">
+                              🎉 HỒ SƠ ĐÃ ĐƯỢC DUYỆT CHÍNH THỨC
+                            </div>
+                            <h2 style="color:#ffffff;margin:0 0 10px;font-size:26px;font-weight:800;letter-spacing:-0.5px;">
+                              Chúc Mừng! Bạn Đã Trở Thành Mentor DynForge
+                            </h2>
+                            <p style="color:#94a3b8;margin:0 auto;font-size:15px;line-height:1.6;max-width:640px;">
+                              Xin chào <strong style="color:#ffffff;">{{MENTOR_NAME}}</strong>, hồ sơ đăng ký trở thành Mentor của bạn cho môn <strong style="color:#38bdf8;">{{COURSE_CODE}}</strong> đã được Ban Quản Trị DynForge phê duyệt thành công. Tài khoản của bạn hiện đã được kích hoạt đầy đủ quyền hạn Mentor chính thức!
+                            </p>
+                          </div>
+
+                          <!-- 1. Highlight Spotlight: Verification & Approved Course Details -->
+                          <div style="background-color:#081b38;background-image:linear-gradient(180deg, #081b38 0%, #081b38 100%);background:linear-gradient(180deg, #081b38 0%, #081b38 100%);border:2px solid #10b981;border-radius:20px;padding:32px;margin-bottom:30px;box-shadow:0 0 35px rgba(16,185,129,0.25);">
+                            <div style="font-size:12px;font-weight:800;color:#6ee7b7;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">
+                              🎖️ THÔNG TIN PHÊ DUYỆT CHUYÊN MÔN HỌC THUẬT
+                            </div>
+                            
+                            <table style="width:100%;border-collapse:collapse;font-size:15px;">
+                              <tr>
+                                <td style="padding:10px 0;width:35%;color:#94a3b8;border-bottom:1px solid #1e293b;">Môn học phê chuẩn:</td>
+                                <td style="padding:10px 0;color:#ffffff;font-size:18px;font-weight:800;border-bottom:1px solid #1e293b;">
+                                  {{COURSE_CODE}}
+                                  <span style="display:inline-block;background-color:#064e3b;color:#6ee7b7;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:8px;border:1px solid #059669;">
+                                    ✓ ĐÃ CHỨNG THỰC
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;border-bottom:1px solid #1e293b;">Điểm số / Xếp loại:</td>
+                                <td style="padding:10px 0;color:#38bdf8;font-weight:700;border-bottom:1px solid #1e293b;">{{CLAIMED_GRADE}}</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;border-bottom:1px solid #1e293b;">Thời điểm phê duyệt:</td>
+                                <td style="padding:10px 0;color:#f8fafc;font-weight:600;border-bottom:1px solid #1e293b;">{{APPROVED_AT_STR}} (GMT+7)</td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;color:#94a3b8;vertical-align:top;">Ghi chú từ Ban Quản Trị:</td>
+                                <td style="padding:10px 0;color:#cbd5e1;line-height:1.6;">{{ADMIN_NOTE}}</td>
+                              </tr>
+                            </table>
+                          </div>
+
+                          <!-- 2. Mentor Privileges Showcase -->
+                          <div style="background-color:#0b152d;background-image:linear-gradient(180deg, #0b152d 0%, #0b152d 100%);background:linear-gradient(180deg, #0b152d 0%, #0b152d 100%);border:1px solid #1e293b;border-radius:20px;padding:28px 32px;margin-bottom:30px;">
+                            <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:18px;">
+                              🌟 ĐẶC QUYỀN MENTOR CHÍNH THỨC DYNFORGE
+                            </div>
+                            
+                            <table style="width:100%;border-collapse:collapse;font-size:14px;line-height:1.6;">
+                              <tr>
+                                <td style="padding:10px 0;vertical-align:top;width:40px;font-size:20px;">🛡️</td>
+                                <td style="padding:10px 0;vertical-align:top;border-bottom:1px solid #1e293b;">
+                                  <strong style="color:#ffffff;">Huy hiệu Xác thực Uy tín (Verified Badge):</strong>
+                                  <div style="color:#94a3b8;margin-top:2px;">Hồ sơ của bạn được gắn biểu tượng chứng thực, giúp gia tăng tối đa niềm tin với sinh viên và được ưu tiên gợi ý trên bảng tìm kiếm.</div>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;vertical-align:top;width:40px;font-size:20px;">💼</td>
+                                <td style="padding:10px 0;vertical-align:top;border-bottom:1px solid #1e293b;">
+                                  <strong style="color:#ffffff;">Chủ động nguồn thu nhập & Escrow bảo vệ:</strong>
+                                  <div style="color:#94a3b8;margin-top:2px;">Tự do cài đặt học phí 1-kèm-1 hoặc nhóm học tập. Tiền được lưu giữ trong Quỹ Ký Quỹ Escrow và giải ngân ngay về ví của bạn khi kết thúc buổi dạy.</div>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;vertical-align:top;width:40px;font-size:20px;">📅</td>
+                                <td style="padding:10px 0;vertical-align:top;border-bottom:1px solid #1e293b;">
+                                  <strong style="color:#ffffff;">Linh hoạt thời gian dạy:</strong>
+                                  <div style="color:#94a3b8;margin-top:2px;">Chủ động bật/tắt các khung giờ rảnh theo tuần. Mentee chỉ có thể đặt lịch theo thời gian bạn đã thiết lập sẵn.</div>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:10px 0;vertical-align:top;width:40px;font-size:20px;">🤖</td>
+                                <td style="padding:10px 0;vertical-align:top;">
+                                  <strong style="color:#ffffff;">Hạ tầng công nghệ toàn diện:</strong>
+                                  <div style="color:#94a3b8;margin-top:2px;">Tích hợp sẵn phòng học video trực tuyến, lịch nhắc tự động qua email và trợ lý AI thông minh hỗ trợ giải đáp học thuật.</div>
+                                </td>
+                              </tr>
+                            </table>
+                          </div>
+
+                          <!-- 3. Next Steps Guide -->
+                          <div style="background-color:#06231c;background-image:linear-gradient(180deg, #06231c 0%, #06231c 100%);background:linear-gradient(180deg, #06231c 0%, #06231c 100%);border-left:4px solid #10b981;border-radius:12px;padding:24px;margin-bottom:32px;">
+                            <strong style="color:#6ee7b7;font-size:15px;display:block;margin-bottom:12px;">
+                              🚀 3 Bước Tiếp Theo Để Bắt Đầu Nhận Buổi Dạy Đầu Tiên:
+                            </strong>
+                            <ol style="margin:0;padding-left:20px;color:#d1fae5;font-size:14px;line-height:1.8;">
+                              <li><strong>Cập nhật Hồ sơ Mentor:</strong> Thêm tiểu sử (Bio), kinh nghiệm cá nhân, bằng cấp và hình ảnh đại diện tại <a href="{{PROFILE_URL}}" style="color:#38bdf8;text-decoration:underline;">Hồ sơ giảng viên</a>.</li>
+                              <li><strong>Thiết lập Lịch rảnh (Availability):</strong> Chọn các khung giờ trong tuần bạn sẵn sàng dạy học tại <a href="{{AVAILABILITY_URL}}" style="color:#38bdf8;text-decoration:underline;">Quản lý lịch rảnh</a>.</li>
+                              <li><strong>Sẵn sàng đón học viên:</strong> Khi học viên đặt lịch và thanh toán thành công, bạn sẽ nhận được thông báo tức thì qua email và chuông hệ thống!</li>
+                            </ol>
+                          </div>
+
+                          <!-- 4. Primary CTA Button -->
+                          <div style="text-align:center;margin:40px 0 36px;">
+                            <a href="{{DASHBOARD_URL}}" target="_blank" style="display:inline-block;background:linear-gradient(135deg, #10b981 0%, #0284c7 100%);color:#ffffff;font-size:18px;font-weight:800;text-decoration:none;padding:18px 48px;border-radius:14px;box-shadow:0 6px 25px rgba(16,185,129,0.4);letter-spacing:0.5px;">
+                              🚀 TRUY CẬP BẢNG ĐIỀU KHIỂN MENTOR
+                            </a>
+                            <div style="margin-top:16px;">
+                              <a href="{{AVAILABILITY_URL}}" target="_blank" style="color:#6ee7b7;font-size:14px;font-weight:600;text-decoration:underline;">
+                                Cài đặt khung giờ rảnh & biểu phí giảng dạy →
+                              </a>
+                            </div>
+                          </div>
+
+                          <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0;text-align:center;">
+                            * Nếu bạn cần bất kỳ hỗ trợ nào về cách vận hành hoặc chính sách giảng dạy, đừng ngần ngại liên hệ với Ban Hỗ Trợ DynForge.
+                          </p>
+
+                        </div>
+
+                        <!-- Full-Bleed Footer -->
+                        <div style="width:100%;background-color:#010712;background-image:linear-gradient(180deg, #010712 0%, #010712 100%);background:linear-gradient(180deg, #010712 0%, #010712 100%);border-top:1px solid #1e293b;padding:36px 20px;text-align:center;box-sizing:border-box;">
+                          <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#94a3b8;">
+                            DynForge Platform — Build People. Forge Futures.
+                          </p>
+                          <p style="margin:0 0 8px;font-size:12px;color:#64748b;">
+                            Cổng thông tin giảng viên và cố vấn học thuật DynForge. Vui lòng không phản hồi trực tiếp vào địa chỉ này.
+                          </p>
+                          <p style="margin:0;font-size:12px;color:#475569;">
+                            © 2026 DynForge. Mọi quyền được bảo lưu.
+                          </p>
+                        </div>
+
+                      </td>
+                    </tr>
+                  </table>
+
+                </body>
+                </html>
+                """
+                .replace("{{MENTOR_NAME}}", greetingMentor)
+                .replace("{{COURSE_CODE}}", effectiveCourse)
+                .replace("{{CLAIMED_GRADE}}", effectiveGrade)
+                .replace("{{APPROVED_AT_STR}}", approvedAtStr)
+                .replace("{{ADMIN_NOTE}}", effectiveNote)
+                .replace("{{DASHBOARD_URL}}", dashboardUrl)
+                .replace("{{PROFILE_URL}}", profileUrl)
+                .replace("{{AVAILABILITY_URL}}", availabilityUrl);
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            String sender = (fromEmail != null && !fromEmail.isBlank()) ? fromEmail : username;
+            helper.setFrom(sender, senderName);
+            helper.setTo(mentorEmail);
+            helper.setSubject("[DynForge] Chúc mừng! Hồ sơ Mentor môn " + effectiveCourse + " của bạn đã được phê duyệt");
+            helper.setText(html, true);
+            mailSender.send(message);
+            log.info("Mentor approval email sent successfully to {} for course {}", mentorEmail, effectiveCourse);
+        } catch (Exception e) {
+            log.error("Failed to send mentor approval email to {}: {}", mentorEmail, e.getMessage());
+        }
+    }
+
+    /**
+     * Sends an email notification to an applicant when their verification request is rejected,
+     * providing the admin reason and instructions on how to re-apply.
+     */
+    @Async
+    public void sendMentorRejectionEmail(
+            String mentorEmail,
+            String mentorName,
+            String courseCode,
+            String rejectionReason
+    ) {
+        if (mentorEmail == null || mentorEmail.isBlank()) return;
+
+        String greeting = (mentorName != null && !mentorName.isBlank()) ? mentorName : "Bạn";
+        String effectiveCourse = (courseCode != null && !courseCode.isBlank()) ? courseCode : "Chuyên môn học thuật";
+        String reason = (rejectionReason != null && !rejectionReason.isBlank())
+                ? rejectionReason
+                : "Hồ sơ hoặc tài liệu minh chứng chưa đáp ứng đầy đủ tiêu chuẩn xác thực của DynForge.";
+        String reapplyUrl = (frontendBaseUrl != null ? frontendBaseUrl : "http://localhost:5173") + "/become-a-mentor";
+
+        if (!isConfigured()) {
+            log.info("[Mentor Rejection Email] (Mail not configured) Rejection notification sent to {}: Course={}, Reason={}",
+                    mentorEmail, effectiveCourse, reason);
+            return;
+        }
+
+        String html = """
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #1e293b;border-radius:12px;background:#020b18;color:#f8fafc">
+                  <h2 style="color:#ef4444;margin:0 0 12px">DynForge - Thông Báo Kết Quả Xét Duyệt Hồ Sơ</h2>
+                  <p>Xin chào <b>%s</b>,</p>
+                  <p>Cảm ơn bạn đã quan tâm và nộp hồ sơ trở thành Mentor môn <b>%s</b> trên nền tảng DynForge.</p>
+                  <p>Rất tiếc, sau khi xem xét kỹ lưỡng tài liệu đính kèm, Ban Quản Trị chưa thể phê duyệt yêu cầu này vào thời điểm hiện tại.</p>
+                  <div style="background:#450a0a;border:1px solid #ef4444;border-radius:8px;padding:16px;margin:16px 0;color:#fecaca">
+                    <p style="margin:0 0 6px;font-weight:bold;color:#f87171">Lý do từ Ban Kiểm Duyệt:</p>
+                    <p style="margin:0;line-height:1.5">%s</p>
+                  </div>
+                  <p>Bạn hoàn toàn có thể cập nhật lại bằng chứng học tập (bảng điểm rõ ràng, thông tin trùng khớp) và nộp lại đơn xét duyệt bất kỳ lúc nào.</p>
+                  <div style="text-align:center;margin:24px 0">
+                    <a href="%s" style="background:#3b82f6;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:bold;display:inline-block">Nộp Lại Đơn Xét Duyệt</a>
+                  </div>
+                  <p style="color:#64748b;font-size:12px;margin-top:24px">DynForge - Peer-to-Peer Academic Mentorship Platform</p>
+                </div>
+                """.formatted(greeting, effectiveCourse, reason, reapplyUrl);
+
+        sendEmailDirect(mentorEmail, "[DynForge] Thông báo kết quả xét duyệt hồ sơ Mentor môn " + effectiveCourse, html);
+    }
+
     private void sendEmailDirect(String to, String subject, String htmlContent) {
         try {
             MimeMessage message = mailSender.createMimeMessage();

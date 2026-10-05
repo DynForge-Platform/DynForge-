@@ -11,8 +11,10 @@ import com.dynforge.be.model.entity.Course;
 import com.dynforge.be.model.entity.MentorProfile;
 import com.dynforge.be.model.entity.User;
 import com.dynforge.be.model.entity.VerificationRequest;
+import com.dynforge.be.model.enums.Role;
 import com.dynforge.be.model.enums.VerificationStatus;
 import com.dynforge.be.repository.MentorRepository;
+import com.dynforge.be.repository.UserRepository;
 import com.dynforge.be.repository.VerificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,8 @@ public class VerificationService {
     private final VerificationRepository verificationRepository;
     private final MentorRepository mentorRepository;
     private final VerificationMapper verificationMapper;
+    private final UserRepository userRepository;
+    private final MailService mailService;
 
     public VerificationResponse submit(User user, VerificationRequestDto dto) {
         UrlValidator.validateHttpUrl(dto.transcriptUrl(), "transcriptUrl");
@@ -116,6 +122,40 @@ public class VerificationService {
             }
 
             mentorRepository.save(profile);
+
+            // Grant MENTOR role to the user account if not already assigned
+            User mentorUser = userRepository.findById(mentorUserId.toHexString()).orElse(null);
+            if (mentorUser != null) {
+                if (mentorUser.getRoles() == null) {
+                    mentorUser.setRoles(EnumSet.of(Role.MENTOR));
+                    userRepository.save(mentorUser);
+                } else if (!mentorUser.getRoles().contains(Role.MENTOR)) {
+                    Set<Role> updatedRoles = EnumSet.copyOf(mentorUser.getRoles());
+                    updatedRoles.add(Role.MENTOR);
+                    mentorUser.setRoles(updatedRoles);
+                    userRepository.save(mentorUser);
+                }
+
+                // Send automated congratulatory email to the mentor
+                mailService.sendMentorApprovalSuccessEmail(
+                        mentorUser.getEmail(),
+                        mentorUser.getFullName(),
+                        request.getCourse(),
+                        request.getClaimedGrade(),
+                        decision.note()
+                );
+            }
+        } else if (decision.status() == VerificationStatus.REJECTED) {
+            ObjectId mentorUserId = request.getUserId();
+            User mentorUser = userRepository.findById(mentorUserId.toHexString()).orElse(null);
+            if (mentorUser != null) {
+                mailService.sendMentorRejectionEmail(
+                        mentorUser.getEmail(),
+                        mentorUser.getFullName(),
+                        request.getCourse(),
+                        decision.note()
+                );
+            }
         }
 
         return verificationMapper.toResponse(request);
