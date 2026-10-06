@@ -411,31 +411,6 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
             )}
 
             <LanguageSwitcher />
-
-            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-
-            {/* Profile Avatar & Info */}
-            <Link
-              to="/dashboard/profile"
-              className="flex items-center gap-2.5 rounded-xl p-1 transition-all hover:bg-slate-900/60 group"
-            >
-              <div className="relative">
-                <ImageWithFallback
-                  src={avatar}
-                  alt={userLabel}
-                  className="size-8 sm:size-9 rounded-full object-cover ring-2 ring-cyan-500/30 group-hover:ring-cyan-400 transition-all"
-                />
-                <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-slate-950 bg-emerald-500" />
-              </div>
-              <div className="hidden text-left lg:block">
-                <p className="truncate text-xs font-bold text-slate-200 group-hover:text-cyan-300 transition-colors">
-                  {userLabel}
-                </p>
-                <p className="text-[10px] text-slate-400 capitalize leading-none">
-                  {portalBadge}
-                </p>
-              </div>
-            </Link>
           </div>
         </header>
 
