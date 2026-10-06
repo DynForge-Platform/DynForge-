@@ -149,10 +149,9 @@ export function EscrowStatus() {
         {/* Hero Celebratory Header with Animations */}
         <div className="text-center mb-10 relative">
           <div className="relative inline-flex items-center justify-center mb-5 animate-fade-rise">
-            <div className="absolute inset-0 rounded-full bg-cyan-500/25 blur-2xl animate-pulse" />
-            <div className="relative size-20 sm:size-24 rounded-3xl bg-gradient-to-br from-slate-900/95 via-slate-950/95 to-cyan-950/95 border-2 border-cyan-400/60 flex items-center justify-center shadow-[0_0_50px_rgba(6,182,212,0.35)] backdrop-blur-xl p-3 sm:p-4">
-              <DynForgeEmblem className="size-11 sm:size-13 drop-shadow-[0_0_16px_rgba(6,182,212,0.8)]" />
-              <div className="absolute -bottom-1 -right-1 size-7 sm:size-8 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center text-slate-950 shadow-lg">
+            <div className="relative size-20 sm:size-24 flex items-center justify-center drop-shadow-[0_0_35px_rgba(6,182,212,0.6)]">
+              <DynForgeEmblem className="size-full" />
+              <div className="absolute -bottom-1 -right-1 size-7 sm:size-8 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center text-slate-950 shadow-lg z-10">
                 <Check className="size-4 sm:size-4.5 stroke-[3]" />
               </div>
             </div>

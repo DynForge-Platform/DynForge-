@@ -21,8 +21,8 @@ export function PublicLayout() {
       {/* Editorial Dark Footer */}
       <Footer />
 
-      {/* AI Assistant */}
-      <GlobalAiChatbot />
+      {/* AI Assistant (Tạm ẩn theo yêu cầu người dùng) */}
+      {/* <GlobalAiChatbot /> */}
       <ScrollRestoration />
     </div>
   );

@@ -8,6 +8,8 @@ import { FormattedText } from './FormattedText';
 import { RiveRobot } from './RiveRobot';
 
 export function GlobalAiChatbot() {
+  // Tạm ẩn icon và chatbot AI theo yêu cầu của người dùng
+  return null;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([
     {

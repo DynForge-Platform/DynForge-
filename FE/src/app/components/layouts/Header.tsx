@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router';
-import { Menu, X, ChevronDown, LogOut, LayoutDashboard } from 'lucide-react';
+import {
+  Menu, X, ChevronDown, LogOut, LayoutDashboard,
+  Home, Search, Sparkles, BookOpen, Info, ChevronRight,
+} from 'lucide-react';
 import { Logo } from '../Logo';
 import { cn } from '../ui/utils';
 import {
@@ -23,11 +26,11 @@ export function Header() {
   const navigate = useNavigate();
 
   const navItems = [
-    { to: '/', label: 'Home' },
-    { to: '/mentors', label: lang === 'vi' ? 'Tìm gia sư' : 'Find Mentors' },
-    { to: '/become-a-mentor', label: lang === 'vi' ? 'Trở thành gia sư' : 'Become a Mentor' },
-    { to: '/resources', label: lang === 'vi' ? 'Tài nguyên' : 'Resources' },
-    { to: '/about', label: lang === 'vi' ? 'Giới thiệu' : 'About' },
+    { to: '/', label: 'Home', icon: Home },
+    { to: '/mentors', label: lang === 'vi' ? 'Tìm gia sư' : 'Find Mentors', icon: Search },
+    { to: '/become-a-mentor', label: lang === 'vi' ? 'Trở thành gia sư' : 'Become a Mentor', icon: Sparkles },
+    { to: '/resources', label: lang === 'vi' ? 'Tài nguyên' : 'Resources', icon: BookOpen },
+    { to: '/about', label: lang === 'vi' ? 'Giới thiệu' : 'About', icon: Info },
   ];
 
   const handleLogout = async () => {
@@ -46,7 +49,7 @@ export function Header() {
       {/* DynForge Brand Logo */}
       <Logo size="md" />
 
-      {/* Navigation Links directly inside page flow */}
+      {/* Navigation Links directly inside page flow (Desktop) */}
       <div className="hidden md:flex flex-row items-center gap-8 lg:gap-12">
         {navItems.map((item) => (
           <NavLink
@@ -67,7 +70,7 @@ export function Header() {
         ))}
       </div>
 
-      {/* Language & CTA Action Controls directly inside page flow */}
+      {/* Language & CTA Action Controls directly inside page flow (Desktop) */}
       <div className="hidden md:flex flex-row items-center gap-4">
         <LanguageSwitcher />
         {user ? (
@@ -99,86 +102,138 @@ export function Header() {
           </DropdownMenu>
         ) : (
           <button
-            onClick={() => navigate('/mentors')}
+            onClick={() => navigate('/login')}
             className="rounded-full border border-white/30 bg-white/5 backdrop-blur-md px-6 py-2 text-sm font-medium text-white hover:bg-white/15 hover:border-white/50 transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
           >
-            {lang === 'vi' ? 'Tìm gia sư ngay' : 'Find a Mentor'}
+            {lang === 'vi' ? 'Đăng nhập' : 'Sign In'}
           </button>
         )}
       </div>
 
-      {/* Mobile menu button */}
+      {/* Mobile Menu Trigger Button */}
       <button
-        className="flex size-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white md:hidden"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Toggle menu"
+        className="flex size-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-200 hover:text-white hover:bg-white/10 transition-all md:hidden cursor-pointer"
+        onClick={() => setOpen(true)}
+        aria-label="Open mobile menu"
       >
-        {open ? <X className="size-5" /> : <Menu className="size-5" />}
+        <Menu className="size-5" />
       </button>
 
-      {/* Mobile drawer */}
+      {/* Premium Mobile Slide-Over Drawer Sheet */}
       {open && (
-        <div className="absolute top-full left-0 right-0 z-50 border-b border-white/10 bg-[#020B18]/95 backdrop-blur-xl px-4 py-4 md:hidden">
-          <nav className="flex flex-col gap-2">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/'}
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          {/* Backdrop Blur Overlay */}
+          <div
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
+            onClick={() => setOpen(false)}
+          />
+
+          {/* Drawer Content Panel */}
+          <aside className="relative ml-auto z-10 flex h-full w-[85vw] max-w-sm flex-col border-l border-white/10 bg-[#030914]/98 px-5 py-5 shadow-2xl backdrop-blur-2xl animate-in slide-in-from-right duration-300 overflow-hidden">
+            {/* Ambient Decorative Glow Circles */}
+            <div className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-cyan-500/15 blur-3xl" />
+            <div className="pointer-events-none absolute bottom-20 -left-16 size-44 rounded-full bg-indigo-600/15 blur-3xl" />
+
+            {/* Top Brand & Close Row */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
+              <Logo size="sm" />
+              <button
                 onClick={() => setOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    'rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
-                    isActive ? 'bg-white/10 text-white font-bold border border-white/20' : 'text-white/60 hover:bg-white/5 hover:text-white'
-                  )
-                }
+                className="flex size-9 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close menu"
               >
-                {item.label}
-              </NavLink>
-            ))}
-            {user ? (
-              <div className="mt-3 pt-3 border-t border-white/10 space-y-3">
-                <div className="flex items-center gap-3 px-1">
-                  <ImageWithFallback src={user.avatar} alt={user.name} className="size-9 rounded-full object-cover border border-white/30" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-                    <span className="inline-block rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[11px] text-cyan-300 capitalize font-medium">
-                      {user.role}
-                    </span>
+                <X className="size-4.5" />
+              </button>
+            </div>
+
+            {/* Nav Items List */}
+            <nav className="mt-5 flex flex-1 flex-col gap-1.5 overflow-y-auto pr-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === '/'}
+                    onClick={() => setOpen(false)}
+                    className={({ isActive }) =>
+                      cn(
+                        'group flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-medium transition-all',
+                        isActive
+                          ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 border border-cyan-500/40 shadow-md shadow-cyan-950/40 font-semibold'
+                          : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'
+                      )
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Icon className={cn('size-4.5 shrink-0 transition-colors', isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-cyan-300')} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        <ChevronRight className={cn('size-4 shrink-0 transition-transform group-hover:translate-x-0.5', isActive ? 'text-cyan-400' : 'text-slate-600 group-hover:text-slate-400')} />
+                      </>
+                    )}
+                  </NavLink>
+                );
+              })}
+            </nav>
+
+            {/* Bottom Footer Section (User or Guest) */}
+            <div className="mt-auto pt-4 border-t border-white/10 shrink-0 space-y-3">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10">
+                    <ImageWithFallback src={user.avatar} alt={user.name} className="size-11 rounded-xl object-cover ring-2 ring-cyan-500/30" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+                      <span className="inline-block rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[10px] text-cyan-300 capitalize font-medium mt-0.5">
+                        {user.role}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col gap-2">
+
                   <button
                     onClick={() => { navigate(user.dashboardPath); setOpen(false); }}
-                    className="flex w-full items-center gap-2.5 rounded-xl bg-white/10 border border-white/15 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/20 transition-all text-left cursor-pointer"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-white font-semibold text-sm py-2.5 shadow-lg shadow-cyan-950/60 cursor-pointer transition-all active:scale-[0.99]"
                   >
-                    <LayoutDashboard className="size-4 text-cyan-400" />
+                    <LayoutDashboard className="size-4" />
                     <span>{dashLabel}</span>
                   </button>
+
                   <div className="flex items-center justify-between pt-1">
                     <LanguageSwitcher />
                     <button
                       onClick={() => { handleLogout(); setOpen(false); }}
-                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-400 hover:bg-red-950/30 transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                     >
-                      <LogOut className="size-4" />
+                      <LogOut className="size-3.5" />
                       <span>{T.logOut}</span>
                     </button>
                   </div>
+                </>
+              ) : (
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => { navigate('/login'); setOpen(false); }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-white font-semibold text-sm py-2.5 shadow-lg shadow-cyan-950/60 cursor-pointer"
+                  >
+                    <span>{lang === 'vi' ? 'Đăng nhập' : 'Sign In'}</span>
+                  </button>
+                  <button
+                    onClick={() => { navigate('/mentors'); setOpen(false); }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-medium text-sm py-2.5 transition-all cursor-pointer"
+                  >
+                    <Search className="size-4" />
+                    <span>{lang === 'vi' ? 'Tìm gia sư' : 'Find a Mentor'}</span>
+                  </button>
+                  <div className="flex items-center justify-center pt-2 border-t border-white/5">
+                    <LanguageSwitcher />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
-                <LanguageSwitcher />
-                <button
-                  onClick={() => { navigate('/mentors'); setOpen(false); }}
-                  className="rounded-full border border-white/30 bg-white/10 px-5 py-2 text-sm text-white font-medium hover:bg-white/20 transition-all cursor-pointer"
-                >
-                  {lang === 'vi' ? 'Tìm gia sư ngay' : 'Find a Mentor'}
-                </button>
-              </div>
-            )}
-          </nav>
+              )}
+            </div>
+          </aside>
         </div>
       )}
     </nav>

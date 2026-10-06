@@ -245,22 +245,57 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
       {/* Mobile Drawer Overlay */}
       {mobileNavOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
+          {/* Backdrop Blur Overlay */}
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-md transition-opacity"
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
             onClick={() => setMobileNavOpen(false)}
           />
-          <aside className="relative z-10 flex h-full w-80 max-w-[85vw] flex-col border-r border-slate-800 bg-slate-950 px-5 py-6 shadow-2xl backdrop-blur-2xl">
-            <div className="flex items-center justify-between px-1 pb-4 border-b border-slate-800">
-              <Logo light />
+
+          {/* Drawer Content Panel */}
+          <aside className="relative z-10 flex h-full w-[85vw] max-w-xs flex-col border-r border-slate-800/80 bg-[#030914]/98 px-5 py-5 shadow-2xl backdrop-blur-2xl animate-in slide-in-from-left duration-300 overflow-hidden">
+            {/* Ambient Decorative Glow Circles */}
+            <div className="pointer-events-none absolute -top-16 -left-16 size-48 rounded-full bg-cyan-500/15 blur-3xl" />
+            <div className="pointer-events-none absolute bottom-20 -right-16 size-44 rounded-full bg-indigo-600/15 blur-3xl" />
+
+            {/* Top Brand Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800/80 shrink-0">
+              <div className="flex items-center gap-2">
+                <Logo light size="sm" />
+                <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-cyan-300 uppercase">
+                  <span className="size-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  {portalBadge}
+                </span>
+              </div>
               <button
                 onClick={() => setMobileNavOpen(false)}
-                className="flex size-9 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white"
+                className="flex size-9 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close menu"
               >
-                <X className="size-5" />
+                <X className="size-4.5" />
               </button>
             </div>
 
-            <nav className="mt-5 flex flex-1 flex-col gap-1.5 overflow-y-auto">
+            {/* Quick Wallet Bar in Drawer (for students) */}
+            {role === 'student' && (
+              <div className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 backdrop-blur-md shrink-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ví Ký Quỹ</span>
+                    <p className="text-sm font-bold text-emerald-400">{formatCurrency(walletBalance)}</p>
+                  </div>
+                  <Link
+                    to="/dashboard/wallet"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 transition-all hover:scale-105"
+                  >
+                    <Plus className="size-3" /> Nạp tiền
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation items list */}
+            <nav className="mt-4 flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
               {nav.map((item) => {
                 const Icon = item.icon;
                 const label = (T as Record<string, string>)[item.labelKey] ?? item.labelKey;
@@ -272,38 +307,54 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
                     onClick={() => setMobileNavOpen(false)}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all',
+                        'group flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all',
                         isActive
-                          ? 'bg-cyan-600/20 text-cyan-300 border border-cyan-500/40 shadow-lg'
-                          : 'text-slate-300 hover:bg-slate-900 hover:text-white'
+                          ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 border border-cyan-500/40 shadow-md shadow-cyan-950/40 font-semibold'
+                          : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'
                       )
                     }
                   >
-                    <Icon className="size-4.5 shrink-0" />
-                    {label}
+                    {({ isActive }) => (
+                      <>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Icon className={cn('size-4.5 shrink-0 transition-colors', isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-cyan-300')} />
+                          <span className="truncate">{label}</span>
+                        </div>
+                        <ChevronRight className={cn('size-4 shrink-0 transition-transform group-hover:translate-x-0.5', isActive ? 'text-cyan-400' : 'text-slate-600 group-hover:text-slate-400')} />
+                      </>
+                    )}
                   </NavLink>
                 );
               })}
             </nav>
 
-            <div className="mt-4 pt-4 border-t border-slate-800">
-              <div className="flex items-center gap-3 px-2 mb-3">
-                <ImageWithFallback
-                  src={avatar}
-                  alt={userLabel}
-                  className="size-10 rounded-full object-cover border border-slate-700"
-                />
+            {/* Footer Profile & Logout */}
+            <div className="mt-auto pt-4 border-t border-slate-800/80 shrink-0 space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
+                <div className="relative size-10 shrink-0">
+                  <ImageWithFallback
+                    src={avatar}
+                    alt={userLabel}
+                    className="size-10 rounded-xl object-cover ring-2 ring-cyan-500/30"
+                  />
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-slate-950 bg-emerald-500" />
+                </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-white">{userLabel}</p>
-                  <p className="truncate text-xs text-cyan-400 capitalize">{portalLabel}</p>
+                  <p className="truncate text-sm font-semibold text-white tracking-tight">{userLabel}</p>
+                  <p className="truncate text-xs text-cyan-400 font-medium">{portalLabel}</p>
                 </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-400 hover:bg-red-950/30 hover:text-red-400 transition-colors"
-              >
-                <LogOut className="size-4.5" /> {T.logOut ?? 'Đăng xuất'}
-              </button>
+
+              <div className="flex items-center justify-between gap-2 px-1">
+                <LanguageSwitcher />
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  <LogOut className="size-3.5" />
+                  <span>{T.logOut ?? 'Đăng xuất'}</span>
+                </button>
+              </div>
             </div>
           </aside>
         </div>
