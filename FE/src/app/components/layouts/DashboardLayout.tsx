@@ -82,7 +82,7 @@ const fallbackAvatar: Record<Role, string> = {
 export function DashboardLayout({ role = 'student' }: { role?: Role }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const { T } = useLanguage();
+  const { T, lang } = useLanguage();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const nav = roleNavMap[role];
@@ -105,9 +105,14 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
 
   const handleLogout = async () => {
     await logout();
-    toast.success('Signed out successfully.');
+    toast.success(lang === 'vi' ? 'Đã đăng xuất thành công.' : 'Signed out successfully.');
     navigate('/');
   };
+
+  const txtWallet = lang === 'vi' ? 'Ví Ký Quỹ' : 'Escrow Wallet';
+  const txtTopUp = lang === 'vi' ? 'Nạp tiền' : 'Top up';
+  const txtNavigation = lang === 'vi' ? 'Điều hướng' : 'Navigation';
+  const txtDiscover = lang === 'vi' ? 'Khám phá Mentor mới' : 'Discover new mentors';
 
   const portalLabel =
     role === 'teacher' ? (T.mentorPortal ?? 'Mentor Portal')
@@ -170,14 +175,14 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
           {role === 'student' && (
             <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between">
               <div>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ví Ký Quỹ</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">{txtWallet}</span>
                 <p className="text-xs font-bold text-emerald-400 tracking-tight">{formatCurrency(walletBalance)}</p>
               </div>
               <Link
                 to="/dashboard/wallet"
                 className="flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[11px] font-semibold text-cyan-300 hover:bg-cyan-500/20 transition-all hover:scale-105"
               >
-                <Plus className="size-3" /> Nạp tiền
+                <Plus className="size-3" /> {txtTopUp}
               </Link>
             </div>
           )}
@@ -186,7 +191,7 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
         {/* Navigation list */}
         <nav className="mt-4 flex flex-1 flex-col gap-1.5 overflow-y-auto pr-1">
           <div className="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Điều hướng
+            {txtNavigation}
           </div>
           {nav.map((item) => {
             const Icon = item.icon;
@@ -228,7 +233,7 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
           >
             <span className="flex items-center gap-2">
               <Sparkles className="size-3.5 text-cyan-400" />
-              Khám phá Mentor mới
+              {txtDiscover}
             </span>
             <ExternalLink className="size-3 opacity-60" />
           </Link>
@@ -280,7 +285,7 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
               <div className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 backdrop-blur-md shrink-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ví Ký Quỹ</span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">{txtWallet}</span>
                     <p className="text-sm font-bold text-emerald-400">{formatCurrency(walletBalance)}</p>
                   </div>
                   <Link
@@ -288,7 +293,7 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
                     onClick={() => setMobileNavOpen(false)}
                     className="flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 transition-all hover:scale-105"
                   >
-                    <Plus className="size-3" /> Nạp tiền
+                    <Plus className="size-3" /> {txtTopUp}
                   </Link>
                 </div>
               </div>

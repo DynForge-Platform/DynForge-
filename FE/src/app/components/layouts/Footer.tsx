@@ -89,10 +89,10 @@ function formatVND(n: number) {
 }
 
 const stats = [
-  { icon: Users, value: '12,000+', label: 'Monthly active students' },
-  { icon: BarChart3, value: '85%', label: 'Engagement rate on ads' },
-  { icon: Star, value: '4.9/5', label: 'Partner satisfaction' },
-  { icon: Megaphone, value: '40+', label: 'Universities reached' },
+  { icon: Users, value: '12,000+', label: 'Sinh viên hoạt động hằng tháng' },
+  { icon: BarChart3, value: '85%', label: 'Tỷ lệ tương tác với quảng cáo' },
+  { icon: Star, value: '4.9/5', label: 'Mức hài lòng của đối tác' },
+  { icon: Megaphone, value: '40+', label: 'Trường đại học tiếp cận' },
 ];
 
 function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -261,22 +261,22 @@ export function Footer() {
   const trustBadges = [
     {
       icon: ShieldCheck,
-      title: 'Verified Mentors',
+      title: lang === 'vi' ? 'Gia sư đã xác minh' : 'Verified Mentors',
       desc: lang === 'vi' ? '100% gia sư được kiểm định hồ sơ & học vấn' : 'Identity & credentials verified',
     },
     {
       icon: Star,
-      title: 'Real Student Reviews',
+      title: lang === 'vi' ? 'Đánh giá thật từ sinh viên' : 'Real Student Reviews',
       desc: lang === 'vi' ? 'Đánh giá thực tế từ sinh viên sau buổi học' : 'Authentic feedback from real sessions',
     },
     {
       icon: CreditCard,
-      title: 'Secure Escrow Payment',
+      title: lang === 'vi' ? 'Thanh toán ký quỹ an toàn' : 'Secure Escrow Payment',
       desc: lang === 'vi' ? 'Học phí ký quỹ an toàn đến khi hoàn tất' : 'Funds held safely in escrow until done',
     },
     {
       icon: Target,
-      title: 'Course-Based Matching',
+      title: lang === 'vi' ? 'Ghép nối theo mã môn học' : 'Course-Based Matching',
       desc: lang === 'vi' ? 'Ghép nối chính xác theo mã môn & giáo trình' : 'Matched by university course code',
     },
   ];

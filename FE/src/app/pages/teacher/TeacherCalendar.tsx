@@ -10,6 +10,7 @@ import {
   getMentorSchedule, mapStatusToDisplay, type BookingResponse,
 } from '../../services/bookingService';
 import { getMyMentorProfile } from '../../services/mentorService';
+import { useLanguage } from '../../context/LanguageContext';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 // Bookings that count as a real session on the calendar.
@@ -18,6 +19,7 @@ const UPCOMING = ['ESCROW_HELD', 'ACCEPTED', 'TAUGHT'];
 
 export function TeacherCalendar() {
   const navigate = useNavigate();
+  const { lang } = useLanguage();
   const [monthOffset, setMonthOffset] = useState(0);
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [availDays, setAvailDays] = useState<Set<string>>(new Set());
@@ -34,9 +36,10 @@ export function TeacherCalendar() {
     }).finally(() => setLoading(false));
   }, []);
 
+  const vi = lang === 'vi';
   const now = new Date();
   const base = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const monthLabel = base.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const monthLabel = base.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-GB', { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
   const firstWeekday = new Date(base.getFullYear(), base.getMonth(), 1).getDay();
   const todayDay = monthOffset === 0 ? now.getDate() : -1;
@@ -85,7 +88,7 @@ export function TeacherCalendar() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
-        <Loader2 className="size-5 animate-spin" /> Loading calendar…
+        <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải lịch…' : 'Loading calendar…'}
       </div>
     );
   }
@@ -95,16 +98,16 @@ export function TeacherCalendar() {
   return (
     <div className="mx-auto max-w-[1100px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Calendar</h1>
-        <p className="mt-1 text-muted-foreground">Your booked sessions and available days at a glance.</p>
+        <h1 className="font-heading" style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Lịch dạy' : 'Calendar'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Xem nhanh các buổi đã đặt và những ngày bạn rảnh.' : 'Your booked sessions and available days at a glance.'}</p>
       </div>
 
       {/* Legend */}
       <div className="mb-4 flex flex-wrap gap-4 text-sm">
         {[
-          { color: 'bg-primary', label: 'Booked session' },
-          { color: 'bg-success/30', label: 'Available' },
-          { color: 'bg-accent', label: 'Unavailable / past' },
+          { color: 'bg-primary', label: vi ? 'Buổi đã đặt' : 'Booked session' },
+          { color: 'bg-success/30', label: vi ? 'Còn trống' : 'Available' },
+          { color: 'bg-accent', label: vi ? 'Bận / đã qua' : 'Unavailable / past' },
         ].map((l) => (
           <span key={l.label} className="flex items-center gap-2">
             <span className={`size-3 rounded-full ${l.color}`} />
@@ -155,7 +158,7 @@ export function TeacherCalendar() {
           {selectedDay != null && (
             <Card className="border-border p-6">
               <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-                {new Date(base.getFullYear(), base.getMonth(), selectedDay).toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })}
+                {new Date(base.getFullYear(), base.getMonth(), selectedDay).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-GB', { weekday: 'long', day: '2-digit', month: 'short' })}
               </h2>
               {selectedSessions.length ? (
                 <div className="space-y-3">
@@ -166,12 +169,12 @@ export function TeacherCalendar() {
                       className="w-full rounded-xl border-l-4 border-primary bg-accent/50 p-4 text-left transition-colors hover:bg-accent"
                     >
                       <div className="flex items-center justify-between">
-                        <p style={{ fontWeight: 600 }}>{b.menteeName ?? 'Student'}</p>
+                        <p style={{ fontWeight: 600 }}>{b.menteeName ?? (vi ? 'Học viên' : 'Student')}</p>
                         <StatusBadge status={mapStatusToDisplay(b.status)} />
                       </div>
                       <p className="text-sm text-muted-foreground">{b.courseCode} · {formatCurrency(b.price)}</p>
                       <p className="mt-1 text-sm text-primary" style={{ fontWeight: 500 }}>
-                        {new Date(b.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {b.durationMin} min
+                        {new Date(b.startAt).toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-GB', { hour: '2-digit', minute: '2-digit' })} · {b.durationMin} {vi ? 'phút' : 'min'}
                       </p>
                     </button>
                   ))}
@@ -179,7 +182,7 @@ export function TeacherCalendar() {
               ) : (
                 <div className="flex flex-col items-center gap-2 py-6 text-center text-muted-foreground">
                   <CalendarX className="size-7" />
-                  <p className="text-sm">Không có lịch dạy trong ngày này.</p>
+                  <p className="text-sm">{vi ? 'Không có lịch dạy trong ngày này.' : 'No sessions on this day.'}</p>
                 </div>
               )}
             </Card>
@@ -188,9 +191,9 @@ export function TeacherCalendar() {
           {/* Upcoming sessions → leads to sessions page */}
           <Card className="border-border p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Upcoming sessions</h2>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Buổi học sắp tới' : 'Upcoming sessions'}</h2>
               <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/mentor/sessions')}>
-                View all <ArrowRight className="size-4" />
+                {vi ? 'Xem tất cả' : 'View all'} <ArrowRight className="size-4" />
               </Button>
             </div>
             {upcoming.length ? (
@@ -201,19 +204,19 @@ export function TeacherCalendar() {
                     onClick={() => navigate('/mentor/sessions')}
                     className="w-full rounded-xl border-l-4 border-primary bg-accent/50 p-4 text-left transition-colors hover:bg-accent"
                   >
-                    <p style={{ fontWeight: 600 }}>{b.menteeName ?? 'Student'}</p>
+                    <p style={{ fontWeight: 600 }}>{b.menteeName ?? (vi ? 'Học viên' : 'Student')}</p>
                     <p className="text-sm text-muted-foreground">{b.courseCode}</p>
                     <p className="mt-1 text-sm text-primary" style={{ fontWeight: 500 }}>
-                      {new Date(b.startAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                      {new Date(b.startAt).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-GB', { day: '2-digit', month: 'short' })}
                       {' · '}
-                      {new Date(b.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                      {' · '}{b.durationMin} min
+                      {new Date(b.startAt).toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      {' · '}{b.durationMin} {vi ? 'phút' : 'min'}
                     </p>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">No upcoming sessions.</p>
+              <p className="text-muted-foreground">{vi ? 'Chưa có buổi học nào sắp tới.' : 'No upcoming sessions.'}</p>
             )}
           </Card>
         </div>

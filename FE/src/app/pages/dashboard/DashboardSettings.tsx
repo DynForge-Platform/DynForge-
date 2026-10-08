@@ -14,49 +14,50 @@ import { useLanguage } from '../../context/LanguageContext';
 
 interface Toggle { label: string; description: string; key: string }
 
-const notifToggles: Toggle[] = [
-  { label: 'Session reminders', description: 'Get notified 24h and 1h before a session.', key: 'session' },
-  { label: 'Booking confirmations', description: 'Confirm when a mentor accepts your booking.', key: 'booking' },
-  { label: 'Escrow updates', description: 'Notifications when your escrow status changes.', key: 'escrow' },
-  { label: 'Dispute updates', description: 'Progress updates on your dispute cases.', key: 'dispute' },
-  { label: 'Mentor messages', description: 'Receive messages from mentors.', key: 'messages' },
-  { label: 'DynForge news', description: 'Platform updates, new features, and events.', key: 'news' },
-];
-
 export function DashboardSettings() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [notifs, setNotifs] = useState<Record<string, boolean>>({
     session: true, booking: true, escrow: true, dispute: true, messages: true, news: false,
   });
+
+  const notifToggles: Toggle[] = [
+    { key: 'session', label: vi ? 'Nhắc lịch học' : 'Session reminders', description: vi ? 'Nhận thông báo trước buổi học 24 giờ và 1 giờ.' : 'Get notified 24h and 1h before a session.' },
+    { key: 'booking', label: vi ? 'Xác nhận đặt lịch' : 'Booking confirmations', description: vi ? 'Báo khi mentor chấp nhận yêu cầu đặt lịch của bạn.' : 'Confirm when a mentor accepts your booking.' },
+    { key: 'escrow', label: vi ? 'Cập nhật ký quỹ (Escrow)' : 'Escrow updates', description: vi ? 'Thông báo khi trạng thái ký quỹ của bạn thay đổi.' : 'Notifications when your escrow status changes.' },
+    { key: 'dispute', label: vi ? 'Cập nhật tranh chấp' : 'Dispute updates', description: vi ? 'Cập nhật tiến độ các vụ tranh chấp của bạn.' : 'Progress updates on your dispute cases.' },
+    { key: 'messages', label: vi ? 'Tin nhắn từ mentor' : 'Mentor messages', description: vi ? 'Nhận tin nhắn từ các mentor.' : 'Receive messages from mentors.' },
+    { key: 'news', label: vi ? 'Tin tức DynForge' : 'DynForge news', description: vi ? 'Cập nhật nền tảng, tính năng mới và sự kiện.' : 'Platform updates, new features, and events.' },
+  ];
 
   const toggle = (key: string) => setNotifs((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
     <div className="mx-auto max-w-[760px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Settings</h1>
-        <p className="mt-1 text-muted-foreground">Manage your account, notifications, and privacy preferences.</p>
+        <h1 className="font-heading" style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Cài đặt' : 'Settings'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Quản lý tài khoản, thông báo và quyền riêng tư của bạn.' : 'Manage your account, notifications, and privacy preferences.'}</p>
       </div>
 
       <div className="space-y-6">
         {/* Account */}
         <Card className="border-border p-6">
           <h2 className="mb-4 flex items-center gap-2" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-            <Lock className="size-5 text-muted-foreground" /> Account settings
+            <Lock className="size-5 text-muted-foreground" /> {vi ? 'Cài đặt tài khoản' : 'Account settings'}
           </h2>
           <div className="space-y-3">
-            <SettingRow label="Full name" value={user?.name ?? '—'} action="Edit" onClick={() => navigate('/dashboard/profile')} />
-            <SettingRow label="Email address" value={user?.email ?? '—'} action="Manage" onClick={() => navigate('/dashboard/profile')} />
-            <SettingRow label="Account language" value={lang === 'vi' ? 'Tiếng Việt' : 'English'} action="Change" />
+            <SettingRow label={vi ? 'Họ và tên' : 'Full name'} value={user?.name ?? '—'} action={vi ? 'Sửa' : 'Edit'} onClick={() => navigate('/dashboard/profile')} />
+            <SettingRow label={vi ? 'Địa chỉ email' : 'Email address'} value={user?.email ?? '—'} action={vi ? 'Quản lý' : 'Manage'} onClick={() => navigate('/dashboard/profile')} />
+            <SettingRow label={vi ? 'Ngôn ngữ tài khoản' : 'Account language'} value={vi ? 'Tiếng Việt' : 'English'} action={vi ? 'Đổi' : 'Change'} />
           </div>
         </Card>
 
         {/* Notifications */}
         <Card className="border-border p-6">
           <h2 className="mb-4 flex items-center gap-2" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-            <Bell className="size-5 text-muted-foreground" /> Notification preferences
+            <Bell className="size-5 text-muted-foreground" /> {vi ? 'Tùy chọn thông báo' : 'Notification preferences'}
           </h2>
           <div className="space-y-4">
             {notifToggles.map((n) => (
@@ -74,23 +75,23 @@ export function DashboardSettings() {
         {/* Payment */}
         <Card className="border-border p-6">
           <h2 className="mb-4 flex items-center gap-2" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-            <CreditCard className="size-5 text-muted-foreground" /> Payment preferences
+            <CreditCard className="size-5 text-muted-foreground" /> {vi ? 'Tùy chọn thanh toán' : 'Payment preferences'}
           </h2>
           <div className="space-y-4">
             <div>
-              <Label className="mb-1.5 block">Default payment method</Label>
+              <Label className="mb-1.5 block">{vi ? 'Phương thức thanh toán mặc định' : 'Default payment method'}</Label>
               <Select defaultValue="wallet">
                 <SelectTrigger className="bg-input-background sm:w-64"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="wallet">DynForge Wallet</SelectItem>
-                  <SelectItem value="bank">Bank Transfer</SelectItem>
+                  <SelectItem value="wallet">{vi ? 'Ví DynForge' : 'DynForge Wallet'}</SelectItem>
+                  <SelectItem value="bank">{vi ? 'Chuyển khoản ngân hàng' : 'Bank Transfer'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p style={{ fontWeight: 500 }}>Auto-confirm sessions</p>
-                <p className="text-sm text-muted-foreground">Automatically confirm session completion after 24h.</p>
+                <p style={{ fontWeight: 500 }}>{vi ? 'Tự động xác nhận buổi học' : 'Auto-confirm sessions'}</p>
+                <p className="text-sm text-muted-foreground">{vi ? 'Tự động xác nhận hoàn tất buổi học sau 24 giờ.' : 'Automatically confirm session completion after 24h.'}</p>
               </div>
               <Switch defaultChecked />
             </div>
@@ -100,20 +101,20 @@ export function DashboardSettings() {
         {/* Privacy */}
         <Card className="border-border p-6">
           <h2 className="mb-4 flex items-center gap-2" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-            <Lock className="size-5 text-muted-foreground" /> Privacy
+            <Lock className="size-5 text-muted-foreground" /> {vi ? 'Quyền riêng tư' : 'Privacy'}
           </h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p style={{ fontWeight: 500 }}>Show my profile publicly</p>
-                <p className="text-sm text-muted-foreground">Let mentors see your basic profile when you book.</p>
+                <p style={{ fontWeight: 500 }}>{vi ? 'Hiển thị hồ sơ công khai' : 'Show my profile publicly'}</p>
+                <p className="text-sm text-muted-foreground">{vi ? 'Cho phép mentor xem hồ sơ cơ bản của bạn khi bạn đặt lịch.' : 'Let mentors see your basic profile when you book.'}</p>
               </div>
               <Switch defaultChecked />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p style={{ fontWeight: 500 }}>Share session history with mentors</p>
-                <p className="text-sm text-muted-foreground">Allow mentors to see what you've studied before.</p>
+                <p style={{ fontWeight: 500 }}>{vi ? 'Chia sẻ lịch sử học với mentor' : 'Share session history with mentors'}</p>
+                <p className="text-sm text-muted-foreground">{vi ? 'Cho phép mentor xem những gì bạn đã học trước đây.' : "Allow mentors to see what you've studied before."}</p>
               </div>
               <Switch />
             </div>
@@ -123,17 +124,18 @@ export function DashboardSettings() {
         {/* Danger zone */}
         <Card className="border-border border-danger/20 p-6">
           <h2 className="mb-2 flex items-center gap-2 text-danger" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-            <Trash2 className="size-5" /> Danger zone
+            <Trash2 className="size-5" /> {vi ? 'Vùng nguy hiểm' : 'Danger zone'}
           </h2>
           <p className="mb-4 text-sm text-muted-foreground">
-            Deleting your account is permanent and cannot be undone. All data including session
-            history, wallet balance, and disputes will be permanently removed.
+            {vi
+              ? 'Xoá tài khoản là vĩnh viễn và không thể hoàn tác. Toàn bộ dữ liệu gồm lịch sử buổi học, số dư ví và tranh chấp sẽ bị xoá vĩnh viễn.'
+              : 'Deleting your account is permanent and cannot be undone. All data including session history, wallet balance, and disputes will be permanently removed.'}
           </p>
           <Button
             variant="destructive"
-            onClick={() => toast.error('Account deletion requires email confirmation. Feature coming soon.')}
+            onClick={() => toast.error(vi ? 'Xoá tài khoản cần xác nhận qua email. Tính năng sắp ra mắt.' : 'Account deletion requires email confirmation. Feature coming soon.')}
           >
-            Delete my account
+            {vi ? 'Xoá tài khoản của tôi' : 'Delete my account'}
           </Button>
         </Card>
       </div>
