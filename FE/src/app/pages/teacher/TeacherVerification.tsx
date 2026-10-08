@@ -29,14 +29,6 @@ import { requestSchoolEmail, verifySchoolEmail } from '../../services/schoolEmai
 // Must match the mentee search filter options (MentorListing).
 const TEACHING_ROLES = ['Senior Student', 'Alumni Mentor', 'Lecturer', 'Research Advisor'];
 
-const steps = [
-  'Basic information',
-  'University email',
-  'Documents upload',
-  'Interview',
-  'Approved',
-];
-
 interface UploadedFile {
   name: string;
   size: number;
@@ -54,20 +46,14 @@ interface CourseRow {
 
 const emptyCourse = (): CourseRow => ({ code: '', name: '', grade: 'A', ratePrivate: '100000', rateGroup: '60000' });
 
-const certTypes = [
-  { key: 'transcript', icon: BookOpen, label: 'Academic Transcript', desc: 'Official transcript or grade report from your university.', accept: '.pdf,.jpg,.png' },
-  { key: 'certificate', icon: Award, label: 'Certificates & Awards', desc: 'Relevant course certificates, competition awards, or scholarships.', accept: '.pdf,.jpg,.png' },
-  { key: 'portfolio', icon: Briefcase, label: 'Portfolio / Work Samples', desc: 'Projects, capstone work, or professional experience evidence.', accept: '.pdf,.jpg,.png,.zip' },
-  { key: 'id', icon: FileText, label: 'Student / Staff ID', desc: 'Your valid university student card or staff ID.', accept: '.jpg,.png' },
-];
-
 function UploadZone({
-  certKey, accept, files, onAdd, onRemove,
+  certKey, accept, files, onAdd, onRemove, vi,
 }: {
   certKey: string; accept: string;
   files: UploadedFile[];
   onAdd: (key: string, files: UploadedFile[]) => void;
   onRemove: (key: string, name: string) => void;
+  vi: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -78,7 +64,7 @@ function UploadZone({
       preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
     }));
     onAdd(certKey, newFiles);
-    toast.success(`${newFiles.length} file${newFiles.length > 1 ? 's' : ''} added.`);
+    toast.success(vi ? `Đã thêm ${newFiles.length} tệp.` : `${newFiles.length} file${newFiles.length > 1 ? 's' : ''} added.`);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -110,9 +96,9 @@ function UploadZone({
         </span>
         <div className="text-center">
           <p style={{ fontWeight: 600 }} className={dragging ? 'text-primary' : 'text-foreground'}>
-            {dragging ? 'Drop files here' : 'Click to upload or drag & drop'}
+            {dragging ? (vi ? 'Thả tệp vào đây' : 'Drop files here') : (vi ? 'Nhấn để tải lên hoặc kéo thả' : 'Click to upload or drag & drop')}
           </p>
-          <p className="text-xs mt-0.5">Accepted: {accept} · Max 10 MB per file</p>
+          <p className="text-xs mt-0.5">{vi ? 'Chấp nhận' : 'Accepted'}: {accept} · {vi ? 'Tối đa 10 MB mỗi tệp' : 'Max 10 MB per file'}</p>
         </div>
       </button>
       <input ref={inputRef} type="file" accept={accept} multiple className="hidden" onChange={(e) => { if (e.target.files?.length) processFiles(e.target.files); e.target.value = ''; }} />
@@ -139,15 +125,27 @@ function UploadZone({
   );
 }
 
-const baseDocuments = [
-  { icon: Mail, title: 'University email verification', description: 'Verify your university email address to confirm your enrollment.' },
-  { icon: Mic, title: 'Verification interview', description: 'A short 15-minute online call with a DynForge team member.' },
-];
-
 export function TeacherVerification() {
   const { refreshUser } = useAuth();
   const { T, lang } = useLanguage();
+  const vi = lang === 'vi';
   const { universities } = useUniversity();
+
+  const steps = vi
+    ? ['Thông tin cơ bản', 'Email trường', 'Tải tài liệu', 'Phỏng vấn', 'Đã duyệt']
+    : ['Basic information', 'University email', 'Documents upload', 'Interview', 'Approved'];
+
+  const certTypes = [
+    { key: 'transcript', icon: BookOpen, label: vi ? 'Bảng điểm' : 'Academic Transcript', desc: vi ? 'Bảng điểm hoặc phiếu điểm chính thức từ trường của bạn.' : 'Official transcript or grade report from your university.', accept: '.pdf,.jpg,.png' },
+    { key: 'certificate', icon: Award, label: vi ? 'Chứng chỉ & Giải thưởng' : 'Certificates & Awards', desc: vi ? 'Chứng chỉ khoá học, giải thưởng cuộc thi hoặc học bổng liên quan.' : 'Relevant course certificates, competition awards, or scholarships.', accept: '.pdf,.jpg,.png' },
+    { key: 'portfolio', icon: Briefcase, label: vi ? 'Portfolio / Sản phẩm' : 'Portfolio / Work Samples', desc: vi ? 'Dự án, đồ án tốt nghiệp hoặc minh chứng kinh nghiệm chuyên môn.' : 'Projects, capstone work, or professional experience evidence.', accept: '.pdf,.jpg,.png,.zip' },
+    { key: 'id', icon: FileText, label: vi ? 'Thẻ sinh viên / Thẻ cán bộ' : 'Student / Staff ID', desc: vi ? 'Thẻ sinh viên hoặc thẻ cán bộ còn hiệu lực của trường.' : 'Your valid university student card or staff ID.', accept: '.jpg,.png' },
+  ];
+
+  const baseDocuments = [
+    { icon: Mail, title: vi ? 'Xác minh email trường' : 'University email verification', description: vi ? 'Xác minh địa chỉ email trường để chứng minh bạn đang theo học.' : 'Verify your university email address to confirm your enrollment.' },
+    { icon: Mic, title: vi ? 'Phỏng vấn xác minh' : 'Verification interview', description: vi ? 'Một cuộc gọi trực tuyến ngắn 15 phút với thành viên đội ngũ DynForge.' : 'A short 15-minute online call with a DynForge team member.' },
+  ];
   const [existing, setExisting] = useState<VerificationItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -174,7 +172,7 @@ export function TeacherVerification() {
       setOtpSent(true);
       toast.success(T.schoolEmailSent);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to send code.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không gửi được mã.' : 'Failed to send code.'));
     } finally {
       setSchoolBusy(false);
     }
@@ -191,7 +189,7 @@ export function TeacherVerification() {
       toast.success(T.schoolEmailVerified);
       await refreshUser();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Invalid or expired code.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Mã không hợp lệ hoặc đã hết hạn.' : 'Invalid or expired code.'));
     } finally {
       setSchoolBusy(false);
     }
@@ -263,9 +261,9 @@ export function TeacherVerification() {
         verified: false,
       }));
 
-    if (!major) { toast.error('Please select your major.'); return; }
-    if (valid.length === 0) { toast.error('Please add at least one course with a code and name.'); return; }
-    if (!isApproved && totalUploaded === 0) { toast.error('Please upload at least one document.'); return; }
+    if (!major) { toast.error(vi ? 'Vui lòng chọn ngành học.' : 'Please select your major.'); return; }
+    if (valid.length === 0) { toast.error(vi ? 'Vui lòng thêm ít nhất một môn học có mã và tên.' : 'Please add at least one course with a code and name.'); return; }
+    if (!isApproved && totalUploaded === 0) { toast.error(vi ? 'Vui lòng tải lên ít nhất một tài liệu.' : 'Please upload at least one document.'); return; }
 
     setSubmitting(true);
     try {
@@ -284,7 +282,7 @@ export function TeacherVerification() {
 
       if (isApproved) {
         // Already verified — just save the updated courses.
-        toast.success('Courses updated. They are now visible to students.');
+        toast.success(vi ? 'Đã cập nhật môn học. Học viên đã có thể nhìn thấy.' : 'Courses updated. They are now visible to students.');
       } else {
         // Submit a verification request (representative course) for admin review.
         const allUploaded = Object.values(uploadedFiles).flat();
@@ -298,12 +296,12 @@ export function TeacherVerification() {
           alumniProofUrl: alumniDoc && alumniDoc !== primaryDoc ? alumniDoc.name : undefined,
         });
         setExisting(result);
-        toast.success('Application submitted! DynForge will review within 2–3 business days.');
+        toast.success(vi ? 'Đã gửi hồ sơ! DynForge sẽ xét duyệt trong 2–3 ngày làm việc.' : 'Application submitted! DynForge will review within 2–3 business days.');
       }
       // Creating the profile grants the MENTOR role — refresh so the header/portal updates.
       await refreshUser();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Submission failed. Please try again.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Gửi hồ sơ thất bại. Vui lòng thử lại.' : 'Submission failed. Please try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -312,7 +310,7 @@ export function TeacherVerification() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
-        <Loader2 className="size-5 animate-spin" /> Loading verification status…
+        <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải trạng thái xác minh…' : 'Loading verification status…'}
       </div>
     );
   }
@@ -329,9 +327,9 @@ export function TeacherVerification() {
   return (
     <div className="mx-auto max-w-[760px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Mentor Verification</h1>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Xác minh Mentor' : 'Mentor Verification'}</h1>
         <p className="mt-1 text-muted-foreground">
-          Register the courses you teach and complete verification to become a listed mentor.
+          {vi ? 'Đăng ký các môn bạn dạy và hoàn tất xác minh để trở thành mentor được hiển thị.' : 'Register the courses you teach and complete verification to become a listed mentor.'}
         </p>
       </div>
 
@@ -345,8 +343,8 @@ export function TeacherVerification() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" />
             <div>
-              <p className="text-success" style={{ fontWeight: 600 }}>Verification approved!</p>
-              <p className="text-sm text-muted-foreground">Your profile is now listed as a verified mentor on DynForge.</p>
+              <p className="text-success" style={{ fontWeight: 600 }}>{vi ? 'Đã duyệt xác minh!' : 'Verification approved!'}</p>
+              <p className="text-sm text-muted-foreground">{vi ? 'Hồ sơ của bạn đã được hiển thị là mentor đã xác minh trên DynForge.' : 'Your profile is now listed as a verified mentor on DynForge.'}</p>
             </div>
           </div>
         </Card>
@@ -357,10 +355,10 @@ export function TeacherVerification() {
           <div className="flex items-start gap-3">
             <BadgeCheck className="mt-0.5 size-5 shrink-0 text-warning" />
             <div>
-              <p className="text-warning" style={{ fontWeight: 600 }}>Application under review</p>
+              <p className="text-warning" style={{ fontWeight: 600 }}>{vi ? 'Hồ sơ đang được xét duyệt' : 'Application under review'}</p>
               <p className="text-sm text-muted-foreground">
-                Your courses have been saved and submitted for <strong>{existing.course}</strong> ({existing.claimedGrade}).
-                DynForge will review within 2–3 business days.
+                {vi ? <>Các môn học của bạn đã được lưu và gửi cho <strong>{existing.course}</strong> ({existing.claimedGrade}). DynForge sẽ xét duyệt trong 2–3 ngày làm việc.</>
+                    : <>Your courses have been saved and submitted for <strong>{existing.course}</strong> ({existing.claimedGrade}). DynForge will review within 2–3 business days.</>}
               </p>
             </div>
           </div>
@@ -372,9 +370,9 @@ export function TeacherVerification() {
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 size-5 shrink-0 text-danger" />
             <div>
-              <p className="text-danger" style={{ fontWeight: 600 }}>Application rejected</p>
-              {existing.note && <p className="text-sm text-muted-foreground mt-1">Reason: {existing.note}</p>}
-              <p className="text-sm text-muted-foreground mt-1">Please update your documents and resubmit below.</p>
+              <p className="text-danger" style={{ fontWeight: 600 }}>{vi ? 'Hồ sơ bị từ chối' : 'Application rejected'}</p>
+              {existing.note && <p className="text-sm text-muted-foreground mt-1">{vi ? 'Lý do' : 'Reason'}: {existing.note}</p>}
+              <p className="text-sm text-muted-foreground mt-1">{vi ? 'Vui lòng cập nhật tài liệu và gửi lại bên dưới.' : 'Please update your documents and resubmit below.'}</p>
             </div>
           </div>
         </Card>
@@ -384,24 +382,24 @@ export function TeacherVerification() {
         <>
           {/* Profile basics */}
           <Card className="mb-6 border-border p-6">
-            <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 700 }}>Mentor profile</h2>
+            <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 700 }}>{vi ? 'Hồ sơ mentor' : 'Mentor profile'}</h2>
             <div className="space-y-4">
               <div>
-                <Label className="mb-1.5 block">Headline / title</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. AI/ML Lecturer · FPT University" className="bg-input-background" />
+                <Label className="mb-1.5 block">{vi ? 'Tiêu đề / chức danh' : 'Headline / title'}</Label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={vi ? 'vd: Giảng viên AI/ML · Đại học FPT' : 'e.g. AI/ML Lecturer · FPT University'} className="bg-input-background" />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="mb-1.5 block">Major <span className="text-danger">*</span></Label>
+                  <Label className="mb-1.5 block">{vi ? 'Ngành học' : 'Major'} <span className="text-danger">*</span></Label>
                   <Select value={major} onValueChange={setMajor}>
-                    <SelectTrigger className="bg-input-background"><SelectValue placeholder="Select your major" /></SelectTrigger>
+                    <SelectTrigger className="bg-input-background"><SelectValue placeholder={vi ? 'Chọn ngành học' : 'Select your major'} /></SelectTrigger>
                     <SelectContent>
                       {majors.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="mb-1.5 block">Teaching role <span className="text-danger">*</span></Label>
+                  <Label className="mb-1.5 block">{vi ? 'Vai trò giảng dạy' : 'Teaching role'} <span className="text-danger">*</span></Label>
                   <Select value={teachingRole} onValueChange={setTeachingRole}>
                     <SelectTrigger className="bg-input-background"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -469,16 +467,16 @@ export function TeacherVerification() {
                 </div>
               </div>
               <div>
-                <Label className="mb-1.5 block">Short bio</Label>
-                <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Tell students about your background and how you can help." />
+                <Label className="mb-1.5 block">{vi ? 'Giới thiệu ngắn' : 'Short bio'}</Label>
+                <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder={vi ? 'Giới thiệu về bạn và cách bạn có thể hỗ trợ học viên.' : 'Tell students about your background and how you can help.'} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="mb-1.5 block">Skills <span className="text-muted-foreground">(comma-separated)</span></Label>
+                  <Label className="mb-1.5 block">{vi ? 'Kỹ năng' : 'Skills'} <span className="text-muted-foreground">{vi ? '(phân tách bằng dấu phẩy)' : '(comma-separated)'}</span></Label>
                   <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Python, Data Analysis" className="bg-input-background" />
                 </div>
                 <div>
-                  <Label className="mb-1.5 block">Languages</Label>
+                  <Label className="mb-1.5 block">{vi ? 'Ngôn ngữ' : 'Languages'}</Label>
                   <Input value={languages} onChange={(e) => setLanguages(e.target.value)} className="bg-input-background" />
                 </div>
               </div>
@@ -489,11 +487,11 @@ export function TeacherVerification() {
           <Card className="mb-6 border-border p-6">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>Courses you teach</h2>
-                <p className="mt-0.5 text-sm text-muted-foreground">Add every course you want to tutor, with your rates.</p>
+                <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>{vi ? 'Các môn bạn dạy' : 'Courses you teach'}</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">{vi ? 'Thêm mọi môn bạn muốn dạy kèm, cùng mức học phí của bạn.' : 'Add every course you want to tutor, with your rates.'}</p>
               </div>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-sm text-primary" style={{ fontWeight: 600 }}>
-                {courses.length} course{courses.length > 1 ? 's' : ''}
+                {courses.length} {vi ? 'môn' : `course${courses.length > 1 ? 's' : ''}`}
               </span>
             </div>
 
@@ -501,7 +499,7 @@ export function TeacherVerification() {
               {courses.map((c, i) => (
                 <div key={i} className="rounded-2xl border border-border p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Course {i + 1}</span>
+                    <span className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>{vi ? 'Môn' : 'Course'} {i + 1}</span>
                     {courses.length > 1 && (
                       <button type="button" onClick={() => removeCourse(i)} className="rounded-lg p-1 text-muted-foreground hover:bg-danger/10 hover:text-danger">
                         <Trash2 className="size-4" />
@@ -510,15 +508,15 @@ export function TeacherVerification() {
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <Label className="mb-1.5 block">Course code</Label>
+                      <Label className="mb-1.5 block">{vi ? 'Mã môn' : 'Course code'}</Label>
                       <Input value={c.code} onChange={(e) => updateCourse(i, { code: e.target.value })} placeholder="MAL301" className="bg-input-background uppercase" />
                     </div>
                     <div>
-                      <Label className="mb-1.5 block">Course name</Label>
+                      <Label className="mb-1.5 block">{vi ? 'Tên môn' : 'Course name'}</Label>
                       <Input value={c.name} onChange={(e) => updateCourse(i, { name: e.target.value })} placeholder="Machine Learning" className="bg-input-background" />
                     </div>
                     <div>
-                      <Label className="mb-1.5 block">Your grade</Label>
+                      <Label className="mb-1.5 block">{vi ? 'Điểm của bạn' : 'Your grade'}</Label>
                       <div className="flex gap-2">
                         {(['A', 'A+'] as const).map((g) => (
                           <button
@@ -535,11 +533,11 @@ export function TeacherVerification() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="mb-1.5 block">1-on-1 rate/hr</Label>
+                        <Label className="mb-1.5 block">{vi ? 'Học phí 1-1/giờ' : '1-on-1 rate/hr'}</Label>
                         <Input value={c.ratePrivate} onChange={(e) => updateCourse(i, { ratePrivate: e.target.value.replace(/\D/g, '') })} className="bg-input-background" />
                       </div>
                       <div>
-                        <Label className="mb-1.5 block">Group rate/hr</Label>
+                        <Label className="mb-1.5 block">{vi ? 'Học phí nhóm/giờ' : 'Group rate/hr'}</Label>
                         <Input value={c.rateGroup} onChange={(e) => updateCourse(i, { rateGroup: e.target.value.replace(/\D/g, '') })} className="bg-input-background" />
                       </div>
                     </div>
@@ -549,7 +547,7 @@ export function TeacherVerification() {
             </div>
 
             <Button type="button" variant="outline" className="mt-4 w-full" onClick={addCourse}>
-              <Plus className="size-4" /> Add another course
+              <Plus className="size-4" /> {vi ? 'Thêm môn khác' : 'Add another course'}
             </Button>
           </Card>
 
@@ -557,8 +555,8 @@ export function TeacherVerification() {
           {isApproved && (
             <Button className="mb-6 w-full" size="lg" onClick={handleSubmit} disabled={submitting}>
               {submitting
-                ? <><Loader2 className="size-4 animate-spin" /> Saving…</>
-                : <><CheckCircle2 className="size-4" /> Save courses</>}
+                ? <><Loader2 className="size-4 animate-spin" /> {vi ? 'Đang lưu…' : 'Saving…'}</>
+                : <><CheckCircle2 className="size-4" /> {vi ? 'Lưu môn học' : 'Save courses'}</>}
             </Button>
           )}
 
@@ -567,12 +565,12 @@ export function TeacherVerification() {
           <Card className="mb-6 border-border p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>Upload documents &amp; certificates</h2>
-                <p className="mt-0.5 text-sm text-muted-foreground">Upload at least one document. Multiple file types accepted.</p>
+                <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>{vi ? 'Tải lên tài liệu & chứng chỉ' : 'Upload documents & certificates'}</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">{vi ? 'Tải lên ít nhất một tài liệu. Chấp nhận nhiều định dạng tệp.' : 'Upload at least one document. Multiple file types accepted.'}</p>
               </div>
               {totalUploaded > 0 && (
                 <span className="rounded-full bg-success/15 px-3 py-1 text-sm text-success" style={{ fontWeight: 600 }}>
-                  {totalUploaded} file{totalUploaded > 1 ? 's' : ''} ready
+                  {vi ? `${totalUploaded} tệp sẵn sàng` : `${totalUploaded} file${totalUploaded > 1 ? 's' : ''} ready`}
                 </span>
               )}
             </div>
@@ -587,7 +585,7 @@ export function TeacherVerification() {
                     <div className="flex-1 min-w-0">
                       <p style={{ fontWeight: 600 }}>{label}</p>
                       <p className="text-sm text-muted-foreground">{desc}</p>
-                      <UploadZone certKey={key} accept={accept} files={uploadedFiles[key] ?? []} onAdd={addFiles} onRemove={removeFile} />
+                      <UploadZone certKey={key} accept={accept} files={uploadedFiles[key] ?? []} onAdd={addFiles} onRemove={removeFile} vi={vi} />
                     </div>
                   </div>
                 </div>
@@ -596,8 +594,8 @@ export function TeacherVerification() {
 
             <Button className="mt-6 w-full" size="lg" onClick={handleSubmit} disabled={submitting}>
               {submitting
-                ? <><Loader2 className="size-4 animate-spin" /> Submitting…</>
-                : <><Upload className="size-4" /> Submit application for review</>}
+                ? <><Loader2 className="size-4 animate-spin" /> {vi ? 'Đang gửi…' : 'Submitting…'}</>
+                : <><Upload className="size-4" /> {vi ? 'Gửi hồ sơ để xét duyệt' : 'Submit application for review'}</>}
             </Button>
           </Card>
           )}
@@ -617,7 +615,7 @@ export function TeacherVerification() {
                   <div className="flex-1">
                     <p style={{ fontWeight: 600 }}>{doc.title}</p>
                     <p className="mt-1 text-sm text-muted-foreground">{doc.description}</p>
-                    <p className="mt-2 text-xs text-muted-foreground italic">Available after documents are approved.</p>
+                    <p className="mt-2 text-xs text-muted-foreground italic">{vi ? 'Khả dụng sau khi tài liệu được duyệt.' : 'Available after documents are approved.'}</p>
                   </div>
                 </div>
               </Card>

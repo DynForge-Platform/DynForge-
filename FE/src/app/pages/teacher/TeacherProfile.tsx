@@ -8,6 +8,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import { VerifiedBadge, StarRating } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { toast } from 'sonner';
 import {
   getMyMentorProfile, updateMyMentorProfile, type MentorProfileResponse,
@@ -16,6 +17,8 @@ import { getMe, updateProfile } from '../../services/userService';
 
 export function TeacherProfile() {
   const { refreshUser } = useAuth();
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [profile, setProfile] = useState<MentorProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,7 +48,7 @@ export function TeacherProfile() {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!displayName.trim()) { toast.error('Display name is required.'); return; }
+    if (!displayName.trim()) { toast.error(vi ? 'Vui lòng nhập tên hiển thị.' : 'Display name is required.'); return; }
     setSaving(true);
     try {
       // User-level fields (name, avatar)
@@ -61,9 +64,9 @@ export function TeacherProfile() {
         availability: profile?.availability ?? {},
       });
       await refreshUser();
-      toast.success('Profile saved. Changes are visible to students.');
+      toast.success(vi ? 'Đã lưu hồ sơ. Thay đổi hiển thị với học viên.' : 'Profile saved. Changes are visible to students.');
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Could not save profile.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không lưu được hồ sơ.' : 'Could not save profile.'));
     } finally {
       setSaving(false);
     }
@@ -72,7 +75,7 @@ export function TeacherProfile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
-        <Loader2 className="size-5 animate-spin" /> Loading profile…
+        <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải hồ sơ…' : 'Loading profile…'}
       </div>
     );
   }
@@ -82,8 +85,8 @@ export function TeacherProfile() {
   return (
     <div className="mx-auto max-w-[900px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>My Mentor Profile</h1>
-        <p className="mt-1 text-muted-foreground">Edit how students see your public profile.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Hồ sơ Mentor của tôi' : 'My Mentor Profile'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Chỉnh cách học viên nhìn thấy hồ sơ công khai của bạn.' : 'Edit how students see your public profile.'}</p>
       </div>
 
       {/* Preview strip */}
@@ -93,14 +96,14 @@ export function TeacherProfile() {
         </div>
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 style={{ fontWeight: 600 }}>{displayName || 'Your name'}</h2>
+            <h2 style={{ fontWeight: 600 }}>{displayName || (vi ? 'Tên của bạn' : 'Your name')}</h2>
             <VerifiedBadge verified={profile?.verified ?? false} />
           </div>
-          <p className="text-sm text-primary">{title || 'Add a headline'}</p>
+          <p className="text-sm text-primary">{title || (vi ? 'Thêm tiêu đề' : 'Add a headline')}</p>
           {profile && (
             <div className="mt-1 flex items-center gap-3 text-sm">
               <StarRating rating={profile.ratingAvg} count={profile.ratingCount} />
-              <span className="text-muted-foreground">{profile.sessionsCount} sessions</span>
+              <span className="text-muted-foreground">{profile.sessionsCount} {vi ? 'buổi học' : 'sessions'}</span>
             </div>
           )}
         </div>
@@ -109,39 +112,39 @@ export function TeacherProfile() {
       <form onSubmit={save} className="space-y-6">
         {/* Basic info */}
         <Card className="border-border p-6">
-          <h2 className="mb-4" style={{ fontWeight: 600 }}>Basic information</h2>
+          <h2 className="mb-4" style={{ fontWeight: 600 }}>{vi ? 'Thông tin cơ bản' : 'Basic information'}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label className="mb-1.5 block">Display name</Label>
+              <Label className="mb-1.5 block">{vi ? 'Tên hiển thị' : 'Display name'}</Label>
               <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="bg-input-background" />
             </div>
             <div>
-              <Label className="mb-1.5 block">Avatar URL</Label>
+              <Label className="mb-1.5 block">{vi ? 'Đường dẫn ảnh đại diện' : 'Avatar URL'}</Label>
               <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" className="bg-input-background" />
             </div>
             <div className="sm:col-span-2">
-              <Label className="mb-1.5 block">Headline / title</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. AI/ML Lecturer · FPT University" className="bg-input-background" />
+              <Label className="mb-1.5 block">{vi ? 'Tiêu đề / chức danh' : 'Headline / title'}</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={vi ? 'vd: Giảng viên AI/ML · Đại học FPT' : 'e.g. AI/ML Lecturer · FPT University'} className="bg-input-background" />
             </div>
           </div>
         </Card>
 
         {/* About */}
         <Card className="border-border p-6">
-          <h2 className="mb-4" style={{ fontWeight: 600 }}>About me</h2>
-          <Textarea rows={5} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell students about your background and how you can help." />
+          <h2 className="mb-4" style={{ fontWeight: 600 }}>{vi ? 'Về tôi' : 'About me'}</h2>
+          <Textarea rows={5} value={bio} onChange={(e) => setBio(e.target.value)} placeholder={vi ? 'Giới thiệu về bạn và cách bạn có thể hỗ trợ học viên.' : 'Tell students about your background and how you can help.'} />
         </Card>
 
         {/* Skills & languages */}
         <Card className="border-border p-6">
-          <h2 className="mb-4" style={{ fontWeight: 600 }}>Skills &amp; languages</h2>
+          <h2 className="mb-4" style={{ fontWeight: 600 }}>{vi ? 'Kỹ năng & ngôn ngữ' : 'Skills & languages'}</h2>
           <div className="space-y-4">
             <div>
-              <Label className="mb-1.5 block">Skills <span className="text-muted-foreground">(comma-separated)</span></Label>
+              <Label className="mb-1.5 block">{vi ? 'Kỹ năng' : 'Skills'} <span className="text-muted-foreground">{vi ? '(phân tách bằng dấu phẩy)' : '(comma-separated)'}</span></Label>
               <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Python, TensorFlow, Data Analysis" className="bg-input-background" />
             </div>
             <div>
-              <Label className="mb-1.5 block">Languages <span className="text-muted-foreground">(comma-separated)</span></Label>
+              <Label className="mb-1.5 block">{vi ? 'Ngôn ngữ' : 'Languages'} <span className="text-muted-foreground">{vi ? '(phân tách bằng dấu phẩy)' : '(comma-separated)'}</span></Label>
               <Input value={languages} onChange={(e) => setLanguages(e.target.value)} placeholder="Vietnamese, English" className="bg-input-background" />
             </div>
           </div>
@@ -149,7 +152,7 @@ export function TeacherProfile() {
 
         {/* Courses (managed elsewhere; shown read-only, preserved on save) */}
         <Card className="border-border p-6">
-          <h2 className="mb-3" style={{ fontWeight: 600 }}>Courses supported</h2>
+          <h2 className="mb-3" style={{ fontWeight: 600 }}>{vi ? 'Các môn hỗ trợ' : 'Courses supported'}</h2>
           {profile?.courses?.length ? (
             <div className="flex flex-wrap gap-2">
               {profile.courses.map((c) => (
@@ -159,13 +162,13 @@ export function TeacherProfile() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No courses yet.</p>
+            <p className="text-sm text-muted-foreground">{vi ? 'Chưa có môn học nào.' : 'No courses yet.'}</p>
           )}
         </Card>
 
         <div className="flex justify-end">
           <Button type="submit" size="lg" disabled={saving}>
-            {saving ? <Loader2 className="size-4 animate-spin" /> : 'Save Profile'}
+            {saving ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Lưu hồ sơ' : 'Save Profile')}
           </Button>
         </div>
       </form>
