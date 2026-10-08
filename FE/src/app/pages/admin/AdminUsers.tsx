@@ -14,6 +14,8 @@ import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
 import { listAdminUsers, updateUserStatus } from '../../services/adminService';
 import type { UserProfile } from '../../services/userService';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatDate } from '../../lib/format';
 
 const roleColor: Record<string, string> = {
   MENTEE: 'bg-primary/10 text-primary border-primary/20',
@@ -28,6 +30,8 @@ function primaryRole(roles: string[]): string {
 }
 
 export function AdminUsers() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -37,7 +41,7 @@ export function AdminUsers() {
   useEffect(() => {
     listAdminUsers()
       .then(setUsers)
-      .catch(() => toast.error('Failed to load users.'))
+      .catch(() => toast.error(vi ? 'Không tải được người dùng.' : 'Failed to load users.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -56,9 +60,11 @@ export function AdminUsers() {
     try {
       const updated = await updateUserStatus(u.id, next);
       setUsers((prev) => prev.map((x) => (x.id === u.id ? updated : x)));
-      toast.success(`${u.fullName} ${next === 'SUSPENDED' ? 'suspended' : 'reactivated'}.`);
+      toast.success(vi
+        ? `Đã ${next === 'SUSPENDED' ? 'tạm khoá' : 'kích hoạt lại'} ${u.fullName}.`
+        : `${u.fullName} ${next === 'SUSPENDED' ? 'suspended' : 'reactivated'}.`);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Action failed.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Thao tác thất bại.' : 'Action failed.'));
     } finally {
       setActingId(null);
     }
@@ -67,8 +73,8 @@ export function AdminUsers() {
   return (
     <div className="mx-auto max-w-[1200px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>User Management</h1>
-        <p className="mt-1 text-muted-foreground">Search, view, and manage all platform users.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Quản lý người dùng' : 'User Management'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Tìm kiếm, xem và quản lý tất cả người dùng nền tảng.' : 'Search, view, and manage all platform users.'}</p>
       </div>
 
       <Card className="border-border p-6">
@@ -78,15 +84,15 @@ export function AdminUsers() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name or email"
+              placeholder={vi ? 'Tìm theo tên hoặc email' : 'Search by name or email'}
               className="bg-input-background pl-9"
             />
           </div>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="All">All roles</SelectItem>
-              <SelectItem value="MENTEE">Student</SelectItem>
+              <SelectItem value="All">{vi ? 'Tất cả vai trò' : 'All roles'}</SelectItem>
+              <SelectItem value="MENTEE">{vi ? 'Học viên' : 'Student'}</SelectItem>
               <SelectItem value="MENTOR">Mentor</SelectItem>
               <SelectItem value="ADMIN">Admin</SelectItem>
             </SelectContent>
@@ -95,22 +101,22 @@ export function AdminUsers() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="size-5 animate-spin" /> Loading users…
+            <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải người dùng…' : 'Loading users…'}
           </div>
         ) : (
           <>
-            <p className="mb-4 text-sm text-muted-foreground">{filtered.length} users</p>
+            <p className="mb-4 text-sm text-muted-foreground">{filtered.length} {vi ? 'người dùng' : 'users'}</p>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>{vi ? 'Tên' : 'Name'}</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Major</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{vi ? 'Vai trò' : 'Role'}</TableHead>
+                    <TableHead>{vi ? 'Ngành' : 'Major'}</TableHead>
+                    <TableHead>{vi ? 'Trạng thái' : 'Status'}</TableHead>
+                    <TableHead>{vi ? 'Tham gia' : 'Joined'}</TableHead>
+                    <TableHead className="text-right">{vi ? 'Thao tác' : 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -124,7 +130,7 @@ export function AdminUsers() {
                         <TableCell className="text-muted-foreground">{u.major ?? '—'}</TableCell>
                         <TableCell><StatusBadge status={u.status === 'ACTIVE' ? 'Active' : 'Suspended'} /></TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
-                          {new Date(u.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {formatDate(u.createdAt, lang, { day: '2-digit', month: 'short', year: 'numeric' })}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -136,7 +142,7 @@ export function AdminUsers() {
                           >
                             {actingId === u.id
                               ? <Loader2 className="size-3.5 animate-spin" />
-                              : u.status === 'SUSPENDED' ? 'Reactivate' : 'Suspend'}
+                              : u.status === 'SUSPENDED' ? (vi ? 'Kích hoạt lại' : 'Reactivate') : (vi ? 'Tạm khoá' : 'Suspend')}
                           </Button>
                         </TableCell>
                       </TableRow>

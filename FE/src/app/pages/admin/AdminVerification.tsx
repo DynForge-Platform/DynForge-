@@ -18,8 +18,12 @@ import {
   decideVerification,
   type VerificationItem,
 } from '../../services/verificationService';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatDate } from '../../lib/format';
 
 export function AdminVerification() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [items, setItems] = useState<VerificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<VerificationItem | null>(null);
@@ -29,14 +33,14 @@ export function AdminVerification() {
   useEffect(() => {
     listVerifications()
       .then(setItems)
-      .catch(() => toast.error('Failed to load verification requests.'))
+      .catch(() => toast.error(vi ? 'Không tải được yêu cầu xác minh.' : 'Failed to load verification requests.'))
       .finally(() => setLoading(false));
   }, []);
 
   const handleDecide = async (status: 'APPROVED' | 'REJECTED') => {
     if (!selected) return;
     if (status === 'REJECTED' && !rejectNote.trim()) {
-      toast.error('Please enter a rejection reason.');
+      toast.error(vi ? 'Vui lòng nhập lý do từ chối.' : 'Please enter a rejection reason.');
       return;
     }
     setDeciding(true);
@@ -44,12 +48,12 @@ export function AdminVerification() {
       const updated = await decideVerification(selected.id, status, rejectNote.trim() || undefined);
       setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
       toast.success(status === 'APPROVED'
-        ? `${selected.userName ?? 'Mentor'} approved successfully.`
-        : `${selected.userName ?? 'Mentor'}'s application rejected.`);
+        ? (vi ? `Đã duyệt ${selected.userName ?? 'Mentor'} thành công.` : `${selected.userName ?? 'Mentor'} approved successfully.`)
+        : (vi ? `Đã từ chối hồ sơ của ${selected.userName ?? 'Mentor'}.` : `${selected.userName ?? 'Mentor'}'s application rejected.`));
       setSelected(null);
       setRejectNote('');
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Action failed. Please try again.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Thao tác thất bại. Vui lòng thử lại.' : 'Action failed. Please try again.'));
     } finally {
       setDeciding(false);
     }
@@ -64,29 +68,29 @@ export function AdminVerification() {
   return (
     <div className="mx-auto max-w-[1200px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Mentor Verification</h1>
-        <p className="mt-1 text-muted-foreground">Review and approve mentor applications.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Xác minh Mentor' : 'Mentor Verification'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Xem xét và phê duyệt hồ sơ mentor.' : 'Review and approve mentor applications.'}</p>
       </div>
 
       <Card className="border-border p-6">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="size-5 animate-spin" /> Loading applications…
+            <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải hồ sơ…' : 'Loading applications…'}
           </div>
         ) : items.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">No verification requests yet.</p>
+          <p className="py-12 text-center text-muted-foreground">{vi ? 'Chưa có yêu cầu xác minh nào.' : 'No verification requests yet.'}</p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Applicant</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Transcript</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead>{vi ? 'Người nộp' : 'Applicant'}</TableHead>
+                  <TableHead>{vi ? 'Môn học' : 'Course'}</TableHead>
+                  <TableHead>{vi ? 'Điểm' : 'Grade'}</TableHead>
+                  <TableHead>{vi ? 'Bảng điểm' : 'Transcript'}</TableHead>
+                  <TableHead>{vi ? 'Ngày nộp' : 'Submitted'}</TableHead>
+                  <TableHead>{vi ? 'Trạng thái' : 'Status'}</TableHead>
+                  <TableHead className="text-right">{vi ? 'Thao tác' : 'Action'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -134,7 +138,7 @@ export function AdminVerification() {
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {formatDate(item.createdAt, lang, { day: '2-digit', month: 'short', year: 'numeric' })}
                     </TableCell>
                     <TableCell><StatusBadge status={statusLabel(item.status)} /></TableCell>
                     <TableCell className="text-right">
@@ -144,7 +148,7 @@ export function AdminVerification() {
                         onClick={() => { setSelected(item); setRejectNote(item.note ?? ''); }}
                         disabled={item.status !== 'PENDING'}
                       >
-                        {item.status === 'PENDING' ? 'Review' : 'Reviewed'}
+                        {item.status === 'PENDING' ? (vi ? 'Xét duyệt' : 'Review') : (vi ? 'Đã xét' : 'Reviewed')}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -159,7 +163,7 @@ export function AdminVerification() {
         <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setRejectNote(''); }}>
           <DialogContent className="max-w-lg" aria-describedby={undefined}>
             <DialogHeader>
-              <DialogTitle>Review: {selected.userName ?? selected.userId}</DialogTitle>
+              <DialogTitle>{vi ? 'Xét duyệt' : 'Review'}: {selected.userName ?? selected.userId}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -170,17 +174,17 @@ export function AdminVerification() {
                 />
                 <div>
                   <p style={{ fontWeight: 600 }}>{selected.userName ?? selected.userId}</p>
-                  <p className="text-sm text-muted-foreground">Applied for: <strong>{selected.course}</strong></p>
+                  <p className="text-sm text-muted-foreground">{vi ? 'Đăng ký môn:' : 'Applied for:'} <strong>{selected.course}</strong></p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground">Claimed grade</p>
+                  <p className="text-muted-foreground">{vi ? 'Điểm khai báo' : 'Claimed grade'}</p>
                   <p style={{ fontWeight: 600 }}>{selected.claimedGrade}</p>
                 </div>
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground">Transcript</p>
+                  <p className="text-muted-foreground">{vi ? 'Bảng điểm' : 'Transcript'}</p>
                   {selected.transcriptUrl ? (
                     selected.transcriptUrl.startsWith('http://') || selected.transcriptUrl.startsWith('https://') ? (
                       <a
@@ -206,7 +210,7 @@ export function AdminVerification() {
 
               {selected.alumniProofUrl && (
                 <div className="rounded-xl border border-border p-3 text-sm">
-                  <p className="text-muted-foreground">Alumni Proof</p>
+                  <p className="text-muted-foreground">{vi ? 'Minh chứng cựu sinh viên' : 'Alumni Proof'}</p>
                   {selected.alumniProofUrl.startsWith('http://') || selected.alumniProofUrl.startsWith('https://') ? (
                     <a
                       href={selected.alumniProofUrl}
@@ -227,11 +231,11 @@ export function AdminVerification() {
               )}
 
               <div className="space-y-1.5">
-                <Label>Rejection note (required when rejecting)</Label>
+                <Label>{vi ? 'Ghi chú từ chối (bắt buộc khi từ chối)' : 'Rejection note (required when rejecting)'}</Label>
                 <Textarea
                   value={rejectNote}
                   onChange={(e) => setRejectNote(e.target.value)}
-                  placeholder="Explain why the application is rejected…"
+                  placeholder={vi ? 'Giải thích vì sao hồ sơ bị từ chối…' : 'Explain why the application is rejected…'}
                   rows={3}
                 />
               </div>
@@ -239,10 +243,10 @@ export function AdminVerification() {
 
             <DialogFooter className="gap-2">
               <Button variant="destructive" onClick={() => handleDecide('REJECTED')} disabled={deciding}>
-                {deciding ? <Loader2 className="size-4 animate-spin" /> : 'Reject'}
+                {deciding ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Từ chối' : 'Reject')}
               </Button>
               <Button onClick={() => handleDecide('APPROVED')} disabled={deciding}>
-                {deciding ? <Loader2 className="size-4 animate-spin" /> : 'Approve'}
+                {deciding ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Duyệt' : 'Approve')}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -12,12 +12,15 @@ import { StarRating, VerifiedBadge } from '../../components/common';
 import { toast } from 'sonner';
 import { backendToMentor } from '../../services/mentorService';
 import { listAdminMentors, updateUserStatus } from '../../services/adminService';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface AdminMentorRow extends Mentor {
   userId: string;
 }
 
 export function AdminMentors() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [rows, setRows] = useState<AdminMentorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -26,7 +29,7 @@ export function AdminMentors() {
   useEffect(() => {
     listAdminMentors()
       .then((profiles) => setRows(profiles.map((p) => ({ ...backendToMentor(p), userId: p.userId }))))
-      .catch(() => toast.error('Failed to load mentors.'))
+      .catch(() => toast.error(vi ? 'Không tải được danh sách mentor.' : 'Failed to load mentors.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -39,9 +42,9 @@ export function AdminMentors() {
     setActingId(m.userId);
     try {
       await updateUserStatus(m.userId, 'SUSPENDED');
-      toast.success(`${m.name} suspended.`);
+      toast.success(vi ? `Đã tạm khoá ${m.name}.` : `${m.name} suspended.`);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Could not suspend mentor.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không thể tạm khoá mentor.' : 'Could not suspend mentor.'));
     } finally {
       setActingId(null);
     }
@@ -50,8 +53,8 @@ export function AdminMentors() {
   return (
     <div className="mx-auto max-w-[1200px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Mentor Management</h1>
-        <p className="mt-1 text-muted-foreground">View and manage all registered mentors.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Quản lý Mentor' : 'Mentor Management'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Xem và quản lý tất cả mentor đã đăng ký.' : 'View and manage all registered mentors.'}</p>
       </div>
 
       <Card className="border-border p-6">
@@ -61,7 +64,7 @@ export function AdminMentors() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search mentors"
+              placeholder={vi ? 'Tìm mentor' : 'Search mentors'}
               className="bg-input-background pl-9"
             />
           </div>
@@ -69,22 +72,22 @@ export function AdminMentors() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="size-5 animate-spin" /> Loading mentors…
+            <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải mentor…' : 'Loading mentors…'}
           </div>
         ) : filtered.length ? (
           <>
-            <p className="mb-4 text-sm text-muted-foreground">{filtered.length} mentors</p>
+            <p className="mb-4 text-sm text-muted-foreground">{filtered.length} mentor</p>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Mentor</TableHead>
-                    <TableHead>Major</TableHead>
-                    <TableHead>Verification</TableHead>
-                    <TableHead>Rating</TableHead>
-                    <TableHead>Sessions</TableHead>
-                    <TableHead>Rate</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{vi ? 'Ngành' : 'Major'}</TableHead>
+                    <TableHead>{vi ? 'Xác minh' : 'Verification'}</TableHead>
+                    <TableHead>{vi ? 'Đánh giá' : 'Rating'}</TableHead>
+                    <TableHead>{vi ? 'Buổi học' : 'Sessions'}</TableHead>
+                    <TableHead>{vi ? 'Học phí' : 'Rate'}</TableHead>
+                    <TableHead className="text-right">{vi ? 'Thao tác' : 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -103,7 +106,7 @@ export function AdminMentors() {
                       <TableCell><VerifiedBadge verified={m.verified} /></TableCell>
                       <TableCell><StarRating rating={m.rating} /></TableCell>
                       <TableCell className="text-muted-foreground">{m.sessionsCompleted}</TableCell>
-                      <TableCell style={{ fontWeight: 500 }}>{m.hourlyRate ? `${formatCurrency(m.hourlyRate)}/hr` : '—'}</TableCell>
+                      <TableCell style={{ fontWeight: 500 }}>{m.hourlyRate ? `${formatCurrency(m.hourlyRate)}/${vi ? 'giờ' : 'hr'}` : '—'}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="outline"
@@ -112,7 +115,7 @@ export function AdminMentors() {
                           disabled={actingId === m.userId}
                           onClick={() => suspend(m)}
                         >
-                          {actingId === m.userId ? <Loader2 className="size-3.5 animate-spin" /> : 'Suspend'}
+                          {actingId === m.userId ? <Loader2 className="size-3.5 animate-spin" /> : (vi ? 'Tạm khoá' : 'Suspend')}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -122,7 +125,7 @@ export function AdminMentors() {
             </div>
           </>
         ) : (
-          <p className="py-12 text-center text-muted-foreground">No mentors found.</p>
+          <p className="py-12 text-center text-muted-foreground">{vi ? 'Không tìm thấy mentor nào.' : 'No mentors found.'}</p>
         )}
       </Card>
     </div>

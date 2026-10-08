@@ -18,6 +18,15 @@ import { Badge } from '../../components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Switch } from '../../components/ui/switch';
 import { toast } from 'sonner';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatDate } from '../../lib/format';
+
+const STATUS_LABELS_VI: Record<VoucherStatus, string> = {
+  Active: 'Đang hoạt động', Expired: 'Hết hạn', Disabled: 'Đã tắt',
+};
+const TAB_LABELS_VI: Record<string, string> = {
+  All: 'Tất cả', Active: 'Hoạt động', Expired: 'Hết hạn', Disabled: 'Đã tắt',
+};
 
 type VoucherType = 'percentage' | 'fixed';
 type VoucherScope = 'platform' | 'mentor';
@@ -62,6 +71,8 @@ function VoucherFormDialog({
   createdBy?: string;
   mentorLock?: string;
 }) {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [type, setType] = useState<VoucherType>('percentage');
   const [scope, setScope] = useState<VoucherScope>(mentorLock ? 'mentor' : 'platform');
   const [autoCode, setAutoCode] = useState(true);
@@ -74,7 +85,7 @@ function VoucherFormDialog({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(`Voucher ${code || 'created'} is now active!`);
+    toast.success(vi ? `Voucher ${code || ''} đã được kích hoạt!` : `Voucher ${code || 'created'} is now active!`);
     onClose();
   };
 
@@ -84,17 +95,17 @@ function VoucherFormDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Tag className="size-5 text-primary" />
-            {mentorLock ? 'Create mentor voucher' : 'Create new voucher'}
+            {mentorLock ? (vi ? 'Tạo voucher mentor' : 'Create mentor voucher') : (vi ? 'Tạo voucher mới' : 'Create new voucher')}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           {/* Code */}
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <Label>Voucher code</Label>
+              <Label>{vi ? 'Mã voucher' : 'Voucher code'}</Label>
               <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                 <Switch checked={autoCode} onCheckedChange={(v) => { setAutoCode(v); if (v) generate(); }} />
-                Auto-generate
+                {vi ? 'Tự tạo mã' : 'Auto-generate'}
               </label>
             </div>
             <div className="flex gap-2">
@@ -102,7 +113,7 @@ function VoucherFormDialog({
                 value={autoCode ? code : code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 readOnly={autoCode}
-                placeholder="e.g. SUMMER30"
+                placeholder={vi ? 'vd: SUMMER30' : 'e.g. SUMMER30'}
                 className="bg-input-background font-mono tracking-widest uppercase"
                 required
               />
@@ -117,17 +128,17 @@ function VoucherFormDialog({
           {/* Type + Value */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="mb-1.5 block">Discount type</Label>
+              <Label className="mb-1.5 block">{vi ? 'Loại giảm giá' : 'Discount type'}</Label>
               <Select value={type} onValueChange={(v) => setType(v as VoucherType)}>
                 <SelectTrigger className="bg-input-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="percentage">Percentage (%)</SelectItem>
-                  <SelectItem value="fixed">Fixed amount (₫)</SelectItem>
+                  <SelectItem value="percentage">{vi ? 'Phần trăm (%)' : 'Percentage (%)'}</SelectItem>
+                  <SelectItem value="fixed">{vi ? 'Số tiền cố định (₫)' : 'Fixed amount (₫)'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="mb-1.5 block">Discount value</Label>
+              <Label className="mb-1.5 block">{vi ? 'Giá trị giảm' : 'Discount value'}</Label>
               <div className="relative">
                 <Input type="number" placeholder={type === 'percentage' ? '20' : '50000'} className="bg-input-background pr-10" required />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -140,11 +151,11 @@ function VoucherFormDialog({
           {/* Min order + Usage limit */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="mb-1.5 block">Min. order (₫)</Label>
+              <Label className="mb-1.5 block">{vi ? 'Đơn tối thiểu (₫)' : 'Min. order (₫)'}</Label>
               <Input type="number" placeholder="80000" className="bg-input-background" />
             </div>
             <div>
-              <Label className="mb-1.5 block">Usage limit</Label>
+              <Label className="mb-1.5 block">{vi ? 'Giới hạn lượt dùng' : 'Usage limit'}</Label>
               <Input type="number" placeholder="100" className="bg-input-background" required />
             </div>
           </div>
@@ -152,12 +163,12 @@ function VoucherFormDialog({
           {/* Scope */}
           {!mentorLock && (
             <div>
-              <Label className="mb-1.5 block">Applies to</Label>
+              <Label className="mb-1.5 block">{vi ? 'Áp dụng cho' : 'Applies to'}</Label>
               <Select value={scope} onValueChange={(v) => setScope(v as VoucherScope)}>
                 <SelectTrigger className="bg-input-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="platform">All sessions (platform-wide)</SelectItem>
-                  <SelectItem value="mentor">Specific mentor only</SelectItem>
+                  <SelectItem value="platform">{vi ? 'Mọi buổi học (toàn nền tảng)' : 'All sessions (platform-wide)'}</SelectItem>
+                  <SelectItem value="mentor">{vi ? 'Chỉ một mentor cụ thể' : 'Specific mentor only'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -170,7 +181,7 @@ function VoucherFormDialog({
                 <Input value={mentorLock} readOnly className="bg-input-background" />
               ) : (
                 <Select>
-                  <SelectTrigger className="bg-input-background"><SelectValue placeholder="Select mentor" /></SelectTrigger>
+                  <SelectTrigger className="bg-input-background"><SelectValue placeholder={vi ? 'Chọn mentor' : 'Select mentor'} /></SelectTrigger>
                   <SelectContent>
                     {mentors.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                   </SelectContent>
@@ -181,13 +192,13 @@ function VoucherFormDialog({
 
           {/* Expiry */}
           <div>
-            <Label className="mb-1.5 block">Expiry date</Label>
+            <Label className="mb-1.5 block">{vi ? 'Ngày hết hạn' : 'Expiry date'}</Label>
             <Input type="date" className="bg-input-background" defaultValue="2026-08-31" required />
           </div>
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit"><Plus className="size-4" /> Create voucher</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{vi ? 'Huỷ' : 'Cancel'}</Button>
+            <Button type="submit"><Plus className="size-4" /> {vi ? 'Tạo voucher' : 'Create voucher'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -196,6 +207,8 @@ function VoucherFormDialog({
 }
 
 export function AdminVouchers() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [vouchers, setVouchers] = useState<Voucher[]>(seedVouchers);
   const [showCreate, setShowCreate] = useState(false);
   const [tabFilter, setTabFilter] = useState('All');
@@ -205,13 +218,13 @@ export function AdminVouchers() {
   const copyCode = (id: string, code: string) => {
     navigator.clipboard.writeText(code).catch(() => {});
     setCopiedId(id);
-    toast.success(`Copied "${code}"`);
+    toast.success(vi ? `Đã sao chép "${code}"` : `Copied "${code}"`);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const remove = (id: string) => {
     setVouchers((prev) => prev.filter((v) => v.id !== id));
-    toast.success('Voucher removed.');
+    toast.success(vi ? 'Đã xoá voucher.' : 'Voucher removed.');
   };
 
   const filtered = vouchers.filter((v) => {
@@ -224,20 +237,20 @@ export function AdminVouchers() {
     <div className="mx-auto max-w-[1200px]">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Vouchers</h1>
-          <p className="mt-1 text-muted-foreground">Create and manage discount vouchers for mentees.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Voucher</h1>
+          <p className="mt-1 text-muted-foreground">{vi ? 'Tạo và quản lý voucher giảm giá cho học viên.' : 'Create and manage discount vouchers for mentees.'}</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
-          <Plus className="size-4" /> Create voucher
+          <Plus className="size-4" /> {vi ? 'Tạo voucher' : 'Create voucher'}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'Active vouchers', value: vouchers.filter((v) => v.status === 'Active').length, color: 'text-success' },
-          { label: 'Total uses', value: vouchers.reduce((s, v) => s + v.usedCount, 0), color: 'text-primary' },
-          { label: 'Expired', value: vouchers.filter((v) => v.status === 'Expired').length, color: 'text-muted-foreground' },
+          { label: vi ? 'Voucher đang hoạt động' : 'Active vouchers', value: vouchers.filter((v) => v.status === 'Active').length, color: 'text-success' },
+          { label: vi ? 'Tổng lượt dùng' : 'Total uses', value: vouchers.reduce((s, v) => s + v.usedCount, 0), color: 'text-primary' },
+          { label: vi ? 'Hết hạn' : 'Expired', value: vouchers.filter((v) => v.status === 'Expired').length, color: 'text-muted-foreground' },
         ].map((s) => (
           <Card key={s.label} className="border-border p-4">
             <p className="text-sm text-muted-foreground">{s.label}</p>
@@ -250,11 +263,11 @@ export function AdminVouchers() {
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search code..." className="bg-input-background pl-9" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={vi ? 'Tìm mã…' : 'Search code...'} className="bg-input-background pl-9" />
           </div>
           <Tabs value={tabFilter} onValueChange={setTabFilter}>
             <TabsList>
-              {['All', 'Active', 'Expired', 'Disabled'].map((t) => <TabsTrigger key={t} value={t}>{t}</TabsTrigger>)}
+              {['All', 'Active', 'Expired', 'Disabled'].map((t) => <TabsTrigger key={t} value={t}>{vi ? TAB_LABELS_VI[t] : t}</TabsTrigger>)}
             </TabsList>
           </Tabs>
         </div>
@@ -263,15 +276,15 @@ export function AdminVouchers() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Discount</TableHead>
-                <TableHead>Min. order</TableHead>
-                <TableHead>Scope</TableHead>
-                <TableHead>Usage</TableHead>
-                <TableHead>Expiry</TableHead>
-                <TableHead>Created by</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{vi ? 'Mã' : 'Code'}</TableHead>
+                <TableHead>{vi ? 'Giảm giá' : 'Discount'}</TableHead>
+                <TableHead>{vi ? 'Đơn tối thiểu' : 'Min. order'}</TableHead>
+                <TableHead>{vi ? 'Phạm vi' : 'Scope'}</TableHead>
+                <TableHead>{vi ? 'Lượt dùng' : 'Usage'}</TableHead>
+                <TableHead>{vi ? 'Hết hạn' : 'Expiry'}</TableHead>
+                <TableHead>{vi ? 'Người tạo' : 'Created by'}</TableHead>
+                <TableHead>{vi ? 'Trạng thái' : 'Status'}</TableHead>
+                <TableHead className="text-right">{vi ? 'Thao tác' : 'Actions'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -291,7 +304,7 @@ export function AdminVouchers() {
                   <TableCell className="text-muted-foreground">{formatCurrency(v.minOrder)}</TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="bg-accent text-accent-foreground">
-                      {v.scope === 'mentor' ? `Mentor: ${v.mentorName}` : 'Platform-wide'}
+                      {v.scope === 'mentor' ? `Mentor: ${v.mentorName}` : (vi ? 'Toàn nền tảng' : 'Platform-wide')}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -307,11 +320,11 @@ export function AdminVouchers() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground whitespace-nowrap">
-                    {new Date(v.expiry).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {formatDate(v.expiry, lang, { day: '2-digit', month: 'short', year: 'numeric' })}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{v.createdBy}</TableCell>
+                  <TableCell className="text-muted-foreground">{v.createdBy === 'Admin' ? 'Admin' : (vi ? 'Mentor' : v.createdBy)}</TableCell>
                   <TableCell>
-                    <Badge className={`border ${statusColor[v.status]}`}>{v.status}</Badge>
+                    <Badge className={`border ${statusColor[v.status]}`}>{vi ? STATUS_LABELS_VI[v.status] : v.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" className="text-danger hover:bg-danger/10" onClick={() => remove(v.id)}>

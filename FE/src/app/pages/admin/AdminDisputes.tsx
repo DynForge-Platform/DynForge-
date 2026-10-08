@@ -16,8 +16,11 @@ import {
   listAdminDisputes, resolveDispute,
   type AdminDispute,
 } from '../../services/adminService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminDisputes() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [disputes, setDisputes] = useState<AdminDispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<AdminDispute | null>(null);
@@ -31,7 +34,7 @@ export function AdminDisputes() {
     setLoading(true);
     listAdminDisputes()
       .then(setDisputes)
-      .catch(() => toast.error('Failed to load disputes.'))
+      .catch(() => toast.error(vi ? 'Không tải được tranh chấp.' : 'Failed to load disputes.'))
       .finally(() => setLoading(false));
   };
 
@@ -43,12 +46,12 @@ export function AdminDisputes() {
     try {
       await resolveDispute(selected.bookingId, releaseToMentor);
       toast.success(releaseToMentor
-        ? 'Dispute resolved — payment released to mentor.'
-        : 'Dispute resolved — student refunded.');
+        ? (vi ? 'Đã xử lý tranh chấp — giải ngân cho mentor.' : 'Dispute resolved — payment released to mentor.')
+        : (vi ? 'Đã xử lý tranh chấp — hoàn tiền cho học viên.' : 'Dispute resolved — student refunded.'));
       setSelected(null);
       fetchDisputes();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Could not resolve dispute.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không thể xử lý tranh chấp.' : 'Could not resolve dispute.'));
     } finally {
       setActing(false);
     }
@@ -57,33 +60,33 @@ export function AdminDisputes() {
   return (
     <div className="mx-auto max-w-[1200px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Dispute Management</h1>
-        <p className="mt-1 text-muted-foreground">Review and resolve student–mentor disputes fairly.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Quản lý tranh chấp' : 'Dispute Management'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Xem xét và giải quyết tranh chấp giữa học viên và mentor một cách công bằng.' : 'Review and resolve student–mentor disputes fairly.'}</p>
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <KpiCard label="Open disputes" value={String(disputes.length)} icon={AlertTriangle} tone="warning" />
-        <KpiCard label="Total value" value={formatCurrency(disputes.reduce((s, d) => s + d.price, 0))} icon={AlertTriangle} />
-        <KpiCard label="Mentors involved" value={String(new Set(disputes.map((d) => d.mentorId)).size)} icon={AlertTriangle} />
+        <KpiCard label={vi ? 'Tranh chấp đang mở' : 'Open disputes'} value={String(disputes.length)} icon={AlertTriangle} tone="warning" />
+        <KpiCard label={vi ? 'Tổng giá trị' : 'Total value'} value={formatCurrency(disputes.reduce((s, d) => s + d.price, 0))} icon={AlertTriangle} />
+        <KpiCard label={vi ? 'Số mentor liên quan' : 'Mentors involved'} value={String(new Set(disputes.map((d) => d.mentorId)).size)} icon={AlertTriangle} />
       </div>
 
       <Card className="border-border p-6">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="size-5 animate-spin" /> Loading disputes…
+            <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải tranh chấp…' : 'Loading disputes…'}
           </div>
         ) : disputes.length ? (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Booking</TableHead>
-                  <TableHead>Student</TableHead>
+                  <TableHead>{vi ? 'Lịch đặt' : 'Booking'}</TableHead>
+                  <TableHead>{vi ? 'Học viên' : 'Student'}</TableHead>
                   <TableHead>Mentor</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Issue</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead>{vi ? 'Môn học' : 'Course'}</TableHead>
+                  <TableHead>{vi ? 'Vấn đề' : 'Issue'}</TableHead>
+                  <TableHead>{vi ? 'Số tiền' : 'Amount'}</TableHead>
+                  <TableHead className="text-right">{vi ? 'Thao tác' : 'Action'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -98,7 +101,7 @@ export function AdminDisputes() {
                     </TableCell>
                     <TableCell style={{ fontWeight: 600 }}>{formatCurrency(d.price)}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => openReview(d)}>Review</Button>
+                      <Button variant="outline" size="sm" onClick={() => openReview(d)}>{vi ? 'Xét duyệt' : 'Review'}</Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -106,7 +109,7 @@ export function AdminDisputes() {
             </Table>
           </div>
         ) : (
-          <EmptyState icon={AlertTriangle} title="No disputes" description="All disputes have been resolved." />
+          <EmptyState icon={AlertTriangle} title={vi ? 'Không có tranh chấp' : 'No disputes'} description={vi ? 'Tất cả tranh chấp đã được giải quyết.' : 'All disputes have been resolved.'} />
         )}
       </Card>
 
@@ -115,12 +118,12 @@ export function AdminDisputes() {
         <Dialog open onOpenChange={() => { if (!acting) setSelected(null); }}>
           <DialogContent className="max-w-lg" aria-describedby={undefined}>
             <DialogHeader>
-              <DialogTitle>Resolve dispute — {selected.bookingId.slice(0, 8)}…</DialogTitle>
+              <DialogTitle>{vi ? 'Xử lý tranh chấp' : 'Resolve dispute'} — {selected.bookingId.slice(0, 8)}…</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground">Student</p>
+                  <p className="text-muted-foreground">{vi ? 'Học viên' : 'Student'}</p>
                   <p style={{ fontWeight: 500 }}>{selected.menteeName ?? selected.menteeId}</p>
                 </div>
                 <div className="rounded-xl border border-border p-3">
@@ -128,30 +131,30 @@ export function AdminDisputes() {
                   <p style={{ fontWeight: 500 }}>{selected.mentorName ?? selected.mentorId}</p>
                 </div>
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground">Course</p>
+                  <p className="text-muted-foreground">{vi ? 'Môn học' : 'Course'}</p>
                   <p style={{ fontWeight: 500 }}>{selected.courseCode}</p>
                 </div>
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground">Amount in escrow</p>
+                  <p className="text-muted-foreground">{vi ? 'Số tiền ký quỹ' : 'Amount in escrow'}</p>
                   <p style={{ fontWeight: 500 }}>{formatCurrency(selected.price)}</p>
                 </div>
               </div>
               <div className="rounded-xl border border-border p-3">
-                <p className="text-muted-foreground">Issue type</p>
+                <p className="text-muted-foreground">{vi ? 'Loại vấn đề' : 'Issue type'}</p>
                 <p style={{ fontWeight: 500 }}>{selected.issueType ?? '—'}</p>
               </div>
               <div className="rounded-xl border border-border p-3">
-                <p className="text-muted-foreground mb-1">Student's reason (Mentee)</p>
-                <p className="whitespace-pre-wrap">{selected.reason ?? 'No reason provided.'}</p>
+                <p className="text-muted-foreground mb-1">{vi ? 'Lý do của học viên' : "Student's reason (Mentee)"}</p>
+                <p className="whitespace-pre-wrap">{selected.reason ?? (vi ? 'Không có lý do.' : 'No reason provided.')}</p>
               </div>
 
               {selected.mentorResponse ? (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-primary">Mentor's Counter-Response</p>
+                    <p className="font-medium text-primary">{vi ? 'Phản hồi đối chất của Mentor' : "Mentor's Counter-Response"}</p>
                     {selected.mentorRespondedAt && (
                       <span className="text-xs text-muted-foreground">
-                        {new Date(selected.mentorRespondedAt).toLocaleString('vi-VN')}
+                        {new Date(selected.mentorRespondedAt).toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-GB')}
                       </span>
                     )}
                   </div>
@@ -164,27 +167,27 @@ export function AdminDisputes() {
                         rel="noopener noreferrer"
                         className="text-xs text-primary underline hover:text-primary/80 inline-flex items-center gap-1"
                       >
-                        Xem tài liệu / bằng chứng đính kèm ↗
+                        {vi ? 'Xem tài liệu / bằng chứng đính kèm ↗' : 'View attached document / evidence ↗'}
                       </a>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-500">
-                  Mentor chưa gửi phản hồi hoặc giải trình đối chất cho khiếu nại này.
+                  {vi ? 'Mentor chưa gửi phản hồi hoặc giải trình đối chất cho khiếu nại này.' : 'The mentor has not submitted a response or counter-evidence for this dispute.'}
                 </div>
               )}
 
               <p className="rounded-xl bg-warning/10 p-3 text-warning">
-                Choose an outcome: refund the student, or release the escrow to the mentor.
+                {vi ? 'Chọn kết quả: hoàn tiền cho học viên, hoặc giải ngân ký quỹ cho mentor.' : 'Choose an outcome: refund the student, or release the escrow to the mentor.'}
               </p>
             </div>
             <DialogFooter className="gap-2">
               <Button variant="outline" className="text-success border-success/30" disabled={acting} onClick={() => decide(false)}>
-                {acting ? <Loader2 className="size-4 animate-spin" /> : 'Refund student'}
+                {acting ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Hoàn tiền học viên' : 'Refund student')}
               </Button>
               <Button disabled={acting} onClick={() => decide(true)}>
-                {acting ? <Loader2 className="size-4 animate-spin" /> : 'Release to mentor'}
+                {acting ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Giải ngân cho mentor' : 'Release to mentor')}
               </Button>
             </DialogFooter>
           </DialogContent>
