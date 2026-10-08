@@ -44,8 +44,12 @@ public class GlobalExceptionHandler {
         Map<String, String> fieldErrors = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(fe ->
                 fieldErrors.put(fe.getField(), fe.getDefaultMessage()));
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .orElse("One or more fields are invalid");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of(400, "Validation Failed", "One or more fields are invalid", fieldErrors));
+                .body(ErrorResponse.of(400, "Validation Failed", message, fieldErrors));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)

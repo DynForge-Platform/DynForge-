@@ -129,6 +129,14 @@ export function ScheduleConsultation() {
     return true;
   };
 
+  const isSlotPast = (slot: string) => {
+    if (monthOffset !== 0 || selectedDay !== now.getDate()) return false;
+    const [h, m] = slot.split(':').map(Number);
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+    return start.getTime() - now.getTime() < 15 * 60 * 1000;
+  };
+  const slotUnavailable = !!selectedSlot && isSlotPast(selectedSlot);
+
   useEffect(() => {
     if (selectedSlot && selectedDay) {
       const rawSlots = getMentorDaySlots(selectedDay);
@@ -137,6 +145,11 @@ export function ScheduleConsultation() {
       }
     }
   }, [duration, selectedDay]);
+
+  // Deselect a slot that becomes past (e.g. time passes while the page is open)
+  useEffect(() => {
+    if (slotUnavailable) setSelectedSlot(null);
+  }, [slotUnavailable]);
 
   const chosenCourse = (mentor?.courses || []).find(
     (c) => (c?.code || '').toLowerCase() === (selectedCourse || '').toLowerCase()
@@ -380,7 +393,7 @@ export function ScheduleConsultation() {
 
                   <Button
                     onClick={cont}
-                    disabled={!selectedDay || !selectedSlot || isSelfBooking}
+                    disabled={!selectedDay || !selectedSlot || slotUnavailable || isSelfBooking}
                     className="w-full py-3 h-12 text-sm font-semibold rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 disabled:opacity-40 transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                   >
                     {isSelfBooking
@@ -532,7 +545,7 @@ export function ScheduleConsultation() {
                           ? 'border border-cyan-400 bg-cyan-500 text-white font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)] scale-105 z-10'
                           : 'border border-white/10 bg-white/5 text-slate-200 hover:border-cyan-400/40 hover:bg-white/10 hover:text-white cursor-pointer'
                       )}
-                      title={!available ? 'Mentor không có lịch rảnh vào ngày này' : undefined}
+                      title={!available ? T.mentorNoSlotsDay : undefined}
                     >
                       <span>{day}</span>
                       {available && !isPast && (
@@ -564,35 +577,51 @@ export function ScheduleConsultation() {
                 </div>
               ) : getMentorDaySlots(selectedDay).length === 0 ? (
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 py-8 text-center text-sm text-amber-300">
-                  ⚠️ Mentor không có lịch rảnh vào ngày đã chọn. Vui lòng chọn một ngày khác có chấm xanh.
+                  ⚠️ {T.mentorNoSlots}
+                </div>
+              ) : getMentorDaySlots(selectedDay).every((slot) => isSlotPast(slot)) ? (
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 py-8 text-center text-sm text-amber-300">
+                  ⚠️ {T.allSlotsPassedToday}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[...getMentorDaySlots(selectedDay)].sort().map((slot) => {
                     const rawSlots = getMentorDaySlots(selectedDay);
+                    const past = isSlotPast(slot);
                     const fitsDuration = isSlotAvailableForDuration(slot, duration, rawSlots);
+                    const unavailable = past || !fitsDuration;
                     const selected = selectedSlot === slot;
                     return (
                       <button
                         key={slot}
-                        disabled={!fitsDuration}
+                        disabled={unavailable}
                         onClick={() => setSelectedSlot(slot)}
                         className={cn(
                           'rounded-xl border py-3 px-2 text-sm font-medium transition-all text-center',
-                          !fitsDuration
+                          unavailable
                             ? 'border-white/5 bg-white/[0.02] text-slate-600 cursor-not-allowed opacity-50'
                             : selected
                             ? 'border-cyan-400 bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.35)] font-semibold scale-[1.02] cursor-pointer'
                             : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/40 hover:bg-white/10 cursor-pointer'
                         )}
-                        title={!fitsDuration ? `Buổi học ${duration} phút vượt quá khung rảnh của Mentor` : undefined}
+                        title={
+                          past
+                            ? T.slotPassed
+                            : !fitsDuration
+                            ? `${T.sessionExceedsAvailability} (${duration}m)`
+                            : undefined
+                        }
                       >
-                        <span className={cn(!fitsDuration && 'line-through')}>{slot}</span>
-                        {!fitsDuration && (
+                        <span className={cn(unavailable && 'line-through')}>{slot}</span>
+                        {past ? (
                           <span className="block text-[10px] text-amber-400/80 font-normal no-underline mt-0.5">
-                            Quá giờ ({duration}m)
+                            {T.passedLabel}
                           </span>
-                        )}
+                        ) : !fitsDuration ? (
+                          <span className="block text-[10px] text-amber-400/80 font-normal no-underline mt-0.5">
+                            {T.exceedsLabel} ({duration}m)
+                          </span>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -611,7 +640,7 @@ export function ScheduleConsultation() {
               </Link>
               <Button
                 onClick={cont}
-                disabled={!selectedDay || !selectedSlot || isSelfBooking}
+                disabled={!selectedDay || !selectedSlot || slotUnavailable || isSelfBooking}
                 className="w-full sm:w-auto py-2.5 px-6 text-sm font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 disabled:opacity-40 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isSelfBooking
@@ -639,7 +668,7 @@ export function ScheduleConsultation() {
 
         <Button
           onClick={cont}
-          disabled={!selectedDay || !selectedSlot || isSelfBooking}
+          disabled={!selectedDay || !selectedSlot || slotUnavailable || isSelfBooking}
           className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-xl h-10 px-5 text-xs shrink-0 shadow-lg shadow-cyan-900/30 disabled:opacity-40"
         >
           {isSelfBooking
