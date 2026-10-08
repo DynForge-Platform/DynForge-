@@ -24,6 +24,7 @@ import { StatusBadge } from '../../components/common';
 import { cn } from '../../components/ui/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '../../context/LanguageContext';
+import { formatDate } from '../../lib/format';
 
 // ── Add Funds modal (PayOS) ──────────────
 function AddFundsModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
@@ -230,7 +231,7 @@ function WithdrawModal({ onClose, balance }: { onClose: () => void; balance: num
 
 // ── Main Wallet Hub ────────────────────────────────────────────
 export function DashboardWallet() {
-  const { T } = useLanguage();
+  const { T, lang } = useLanguage();
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -518,9 +519,9 @@ export function DashboardWallet() {
                 {filtered.map((t) => (
                   <TableRow key={t.id} className="border-slate-800/60 hover:bg-slate-900/60 transition-colors">
                     <TableCell className="text-xs text-slate-300 whitespace-nowrap">
-                      {new Date(t.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      {formatDate(t.createdAt, lang, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                       {' · '}
-                      {new Date(t.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(t.createdAt).toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}
                     </TableCell>
                     <TableCell>
                       <span className={cn(

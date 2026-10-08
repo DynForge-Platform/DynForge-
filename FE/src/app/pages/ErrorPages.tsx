@@ -54,6 +54,8 @@ export function PermissionDeniedPage() {
 }
 
 export function GlobalErrorBoundary() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const error: any = useRouteError();
   console.error('GlobalErrorBoundary caught error:', error);
   const errorMessage = error?.message || error?.statusText || (typeof error === 'string' ? error : JSON.stringify(error));
@@ -61,11 +63,11 @@ export function GlobalErrorBoundary() {
 
   return (
     <ErrorShell>
-      <h1 className="text-center text-white font-bold text-4xl" style={{ fontFamily: "var(--font-heading)" }}>Application Error</h1>
-      <p className="mt-3 max-w-md text-center text-slate-400 text-sm">An unexpected error occurred. Please try returning to home.</p>
+      <h1 className="text-center text-white font-bold text-4xl" style={{ fontFamily: "var(--font-heading)" }}>{vi ? 'Lỗi ứng dụng' : 'Application Error'}</h1>
+      <p className="mt-3 max-w-md text-center text-slate-400 text-sm">{vi ? 'Đã xảy ra lỗi không mong muốn. Vui lòng thử quay lại trang chủ.' : 'An unexpected error occurred. Please try returning to home.'}</p>
       {errorMessage && (
         <div className="mt-4 max-w-xl w-full text-left rounded-xl border border-red-500/30 bg-red-950/40 p-4">
-          <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-1">Error Details:</p>
+          <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-1">{vi ? 'Chi tiết lỗi:' : 'Error Details:'}</p>
           <p className="text-xs font-mono text-red-200 break-words">{errorMessage}</p>
           {errorStack && (
             <pre className="mt-2 text-[10px] font-mono text-red-300/70 overflow-x-auto max-h-40 whitespace-pre-wrap">
@@ -75,7 +77,7 @@ export function GlobalErrorBoundary() {
         </div>
       )}
       <a href="/" className="mt-6 inline-block bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-8 py-3 rounded-xl text-sm">
-        Reload Home
+        {vi ? 'Tải lại trang chủ' : 'Reload Home'}
       </a>
     </ErrorShell>
   );

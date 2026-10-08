@@ -10,19 +10,24 @@ import {
   listConversations, getConversation, sendMessage,
   type Conversation, type ConversationDetail,
 } from '../services/messageService';
+import { useLanguage } from '../context/LanguageContext';
+import { formatDate } from '../lib/format';
 
-function fmtTime(iso: string): string {
+function fmtTime(iso: string, lang: 'en' | 'vi'): string {
   const d = new Date(iso);
   const now = new Date();
+  const locale = lang === 'vi' ? 'vi-VN' : 'en-GB';
   if (d.toDateString() === now.toDateString()) {
-    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   }
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  return formatDate(d, lang, { day: '2-digit', month: 'short' });
 }
 
 export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) {
   const { mentorId } = useParams();
   const navigate = useNavigate();
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
 
   const [activeId, setActiveId] = useState<string | null>(mentorId ?? null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -79,7 +84,7 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
       await fetchDetail();
       fetchConversations();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Could not send message.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không gửi được tin nhắn.' : 'Could not send message.'));
       setDraft(text);
     } finally {
       setSending(false);
@@ -99,13 +104,13 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
         activeId ? "hidden sm:flex" : "flex"
       )}>
         <div className="border-b border-slate-800 p-4">
-          <h2 className="font-semibold text-lg text-white">Messages</h2>
+          <h2 className="font-semibold text-lg text-white">{vi ? 'Tin nhắn' : 'Messages'}</h2>
           <div className="relative mt-3">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search conversations"
+              placeholder={vi ? 'Tìm cuộc trò chuyện' : 'Search conversations'}
               className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 pl-9"
             />
           </div>
@@ -113,7 +118,7 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
         <div className="flex-1 overflow-y-auto">
           {loadingConvos ? (
             <div className="flex items-center justify-center py-10 text-slate-400 gap-2">
-              <Loader2 className="size-5 animate-spin text-cyan-400" /> Loading…
+              <Loader2 className="size-5 animate-spin text-cyan-400" /> {vi ? 'Đang tải…' : 'Loading…'}
             </div>
           ) : convos.length ? (
             convos.map((c) => (
@@ -136,7 +141,7 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
                     <p className="truncate font-semibold text-white">{c.name}</p>
-                    <span className="shrink-0 text-xs text-slate-400">{fmtTime(c.lastAt)}</span>
+                    <span className="shrink-0 text-xs text-slate-400">{fmtTime(c.lastAt, lang)}</span>
                   </div>
                   <p className="truncate text-sm text-slate-400 mt-0.5">{c.lastMessage}</p>
                 </div>
@@ -144,7 +149,9 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
             ))
           ) : (
             <div className="p-6 text-center text-sm text-slate-400">
-              No conversations yet. Message a {role === 'student' ? 'mentor' : 'student'} to start chatting.
+              {vi
+                ? `Chưa có cuộc trò chuyện nào. Nhắn tin cho ${role === 'student' ? 'mentor' : 'học viên'} để bắt đầu.`
+                : `No conversations yet. Message a ${role === 'student' ? 'mentor' : 'student'} to start chatting.`}
             </div>
           )}
         </div>
@@ -168,14 +175,14 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
               <ImageWithFallback src={other.avatarUrl ?? ''} alt={other.name} className="size-9 rounded-full object-cover border border-slate-700" />
               <div>
                 <p className="font-semibold text-white">{other.name}</p>
-                <p className="text-xs text-cyan-400 font-medium">{role === 'student' ? 'Mentor' : 'Student'}</p>
+                <p className="text-xs text-cyan-400 font-medium">{role === 'student' ? 'Mentor' : (vi ? 'Học viên' : 'Student')}</p>
               </div>
             </div>
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-slate-950">
               {detail.messages.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-sm text-slate-400">
-                  No messages yet. Say hi 👋
+                  {vi ? 'Chưa có tin nhắn. Gửi lời chào nhé 👋' : 'No messages yet. Say hi 👋'}
                 </div>
               ) : detail.messages.map((m) => (
                 <div key={m.id} className={cn('flex', m.mine ? 'justify-end' : 'justify-start')}>
@@ -190,7 +197,7 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
                   )}>
                     <p className="whitespace-pre-wrap break-words">{m.content}</p>
                     <div className={cn('mt-1 flex items-center gap-1 text-xs', m.mine ? 'justify-end text-cyan-200' : 'text-slate-400')}>
-                      <span>{fmtTime(m.createdAt)}</span>
+                      <span>{fmtTime(m.createdAt, lang)}</span>
                     </div>
                   </div>
                 </div>
@@ -203,7 +210,7 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder="Type a message..."
+                  placeholder={vi ? 'Nhập tin nhắn…' : 'Type a message...'}
                   className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500"
                 />
                 <Button size="icon" onClick={send} disabled={!draft.trim() || sending} className="bg-cyan-600 hover:bg-cyan-500 text-white">
@@ -215,7 +222,7 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 text-slate-400">
             <MessageSquare className="size-8 text-cyan-400" />
-            Select a conversation to start messaging.
+            {vi ? 'Chọn một cuộc trò chuyện để bắt đầu nhắn tin.' : 'Select a conversation to start messaging.'}
           </div>
         )}
       </div>
@@ -228,7 +235,7 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
               <ImageWithFallback src={other.avatarUrl ?? ''} alt={other.name} className="size-16 rounded-2xl object-cover border border-slate-700" />
               <div>
                 <p className="font-semibold text-white">{other.name}</p>
-                <p className="text-xs text-cyan-400 font-medium">{role === 'student' ? 'Mentor' : 'Student'}</p>
+                <p className="text-xs text-cyan-400 font-medium">{role === 'student' ? 'Mentor' : (vi ? 'Học viên' : 'Student')}</p>
               </div>
             </div>
             <div className="mt-6 space-y-2 border-t border-slate-800 pt-4">
@@ -236,7 +243,7 @@ export function Messages({ role = 'student' }: { role?: 'student' | 'mentor' }) 
                 onClick={() => navigate('/support/contact')}
                 className="flex w-full items-center gap-3 rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm text-slate-200 transition-colors hover:bg-slate-800 font-medium"
               >
-                <LifeBuoy className="size-4 text-cyan-400" /> Contact Support
+                <LifeBuoy className="size-4 text-cyan-400" /> {vi ? 'Liên hệ hỗ trợ' : 'Contact Support'}
               </button>
             </div>
           </div>
