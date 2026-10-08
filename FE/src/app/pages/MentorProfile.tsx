@@ -97,7 +97,7 @@ export function MentorProfile() {
   if (!mentor) {
     return (
       <div className="relative z-10 min-h-screen mx-auto max-w-5xl px-6 py-20 text-center text-slate-100 space-y-4">
-        <h1 className="text-4xl font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>{T.mentorNotFound}</h1>
+        <h1 className="text-4xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>{T.mentorNotFound}</h1>
         <Link to="/mentors" className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-2.5 text-sm font-medium text-white hover:bg-white/20 transition-all">
           <ArrowLeft className="size-4" /> {T.backToMentors}
         </Link>
@@ -128,7 +128,7 @@ export function MentorProfile() {
                 />
                 <div className="flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-3xl sm:text-5xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                    <h1 className="text-3xl sm:text-5xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
                       {mentor.name}
                     </h1>
                     <VerifiedBadge verified={mentor.verified} />
@@ -172,7 +172,7 @@ export function MentorProfile() {
 
             {/* About */}
             <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-6 sm:p-8 shadow-xl space-y-3">
-              <h2 className="text-3xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              <h2 className="text-3xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
                 {T.aboutMentor}
               </h2>
               <p className="text-white/70 text-sm leading-relaxed font-normal">{mentor.about}</p>
@@ -180,7 +180,7 @@ export function MentorProfile() {
 
             {/* How I can help */}
             <div className="space-y-4">
-              <h2 className="text-3xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              <h2 className="text-3xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
                 {T.howICanHelp}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -204,7 +204,7 @@ export function MentorProfile() {
             {/* Courses + Strengths */}
             <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-6 sm:p-8 shadow-xl space-y-6">
               <div>
-                <h2 className="mb-3 text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                <h2 className="mb-3 text-2xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
                   {T.coursesSupported}
                 </h2>
                 <div className="flex flex-wrap gap-2.5">
@@ -237,7 +237,7 @@ export function MentorProfile() {
               </div>
 
               <div>
-                <h2 className="mb-3 text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                <h2 className="mb-3 text-2xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
                   {T.academicStrengths}
                 </h2>
                 <div className="flex flex-wrap gap-2">
@@ -250,7 +250,7 @@ export function MentorProfile() {
 
             {/* Reviews */}
             <div className="space-y-4">
-              <h2 className="text-3xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              <h2 className="text-3xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
                 {T.studentReviews}
               </h2>
               {reviews.length ? (

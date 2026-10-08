@@ -2,8 +2,8 @@
 
 :root {
   --font-size: 16px;
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-heading: 'Instrument Serif', 'Inter', serif;
+  --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-heading: 'Be Vietnam Pro', system-ui, sans-serif;
   --background: #020b18;
   --foreground: #f8fafc;
   --card: #090f1e;
@@ -146,6 +146,12 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: normal;
+  }
+
+  p {
+    line-height: 1.6;
   }
 
   html {

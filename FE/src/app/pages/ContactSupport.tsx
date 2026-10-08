@@ -59,7 +59,7 @@ export function ContactSupport() {
           <span className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
             <CheckCircle2 className="size-9" />
           </span>
-          <h1 className="text-3xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>{vi ? 'Đã gửi yêu cầu hỗ trợ' : 'Support request submitted'}</h1>
+          <h1 className="text-3xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>{vi ? 'Đã gửi yêu cầu hỗ trợ' : 'Support request submitted'}</h1>
           <p className="mt-3 text-slate-400 text-sm">
             {vi ? 'Đội ngũ của chúng tôi sẽ xem xét yêu cầu và phản hồi trong vòng 24 giờ.' : 'Our team will review your request and respond within 24 hours.'}
           </p>
@@ -92,7 +92,7 @@ export function ContactSupport() {
           {/* Ticket Form */}
           <div className="space-y-6 lg:col-span-7">
             <Card className="border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-8 text-slate-100 shadow-2xl rounded-2xl">
-              <h2 className="mb-2 text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              <h2 className="mb-2 text-2xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
                 {vi ? 'Gửi yêu cầu hỗ trợ' : 'Submit a Support Ticket'}
               </h2>
               <p className="mb-6 text-xs text-slate-400">{vi ? 'Điền thông tin bên dưới, đội ngũ của chúng tôi sẽ phản hồi trong vòng 24 giờ.' : 'Fill in the details below and our team will get back to you within 24 hours.'}</p>
@@ -141,7 +141,7 @@ export function ContactSupport() {
           {/* Sidebar & FAQs */}
           <div className="space-y-6 lg:col-span-5">
             <Card className="border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-6 text-slate-100 shadow-2xl rounded-2xl">
-              <h2 className="mb-4 text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              <h2 className="mb-4 text-2xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
                 {vi ? 'Câu hỏi thường gặp' : 'Frequently Asked Questions'}
               </h2>
               <Accordion type="single" collapsible className="w-full">

@@ -112,7 +112,7 @@ export function BecomeMentor() {
               <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
                 {lang === 'vi' ? 'THU NHẬP DỰ KIẾN' : 'EARNINGS POTENTIAL'}
               </span>
-              <h2 className="text-3xl sm:text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              <h2 className="text-3xl sm:text-4xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
                 {lang === 'vi' ? 'Thu nhập linh hoạt theo lịch học của bạn.' : 'Flexible income scheduled around your studies.'}
               </h2>
               <p className="text-white/70 text-sm leading-relaxed">
@@ -158,7 +158,7 @@ export function BecomeMentor() {
             <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
               {lang === 'vi' ? 'VÌ SAO CHỌN DYNFORGE' : 'WHY MENTOR WITH DYNFORGE'}
             </span>
-            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="text-4xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {T.benefitsTitle}
             </h2>
           </div>
@@ -182,7 +182,7 @@ export function BecomeMentor() {
         {/* Requirements & Process */}
         <section className="grid gap-8 lg:grid-cols-2">
           <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 shadow-xl space-y-6">
-            <h2 className="text-3xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="text-3xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {T.reqsTitle}
             </h2>
             <div className="space-y-4">
@@ -198,7 +198,7 @@ export function BecomeMentor() {
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 shadow-xl space-y-6">
-            <h2 className="text-3xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="text-3xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {T.howItWorksTitle}
             </h2>
             <div className="space-y-4">
@@ -223,7 +223,7 @@ export function BecomeMentor() {
         {/* FAQs */}
         <section className="space-y-8">
           <div className="text-center space-y-2">
-            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="text-4xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {T.faqTitle}
             </h2>
           </div>

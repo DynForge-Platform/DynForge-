@@ -78,7 +78,7 @@ export function ForgotPassword() {
         {step === 'email' && (
           <form onSubmit={submitEmail} className="space-y-4">
             <div className="text-center">
-              <h2 className="text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>{vi ? 'Quên mật khẩu' : 'Forgot Password'}</h2>
+              <h2 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>{vi ? 'Quên mật khẩu' : 'Forgot Password'}</h2>
               <p className="mt-1 text-xs text-slate-400">{vi ? 'Nhập địa chỉ email để nhận mã xác minh.' : 'Enter your email address to receive a verification code.'}</p>
             </div>
             <div>
@@ -109,7 +109,7 @@ export function ForgotPassword() {
         {step === 'otp' && (
           <form onSubmit={submitOtp} className="space-y-4">
             <div className="text-center">
-              <h2 className="text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>{vi ? 'Nhập mã xác minh' : 'Enter Verification Code'}</h2>
+              <h2 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>{vi ? 'Nhập mã xác minh' : 'Enter Verification Code'}</h2>
               <p className="mt-1 text-xs text-slate-400">{vi ? <>Chúng tôi đã gửi mã đến <strong className="text-white">{email}</strong>.</> : <>We sent a code to <strong className="text-white">{email}</strong>.</>}</p>
             </div>
             <div>
@@ -134,7 +134,7 @@ export function ForgotPassword() {
         {step === 'reset' && (
           <form onSubmit={submitReset} className="space-y-4">
             <div className="text-center">
-              <h2 className="text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>{vi ? 'Đặt mật khẩu mới' : 'Set New Password'}</h2>
+              <h2 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>{vi ? 'Đặt mật khẩu mới' : 'Set New Password'}</h2>
               <p className="mt-1 text-xs text-slate-400">{vi ? 'Tạo mật khẩu mới an toàn cho tài khoản DynForge của bạn.' : 'Create a new secure password for your DynForge account.'}</p>
             </div>
             <div>
@@ -176,7 +176,7 @@ export function ForgotPassword() {
             <div className="flex size-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 mx-auto">
               <CheckCircle2 className="size-8" />
             </div>
-            <h2 className="text-2xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>{vi ? 'Đặt lại mật khẩu thành công' : 'Password Reset Complete'}</h2>
+            <h2 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>{vi ? 'Đặt lại mật khẩu thành công' : 'Password Reset Complete'}</h2>
             <p className="text-xs text-slate-400">{vi ? 'Mật khẩu của bạn đã được cập nhật. Bạn có thể đăng nhập bằng mật khẩu mới.' : 'Your password has been updated. You can now log in with your new credentials.'}</p>
             <Button onClick={() => navigate('/login')} className="w-full h-11 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl shadow-lg">
               {vi ? 'Đăng nhập ngay' : 'Log In Now'}

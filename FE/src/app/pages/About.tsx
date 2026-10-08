@@ -74,13 +74,13 @@ export function About() {
         {/* Mission & Vision */}
         <section className="grid gap-8 sm:grid-cols-2">
           <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 shadow-xl">
-            <h2 className="mb-4 text-3xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="mb-4 text-3xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {T.ourMission}
             </h2>
             <p className="text-white/70 leading-relaxed text-sm font-normal">{T.missionText}</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 shadow-xl">
-            <h2 className="mb-4 text-3xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="mb-4 text-3xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {lang === 'vi' ? 'Vì sao chọn DynForge' : 'Why DynForge'}
             </h2>
             <p className="text-white/70 leading-relaxed text-sm font-normal">{T.whyDynForgeText}</p>
@@ -93,7 +93,7 @@ export function About() {
             <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
               {T.whatWeStandFor}
             </span>
-            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="text-4xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {T.communityValuesTitle}
             </h2>
           </div>
@@ -119,7 +119,7 @@ export function About() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             {stats.map((s, idx) => (
               <div key={idx} className="space-y-1">
-                <p className="text-3xl sm:text-5xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                <p className="text-3xl sm:text-5xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
                   <GsapCounter
                     targetValue={s.target}
                     suffix={s.suffix}

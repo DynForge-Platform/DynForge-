@@ -23,7 +23,7 @@ export function EditorialPageHeader({
 
       <h1
         className="text-5xl sm:text-7xl lg:text-8xl font-normal tracking-tight leading-[1.08] text-white animate-fade-rise"
-        style={{ fontFamily: "'Instrument Serif', serif" }}
+        style={{ fontFamily: "var(--font-heading)" }}
       >
         {title}
       </h1>

@@ -43,7 +43,7 @@ function BrandPanel({ title, subtitle }: { title: string; subtitle: string }) {
         </div>
         <h2
           className="text-white text-center mt-6 text-3xl lg:text-4xl font-normal leading-tight max-w-md"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
+          style={{ fontFamily: "var(--font-heading)" }}
         >
           {title}
         </h2>
@@ -185,7 +185,7 @@ export function Login() {
       title="Learn from mentors who have been there."
       subtitle="Book verified seniors, alumni, and lecturers for course tutoring, thesis support, and career advice."
     >
-      <h1 className="text-3xl text-white font-normal mb-1" style={{ fontFamily: "'Instrument Serif', serif" }}>
+      <h1 className="text-3xl text-white font-bold mb-1" style={{ fontFamily: "var(--font-heading)" }}>
         {T.welcomeBack}
       </h1>
       <p className="text-xs text-slate-400 mb-6">{T.loginSubtitle}</p>
@@ -279,7 +279,7 @@ export function Register() {
       title="Join DynForge today."
       subtitle="Connect with verified academic mentors and accelerate your university journey."
     >
-      <h1 className="text-3xl text-white font-normal mb-1" style={{ fontFamily: "'Instrument Serif', serif" }}>
+      <h1 className="text-3xl text-white font-bold mb-1" style={{ fontFamily: "var(--font-heading)" }}>
         {T.createAccount}
       </h1>
       <p className="text-xs text-slate-400 mb-6">{T.registerSubtitle}</p>
