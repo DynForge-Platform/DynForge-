@@ -230,7 +230,7 @@ export function RoadmapTimeline({ lang = 'vi' }: { lang: 'vi' | 'en' }) {
 
         <h2
           className="text-4xl sm:text-6xl font-normal text-white tracking-tight leading-tight"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
+          style={{ fontFamily: "var(--font-heading)" }}
         >
           {lang === 'vi' ? (
             <>

@@ -17,6 +17,8 @@ import {
 import { Badge } from '../../components/ui/badge';
 import { Switch } from '../../components/ui/switch';
 import { toast } from 'sonner';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatDate } from '../../lib/format';
 
 const myMentor = mentors[0]; // Nguyễn Thị Linh (logged-in teacher)
 
@@ -46,7 +48,14 @@ const statusColor: Record<VoucherStatus, string> = {
   Disabled: 'bg-danger/10 text-danger border-danger/20',
 };
 
+const STATUS_LABELS_VI: Record<VoucherStatus, string> = {
+  Active: 'Đang hoạt động', Expired: 'Hết hạn', Disabled: 'Đã tắt',
+};
+
 export function MentorVouchers() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
+  const statusLabel = (s: VoucherStatus) => (vi ? STATUS_LABELS_VI[s] : s);
   const [vouchers, setVouchers] = useState<MyVoucher[]>(initialVouchers);
   const [showCreate, setShowCreate] = useState(false);
   const [type, setType] = useState<VoucherType>('percentage');
@@ -65,13 +74,13 @@ export function MentorVouchers() {
   const copyCode = (id: string, c: string) => {
     navigator.clipboard.writeText(c).catch(() => {});
     setCopiedId(id);
-    toast.success(`Copied "${c}"`);
+    toast.success(vi ? `Đã sao chép "${c}"` : `Copied "${c}"`);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const remove = (id: string) => {
     setVouchers((prev) => prev.filter((v) => v.id !== id));
-    toast.success('Voucher removed.');
+    toast.success(vi ? 'Đã xoá voucher.' : 'Voucher removed.');
   };
 
   const submit = (e: React.FormEvent) => {
@@ -88,7 +97,7 @@ export function MentorVouchers() {
       status: 'Active',
     };
     setVouchers((prev) => [newV, ...prev]);
-    toast.success(`Voucher ${newV.code} created and active!`);
+    toast.success(vi ? `Đã tạo và kích hoạt voucher ${newV.code}!` : `Voucher ${newV.code} created and active!`);
     setShowCreate(false);
     setCode('');
   };
@@ -97,13 +106,13 @@ export function MentorVouchers() {
     <div className="mx-auto max-w-[1000px]">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>My Vouchers</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Voucher của tôi' : 'My Vouchers'}</h1>
           <p className="mt-1 text-muted-foreground">
-            Create discount codes for your mentees — attract new students and reward loyal ones.
+            {vi ? 'Tạo mã giảm giá cho học viên — thu hút học viên mới và tri ân học viên thân thiết.' : 'Create discount codes for your mentees — attract new students and reward loyal ones.'}
           </p>
         </div>
         <Button onClick={() => { setShowCreate(true); generateCode(); }}>
-          <Plus className="size-4" /> Create voucher
+          <Plus className="size-4" /> {vi ? 'Tạo voucher' : 'Create voucher'}
         </Button>
       </div>
 
@@ -112,10 +121,11 @@ export function MentorVouchers() {
         <div className="flex items-start gap-3 text-sm">
           <Info className="mt-0.5 size-4 shrink-0 text-primary" />
           <div>
-            <p className="text-primary" style={{ fontWeight: 600 }}>How mentor vouchers work</p>
+            <p className="text-primary" style={{ fontWeight: 600 }}>{vi ? 'Cách voucher mentor hoạt động' : 'How mentor vouchers work'}</p>
             <p className="text-muted-foreground">
-              Vouchers you create apply only to sessions booked with you. Mentees enter the code at checkout to get a discount.
-              The discount is deducted from your session fee — not charged by DynForge.
+              {vi
+                ? 'Voucher bạn tạo chỉ áp dụng cho các buổi học đặt với bạn. Học viên nhập mã khi thanh toán để được giảm giá. Khoản giảm được trừ vào học phí của bạn — không phải DynForge thu.'
+                : 'Vouchers you create apply only to sessions booked with you. Mentees enter the code at checkout to get a discount. The discount is deducted from your session fee — not charged by DynForge.'}
             </p>
           </div>
         </div>
@@ -124,15 +134,15 @@ export function MentorVouchers() {
       {/* Stats */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Card className="border-border p-4">
-          <p className="text-sm text-muted-foreground">Active vouchers</p>
+          <p className="text-sm text-muted-foreground">{vi ? 'Voucher đang hoạt động' : 'Active vouchers'}</p>
           <p className="mt-1 text-success" style={{ fontSize: '2rem', fontWeight: 800 }}>{activeCount}</p>
         </Card>
         <Card className="border-border p-4">
-          <p className="text-sm text-muted-foreground">Total uses</p>
+          <p className="text-sm text-muted-foreground">{vi ? 'Tổng lượt dùng' : 'Total uses'}</p>
           <p className="mt-1 text-primary" style={{ fontSize: '2rem', fontWeight: 800 }}>{totalUses}</p>
         </Card>
         <Card className="border-border p-4">
-          <p className="text-sm text-muted-foreground">Max vouchers allowed</p>
+          <p className="text-sm text-muted-foreground">{vi ? 'Số voucher tối đa' : 'Max vouchers allowed'}</p>
           <p className="mt-1" style={{ fontSize: '2rem', fontWeight: 800 }}>5</p>
         </Card>
       </div>
@@ -144,13 +154,13 @@ export function MentorVouchers() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Min. order</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Expiry</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Remove</TableHead>
+                  <TableHead>{vi ? 'Mã' : 'Code'}</TableHead>
+                  <TableHead>{vi ? 'Giảm giá' : 'Discount'}</TableHead>
+                  <TableHead>{vi ? 'Đơn tối thiểu' : 'Min. order'}</TableHead>
+                  <TableHead>{vi ? 'Lượt dùng' : 'Usage'}</TableHead>
+                  <TableHead>{vi ? 'Hết hạn' : 'Expiry'}</TableHead>
+                  <TableHead>{vi ? 'Trạng thái' : 'Status'}</TableHead>
+                  <TableHead className="text-right">{vi ? 'Xoá' : 'Remove'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -181,10 +191,10 @@ export function MentorVouchers() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {new Date(v.expiry).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {formatDate(v.expiry, lang, { day: '2-digit', month: 'short', year: 'numeric' })}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`border ${statusColor[v.status]}`}>{v.status}</Badge>
+                      <Badge className={`border ${statusColor[v.status]}`}>{statusLabel(v.status)}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" className="text-danger hover:bg-danger/10" onClick={() => remove(v.id)}>
@@ -199,8 +209,8 @@ export function MentorVouchers() {
         ) : (
           <div className="py-12 text-center text-muted-foreground">
             <Tag className="mx-auto mb-3 size-10 opacity-30" />
-            <p style={{ fontWeight: 500 }}>No vouchers yet</p>
-            <p className="text-sm">Create your first voucher to attract more students.</p>
+            <p style={{ fontWeight: 500 }}>{vi ? 'Chưa có voucher nào' : 'No vouchers yet'}</p>
+            <p className="text-sm">{vi ? 'Tạo voucher đầu tiên để thu hút thêm học viên.' : 'Create your first voucher to attract more students.'}</p>
           </div>
         )}
       </Card>
@@ -210,17 +220,17 @@ export function MentorVouchers() {
         <DialogContent className="max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Tag className="size-5 text-primary" /> Create mentor voucher
+              <Tag className="size-5 text-primary" /> {vi ? 'Tạo voucher mentor' : 'Create mentor voucher'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={submit} className="space-y-4">
             {/* Code */}
             <div>
               <div className="mb-1.5 flex items-center justify-between">
-                <Label>Voucher code</Label>
+                <Label>{vi ? 'Mã voucher' : 'Voucher code'}</Label>
                 <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                   <Switch checked={autoCode} onCheckedChange={(v) => { setAutoCode(v); if (v) generateCode(); }} />
-                  Auto-generate
+                  {vi ? 'Tự tạo mã' : 'Auto-generate'}
                 </label>
               </div>
               <div className="flex gap-2">
@@ -242,17 +252,17 @@ export function MentorVouchers() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="mb-1.5 block">Discount type</Label>
+                <Label className="mb-1.5 block">{vi ? 'Loại giảm giá' : 'Discount type'}</Label>
                 <Select value={type} onValueChange={(v) => setType(v as VoucherType)}>
                   <SelectTrigger className="bg-input-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="fixed">Fixed amount (₫)</SelectItem>
+                    <SelectItem value="percentage">{vi ? 'Phần trăm (%)' : 'Percentage (%)'}</SelectItem>
+                    <SelectItem value="fixed">{vi ? 'Số tiền cố định (₫)' : 'Fixed amount (₫)'}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="mb-1.5 block">Value</Label>
+                <Label className="mb-1.5 block">{vi ? 'Giá trị' : 'Value'}</Label>
                 <div className="relative">
                   <Input type="number" placeholder={type === 'percentage' ? '15' : '30000'} className="bg-input-background pr-8" required />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -264,28 +274,28 @@ export function MentorVouchers() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="mb-1.5 block">Min. order (₫)</Label>
+                <Label className="mb-1.5 block">{vi ? 'Đơn tối thiểu (₫)' : 'Min. order (₫)'}</Label>
                 <Input type="number" placeholder="80000" className="bg-input-background" />
               </div>
               <div>
-                <Label className="mb-1.5 block">Usage limit</Label>
+                <Label className="mb-1.5 block">{vi ? 'Giới hạn lượt dùng' : 'Usage limit'}</Label>
                 <Input type="number" placeholder="30" className="bg-input-background" required />
               </div>
             </div>
 
             <div>
-              <Label className="mb-1.5 block">Expiry date</Label>
+              <Label className="mb-1.5 block">{vi ? 'Ngày hết hạn' : 'Expiry date'}</Label>
               <Input type="date" className="bg-input-background" defaultValue="2026-09-30" required />
             </div>
 
             <div className="rounded-xl bg-accent/60 p-3 text-xs text-muted-foreground">
-              This voucher applies only to sessions booked with <strong>{myMentor.name}</strong>.
-              Discount is deducted from your earnings.
+              {vi ? <>Voucher này chỉ áp dụng cho các buổi học đặt với <strong>{myMentor.name}</strong>. Khoản giảm được trừ vào thu nhập của bạn.</>
+                  : <>This voucher applies only to sessions booked with <strong>{myMentor.name}</strong>. Discount is deducted from your earnings.</>}
             </div>
 
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button type="submit"><Plus className="size-4" /> Create</Button>
+              <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>{vi ? 'Huỷ' : 'Cancel'}</Button>
+              <Button type="submit"><Plus className="size-4" /> {vi ? 'Tạo' : 'Create'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

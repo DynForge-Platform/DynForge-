@@ -15,8 +15,11 @@ import { toast } from 'sonner';
 import {
   getMentorSchedule, mapStatusToDisplay, respondDispute, type BookingResponse,
 } from '../../services/bookingService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function TeacherDisputes() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<BookingResponse | null>(null);
@@ -27,7 +30,7 @@ export function TeacherDisputes() {
   useEffect(() => {
     getMentorSchedule()
       .then(setBookings)
-      .catch(() => toast.error('Failed to load disputes.'))
+      .catch(() => toast.error(vi ? 'Không tải được danh sách khiếu nại.' : 'Failed to load disputes.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -74,43 +77,43 @@ export function TeacherDisputes() {
   return (
     <div className="mx-auto max-w-[1100px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Disputes & Resolution</h1>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Khiếu nại & Giải quyết' : 'Disputes & Resolution'}</h1>
         <p className="mt-1 text-muted-foreground">
-          Student complaints raised against your sessions. You can submit your explanations and evidence for admin review.
+          {vi ? 'Khiếu nại của học viên đối với các buổi học của bạn. Bạn có thể gửi giải trình và bằng chứng để admin xem xét.' : 'Student complaints raised against your sessions. You can submit your explanations and evidence for admin review.'}
         </p>
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <KpiCard label="Open" value={String(counts.open)} icon={AlertTriangle} tone="warning" />
-        <KpiCard label="Refunded" value={String(counts.refunded)} icon={RefreshCcw} tone="success" />
-        <KpiCard label="Total value" value={formatCurrency(disputes.reduce((s, d) => s + d.price, 0))} icon={ShieldCheck} />
+        <KpiCard label={vi ? 'Đang mở' : 'Open'} value={String(counts.open)} icon={AlertTriangle} tone="warning" />
+        <KpiCard label={vi ? 'Đã hoàn tiền' : 'Refunded'} value={String(counts.refunded)} icon={RefreshCcw} tone="success" />
+        <KpiCard label={vi ? 'Tổng giá trị' : 'Total value'} value={formatCurrency(disputes.reduce((s, d) => s + d.price, 0))} icon={ShieldCheck} />
       </div>
 
       <Card className="border-border p-6">
-        <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>Dispute cases</h2>
+        <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Các vụ khiếu nại' : 'Dispute cases'}</h2>
         {loading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="size-5 animate-spin" /> Loading disputes…
+            <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải khiếu nại…' : 'Loading disputes…'}
           </div>
         ) : disputes.length ? (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Issue</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Response Status</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead>{vi ? 'Học viên' : 'Student'}</TableHead>
+                  <TableHead>{vi ? 'Môn học' : 'Course'}</TableHead>
+                  <TableHead>{vi ? 'Vấn đề' : 'Issue'}</TableHead>
+                  <TableHead>{vi ? 'Lý do' : 'Reason'}</TableHead>
+                  <TableHead>{vi ? 'Trạng thái phản hồi' : 'Response Status'}</TableHead>
+                  <TableHead>{vi ? 'Số tiền' : 'Amount'}</TableHead>
+                  <TableHead>{vi ? 'Trạng thái' : 'Status'}</TableHead>
+                  <TableHead className="text-right">{vi ? 'Thao tác' : 'Action'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {disputes.map((d) => (
                   <TableRow key={d.id}>
-                    <TableCell style={{ fontWeight: 500 }}>{d.menteeName ?? 'Student'}</TableCell>
+                    <TableCell style={{ fontWeight: 500 }}>{d.menteeName ?? (vi ? 'Học viên' : 'Student')}</TableCell>
                     <TableCell className="text-muted-foreground">{d.courseCode}</TableCell>
                     <TableCell className="text-muted-foreground">{d.disputeIssueType ?? '—'}</TableCell>
                     <TableCell className="max-w-[200px] text-muted-foreground">
@@ -133,7 +136,7 @@ export function TeacherDisputes() {
                     <TableCell><StatusBadge status={mapStatusToDisplay(d.status)} /></TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="outline" onClick={() => setSelected(d)}>
-                        <Eye className="size-4" /> {d.status === 'DISPUTED' && !d.disputeMentorResponse ? 'Phản hồi' : 'Chi tiết'}
+                        <Eye className="size-4" /> {d.status === 'DISPUTED' && !d.disputeMentorResponse ? (vi ? 'Phản hồi' : 'Respond') : (vi ? 'Chi tiết' : 'Details')}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -144,8 +147,8 @@ export function TeacherDisputes() {
         ) : (
           <EmptyState
             icon={AlertTriangle}
-            title="No disputes"
-            description="No student disputes have been raised against your sessions."
+            title={vi ? 'Không có khiếu nại' : 'No disputes'}
+            description={vi ? 'Chưa có khiếu nại nào của học viên đối với các buổi học của bạn.' : 'No student disputes have been raised against your sessions.'}
           />
         )}
       </Card>
@@ -161,7 +164,7 @@ export function TeacherDisputes() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-border p-3">
                   <p className="text-muted-foreground">Học viên</p>
-                  <p style={{ fontWeight: 500 }}>{selected.menteeName ?? 'Student'}</p>
+                  <p style={{ fontWeight: 500 }}>{selected.menteeName ?? (vi ? 'Học viên' : 'Student')}</p>
                 </div>
                 <div className="rounded-xl border border-border p-3">
                   <p className="text-muted-foreground">Số tiền ký quỹ</p>
@@ -190,7 +193,7 @@ export function TeacherDisputes() {
                   <p className="font-semibold text-primary">Phản hồi & Bằng chứng của bạn (Mentor)</p>
                   {selected.disputeRespondedAt && (
                     <span className="text-xs text-muted-foreground">
-                      Gửi lúc: {new Date(selected.disputeRespondedAt).toLocaleString('vi-VN')}
+                      Gửi lúc: {new Date(selected.disputeRespondedAt).toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-GB')}
                     </span>
                   )}
                 </div>

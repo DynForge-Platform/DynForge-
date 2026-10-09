@@ -42,7 +42,7 @@ export function DynForgeCinematicHome() {
     <div
       className="relative min-h-screen w-full overflow-hidden bg-transparent text-slate-50"
       style={{
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "var(--font-sans)",
       }}
     >
       {/* ── High-Performance Interactive Mouse-Following Light Effect ── */}
@@ -59,7 +59,7 @@ export function DynForgeCinematicHome() {
         {/* H1 Headline with GSAP Typewriter animation */}
         <h1
           className="text-5xl sm:text-7xl lg:text-8xl leading-[1.08] tracking-tight max-w-5xl font-normal text-white drop-shadow-md text-center"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
+          style={{ fontFamily: "var(--font-heading)" }}
         >
           {lang === 'vi' ? (
             <GsapTypewriter

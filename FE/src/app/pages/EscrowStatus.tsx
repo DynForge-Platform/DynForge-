@@ -29,6 +29,7 @@ import { Button } from '../components/ui/button';
 import { GsapCounter } from '../components/GsapCounter';
 import { MouseFollowLight } from '../components/MouseFollowLight';
 import { DynForgeEmblem } from '../components/Logo';
+import { formatDate } from '../lib/format';
 import { toast } from 'sonner';
 
 interface EscrowLocationState {
@@ -87,7 +88,7 @@ export function EscrowStatus() {
   const sessionDay = state.day ?? now.getDate() + 2;
   const sessionDateObj = new Date(sessionYear, sessionMonth, sessionDay);
 
-  const formattedDate = sessionDateObj.toLocaleDateString(isVi ? 'vi-VN' : 'en-US', {
+  const formattedDate = formatDate(sessionDateObj, lang, {
     weekday: 'long',
     day: '2-digit',
     month: '2-digit',
@@ -166,7 +167,7 @@ export function EscrowStatus() {
 
           <h1
             className="text-4xl sm:text-5xl lg:text-6xl font-normal text-white tracking-tight mb-3 animate-fade-rise drop-shadow-lg"
-            style={{ fontFamily: "'Instrument Serif', serif" }}
+            style={{ fontFamily: "var(--font-heading)" }}
           >
             {isVi ? 'Hợp Đồng Ký Quỹ' : 'DynForge Escrow'}{' '}
             <span className="bg-gradient-to-r from-cyan-300 via-teal-200 to-blue-400 bg-clip-text text-transparent italic">

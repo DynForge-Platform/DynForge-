@@ -5,6 +5,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../../components/ui/table';
 import { cn } from '../../components/ui/utils';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatDateTime } from '../../lib/format';
 
 const statusColor: Record<string, string> = {
   Success: 'bg-success/10 text-success border-success/20',
@@ -13,11 +15,13 @@ const statusColor: Record<string, string> = {
 };
 
 export function AdminAuditLogs() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   return (
     <div className="mx-auto max-w-[1200px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Audit Logs</h1>
-        <p className="mt-1 text-muted-foreground">Full history of admin actions on the platform.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Nhật ký kiểm toán' : 'Audit Logs'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Toàn bộ lịch sử thao tác của admin trên nền tảng.' : 'Full history of admin actions on the platform.'}</p>
       </div>
 
       <Card className="border-border p-6">
@@ -25,12 +29,12 @@ export function AdminAuditLogs() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Log ID</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{vi ? 'Mã nhật ký' : 'Log ID'}</TableHead>
+                <TableHead>{vi ? 'Hành động' : 'Action'}</TableHead>
+                <TableHead>{vi ? 'Người thực hiện' : 'Actor'}</TableHead>
+                <TableHead>{vi ? 'Đối tượng' : 'Target'}</TableHead>
+                <TableHead>{vi ? 'Thời gian' : 'Timestamp'}</TableHead>
+                <TableHead>{vi ? 'Trạng thái' : 'Status'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -41,7 +45,7 @@ export function AdminAuditLogs() {
                   <TableCell className="text-muted-foreground">{log.actor}</TableCell>
                   <TableCell className="text-muted-foreground">{log.target}</TableCell>
                   <TableCell className="text-muted-foreground whitespace-nowrap">
-                    {new Date(log.timestamp).toLocaleString('en-GB', {
+                    {formatDateTime(log.timestamp, lang, {
                       day: '2-digit',
                       month: 'short',
                       year: 'numeric',

@@ -28,6 +28,8 @@ const DASHBOARD_PATHS: Record<AuthRole, string> = {
 };
 
 function BrandPanel({ title, subtitle }: { title: string; subtitle: string }) {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   return (
     <div className="relative flex h-full min-h-screen flex-col justify-between overflow-hidden bg-[#020B18] p-10 lg:p-14 border-r border-white/10 text-slate-100">
       {/* Background ambient glowing lights */}
@@ -43,7 +45,7 @@ function BrandPanel({ title, subtitle }: { title: string; subtitle: string }) {
         </div>
         <h2
           className="text-white text-center mt-6 text-3xl lg:text-4xl font-normal leading-tight max-w-md"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
+          style={{ fontFamily: "var(--font-heading)" }}
         >
           {title}
         </h2>
@@ -51,8 +53,8 @@ function BrandPanel({ title, subtitle }: { title: string; subtitle: string }) {
       </div>
 
       <div className="flex items-center justify-between text-xs lg:text-sm text-slate-400 border-t border-white/10 pt-5">
-        <span className="flex items-center gap-2"><ShieldCheck className="size-4 text-cyan-400" /> Escrow Security 🛡️</span>
-        <span className="flex items-center gap-2"><Star className="size-4 text-amber-400" /> Verified Mentors ✨</span>
+        <span className="flex items-center gap-2"><ShieldCheck className="size-4 text-cyan-400" /> {vi ? 'Bảo mật ký quỹ 🛡️' : 'Escrow Security 🛡️'}</span>
+        <span className="flex items-center gap-2"><Star className="size-4 text-amber-400" /> {vi ? 'Mentor đã xác minh ✨' : 'Verified Mentors ✨'}</span>
       </div>
     </div>
   );
@@ -90,6 +92,8 @@ function GoogleButton() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const { loginWithGoogle } = useAuth();
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [clientId, setClientId] = useState<string | null>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
 
@@ -107,10 +111,10 @@ function GoogleButton() {
         callback: async (response: { credential: string }) => {
           try {
             const u = await loginWithGoogle(response.credential);
-            toast.success('Signed in with Google. Welcome!');
+            toast.success(vi ? 'Đã đăng nhập bằng Google. Chào mừng bạn!' : 'Signed in with Google. Welcome!');
             navigate(redirectTo ?? u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
           } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? 'Google sign-in failed. Please try again.');
+            toast.error(err?.response?.data?.message ?? (vi ? 'Đăng nhập Google thất bại. Vui lòng thử lại.' : 'Google sign-in failed. Please try again.'));
           }
         },
       });
@@ -136,14 +140,14 @@ function GoogleButton() {
   if (clientId === '') {
     return (
       <Button variant="outline" className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-full h-11"
-        onClick={() => toast.info('Google Sign-In chưa được cấu hình (google.client-id trong application.properties).')}>
+        onClick={() => toast.info(vi ? 'Google Sign-In chưa được cấu hình (google.client-id trong application.properties).' : 'Google Sign-In is not configured (google.client-id in application.properties).')}>
         <svg className="size-4 mr-2" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/>
           <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"/>
         </svg>
-        Continue with Google
+        {vi ? 'Tiếp tục với Google' : 'Continue with Google'}
       </Button>
     );
   }
@@ -165,16 +169,16 @@ export function Login() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error('Vui lòng nhập Email và Mật khẩu.');
+      toast.error(lang === 'vi' ? 'Vui lòng nhập Email và Mật khẩu.' : 'Please enter your email and password.');
       return;
     }
     setLoading(true);
     try {
       const u = await loginWithCredentials(email, password);
-      toast.success('Welcome back!');
+      toast.success(lang === 'vi' ? 'Chào mừng bạn trở lại!' : 'Welcome back!');
       navigate(redirectTo ?? u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Invalid email or password.');
+      toast.error(err?.response?.data?.message ?? (lang === 'vi' ? 'Email hoặc mật khẩu không đúng.' : 'Invalid email or password.'));
     } finally {
       setLoading(false);
     }
@@ -182,10 +186,10 @@ export function Login() {
 
   return (
     <AuthShell
-      title="Learn from mentors who have been there."
-      subtitle="Book verified seniors, alumni, and lecturers for course tutoring, thesis support, and career advice."
+      title={lang === 'vi' ? 'Học từ những người đi trước.' : 'Learn from mentors who have been there.'}
+      subtitle={lang === 'vi' ? 'Đặt lịch với các anh chị khóa trên, cựu sinh viên và giảng viên đã xác minh để được kèm môn, hỗ trợ đồ án và tư vấn nghề nghiệp.' : 'Book verified seniors, alumni, and lecturers for course tutoring, thesis support, and career advice.'}
     >
-      <h1 className="text-3xl text-white font-normal mb-1" style={{ fontFamily: "'Instrument Serif', serif" }}>
+      <h1 className="text-3xl text-white font-bold mb-1" style={{ fontFamily: "var(--font-heading)" }}>
         {T.welcomeBack}
       </h1>
       <p className="text-xs text-slate-400 mb-6">{T.loginSubtitle}</p>
@@ -250,7 +254,7 @@ export function Register() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
-      toast.error('Vui lòng điền đầy đủ Họ tên, Email và Mật khẩu.');
+      toast.error(lang === 'vi' ? 'Vui lòng điền đầy đủ Họ tên, Email và Mật khẩu.' : 'Please fill in your full name, email, and password.');
       return;
     }
     setLoading(true);
@@ -265,10 +269,10 @@ export function Register() {
       });
       // Scope mentor discovery to the chosen university (verify later via school email).
       if (universityCode) setSelectedCode(universityCode);
-      toast.success('Account created successfully!');
+      toast.success(lang === 'vi' ? 'Tạo tài khoản thành công!' : 'Account created successfully!');
       navigate(u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Registration failed. Please check your inputs.');
+      toast.error(err?.response?.data?.message ?? (lang === 'vi' ? 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.' : 'Registration failed. Please check your inputs.'));
     } finally {
       setLoading(false);
     }
@@ -276,10 +280,10 @@ export function Register() {
 
   return (
     <AuthShell
-      title="Join DynForge today."
-      subtitle="Connect with verified academic mentors and accelerate your university journey."
+      title={lang === 'vi' ? 'Gia nhập DynForge hôm nay.' : 'Join DynForge today.'}
+      subtitle={lang === 'vi' ? 'Kết nối với các mentor học thuật đã xác minh và tăng tốc hành trình đại học của bạn.' : 'Connect with verified academic mentors and accelerate your university journey.'}
     >
-      <h1 className="text-3xl text-white font-normal mb-1" style={{ fontFamily: "'Instrument Serif', serif" }}>
+      <h1 className="text-3xl text-white font-bold mb-1" style={{ fontFamily: "var(--font-heading)" }}>
         {T.createAccount}
       </h1>
       <p className="text-xs text-slate-400 mb-6">{T.registerSubtitle}</p>

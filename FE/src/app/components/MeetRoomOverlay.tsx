@@ -3,6 +3,7 @@ import { PhoneOff, Circle, Square, Loader2, ShieldCheck, NotebookPen, Sparkles, 
 import { toast } from 'sonner';
 import { uploadRecording } from '../services/recordingService';
 import { askSession, rewriteNote } from '../services/aiService';
+import { useLanguage } from '../context/LanguageContext';
 
 interface MeetProps {
   bookingId: string;
@@ -15,7 +16,7 @@ interface MeetProps {
 }
 
 // ── In-meeting notes panel (persisted per booking, AI rewrites the main points) ──
-function NotesPanel({ bookingId, onClose }: { bookingId: string; onClose: () => void }) {
+function NotesPanel({ bookingId, onClose, vi }: { bookingId: string; onClose: () => void; vi: boolean }) {
   const storageKey = `dynforge_meet_note_${bookingId}`;
   const [note, setNote] = useState(() => localStorage.getItem(storageKey) ?? localStorage.getItem(`gradora_meet_note_${bookingId}`) ?? '');
   const [rewriting, setRewriting] = useState(false);
@@ -31,9 +32,9 @@ function NotesPanel({ bookingId, onClose }: { bookingId: string; onClose: () => 
     try {
       const rewritten = await rewriteNote(bookingId, note.trim());
       setNote(rewritten);
-      toast.success('AI đã viết lại nội dung chính của ghi chú.');
+      toast.success(vi ? 'AI đã viết lại nội dung chính của ghi chú.' : 'AI rewrote the key points of your note.');
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Không viết lại được ghi chú.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không viết lại được ghi chú.' : 'Could not rewrite the note.'));
     } finally {
       setRewriting(false);
     }
@@ -43,7 +44,7 @@ function NotesPanel({ bookingId, onClose }: { bookingId: string; onClose: () => 
     <div className="flex w-80 shrink-0 flex-col rounded-2xl bg-[#1c1f2e] p-3">
       <div className="mb-2 flex items-center justify-between">
         <p className="flex items-center gap-1.5 text-sm text-white" style={{ fontWeight: 600 }}>
-          <NotebookPen className="size-4" /> Ghi chú buổi học
+          <NotebookPen className="size-4" /> {vi ? 'Ghi chú buổi học' : 'Session notes'}
         </p>
         <button onClick={onClose} className="rounded-lg p-1 text-white/50 hover:bg-white/10 hover:text-white">
           <X className="size-4" />
@@ -52,7 +53,7 @@ function NotesPanel({ bookingId, onClose }: { bookingId: string; onClose: () => 
       <textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Ghi nhanh những gì được dạy, bài tập, điều chưa hiểu…"
+        placeholder={vi ? 'Ghi nhanh những gì được dạy, bài tập, điều chưa hiểu…' : 'Jot down what was taught, exercises, unclear points…'}
         className="min-h-0 flex-1 resize-none rounded-xl border border-white/10 bg-[#0f1117] p-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-primary"
       />
       <button
@@ -62,10 +63,10 @@ function NotesPanel({ bookingId, onClose }: { bookingId: string; onClose: () => 
         style={{ fontWeight: 600 }}
       >
         {rewriting
-          ? <><Loader2 className="size-4 animate-spin" /> Đang viết lại…</>
-          : <><Sparkles className="size-4" /> Dùng AI viết lại nội dung chính</>}
+          ? <><Loader2 className="size-4 animate-spin" /> {vi ? 'Đang viết lại…' : 'Rewriting…'}</>
+          : <><Sparkles className="size-4" /> {vi ? 'Dùng AI viết lại nội dung chính' : 'Use AI to rewrite key points'}</>}
       </button>
-      <p className="mt-1.5 text-center text-[11px] text-white/40">Ghi chú tự lưu trên máy của bạn.</p>
+      <p className="mt-1.5 text-center text-[11px] text-white/40">{vi ? 'Ghi chú tự lưu trên máy của bạn.' : 'Notes are auto-saved on your device.'}</p>
     </div>
   );
 }
@@ -73,9 +74,11 @@ function NotesPanel({ bookingId, onClose }: { bookingId: string; onClose: () => 
 // ── Floating AI chat popup (grounded in this session) ──────────────────────────
 interface ChatMsg { mine: boolean; text: string }
 
-function AiChatPopup({ bookingId, course, onClose }: { bookingId: string; course: string; onClose: () => void }) {
+function AiChatPopup({ bookingId, course, onClose, vi }: { bookingId: string; course: string; onClose: () => void; vi: boolean }) {
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { mine: false, text: `Chào bạn! Mình là trợ lý AI của DynForge. Hỏi mình bất cứ điều gì về buổi học ${course} này nhé.` },
+    { mine: false, text: vi
+      ? `Chào bạn! Mình là trợ lý AI của DynForge. Hỏi mình bất cứ điều gì về buổi học ${course} này nhé.`
+      : `Hi! I'm the DynForge AI assistant. Ask me anything about this ${course} session.` },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -96,7 +99,7 @@ function AiChatPopup({ bookingId, course, onClose }: { bookingId: string; course
       const res = await askSession(bookingId, question);
       setMessages((m) => [...m, { mine: false, text: res.answer }]);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'AI không trả lời được, thử lại nhé.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'AI không trả lời được, thử lại nhé.' : "The AI couldn't respond, please try again."));
     } finally {
       setLoading(false);
     }
@@ -106,7 +109,7 @@ function AiChatPopup({ bookingId, course, onClose }: { bookingId: string; course
     <div className="absolute bottom-24 right-6 z-10 flex h-[420px] w-80 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#1c1f2e] shadow-2xl">
       <div className="flex items-center justify-between bg-primary/20 px-3 py-2.5">
         <p className="flex items-center gap-1.5 text-sm text-white" style={{ fontWeight: 600 }}>
-          <Sparkles className="size-4 text-primary" /> Trợ lý AI
+          <Sparkles className="size-4 text-primary" /> {vi ? 'Trợ lý AI' : 'AI assistant'}
         </p>
         <button onClick={onClose} className="rounded-lg p-1 text-white/50 hover:bg-white/10 hover:text-white">
           <X className="size-4" />
@@ -125,7 +128,7 @@ function AiChatPopup({ bookingId, course, onClose }: { bookingId: string; course
         {loading && (
           <div className="flex justify-start">
             <p className="flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2 text-sm text-white/70">
-              <Loader2 className="size-3.5 animate-spin" /> Đang suy nghĩ…
+              <Loader2 className="size-3.5 animate-spin" /> {vi ? 'Đang suy nghĩ…' : 'Thinking…'}
             </p>
           </div>
         )}
@@ -134,7 +137,7 @@ function AiChatPopup({ bookingId, course, onClose }: { bookingId: string; course
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Hỏi về buổi học…"
+          placeholder={vi ? 'Hỏi về buổi học…' : 'Ask about the session…'}
           className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#0f1117] px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <button
@@ -150,6 +153,8 @@ function AiChatPopup({ bookingId, course, onClose }: { bookingId: string; course
 }
 
 export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durationMinutes, displayName, onClose }: MeetProps) {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [elapsed, setElapsed] = useState('00:00');
   const [recording, setRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -184,9 +189,9 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
         setUploading(true);
         try {
           await uploadRecording(bookingId, blob);
-          toast.success('Recording saved — available to admins as dispute evidence.');
+          toast.success(vi ? 'Đã lưu bản ghi — admin có thể dùng làm bằng chứng tranh chấp.' : 'Recording saved — available to admins as dispute evidence.');
         } catch (err: any) {
-          toast.error(err?.response?.data?.message ?? 'Could not upload recording.');
+          toast.error(err?.response?.data?.message ?? (vi ? 'Không tải lên được bản ghi.' : 'Could not upload recording.'));
         } finally {
           setUploading(false);
         }
@@ -199,9 +204,9 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
       recorder.start();
       recorderRef.current = recorder;
       setRecording(true);
-      toast.info('Recording started — pick the meeting tab/window to capture.');
+      toast.info(vi ? 'Đã bắt đầu ghi — chọn tab/cửa sổ buổi học để ghi lại.' : 'Recording started — pick the meeting tab/window to capture.');
     } catch {
-      toast.error('Screen recording was cancelled or blocked.');
+      toast.error(vi ? 'Ghi màn hình đã bị huỷ hoặc bị chặn.' : 'Screen recording was cancelled or blocked.');
     }
   };
 
@@ -212,7 +217,7 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
 
   const end = () => {
     if (recording) stopRecording();
-    toast.success('Session ended. Please mark it as completed.');
+    toast.success(vi ? 'Đã kết thúc buổi học. Vui lòng đánh dấu hoàn thành.' : 'Session ended. Please mark it as completed.');
     onClose();
   };
 
@@ -224,7 +229,7 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-white text-xs" style={{ fontWeight: 700 }}>G</span>
           <div>
             <p className="text-sm text-white" style={{ fontWeight: 600 }}>{course}</p>
-            <p className="text-xs text-white/50">with {partnerName} · {durationMinutes} min</p>
+            <p className="text-xs text-white/50">{vi ? 'cùng' : 'with'} {partnerName} · {durationMinutes} {vi ? 'phút' : 'min'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -243,8 +248,8 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
           allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
           className="h-full w-full min-w-0 flex-1 rounded-2xl border-0 bg-[#1c1f2e]"
         />
-        {notesOpen && <NotesPanel bookingId={bookingId} onClose={() => setNotesOpen(false)} />}
-        {chatOpen && <AiChatPopup bookingId={bookingId} course={course} onClose={() => setChatOpen(false)} />}
+        {notesOpen && <NotesPanel bookingId={bookingId} onClose={() => setNotesOpen(false)} vi={vi} />}
+        {chatOpen && <AiChatPopup bookingId={bookingId} course={course} onClose={() => setChatOpen(false)} vi={vi} />}
       </div>
 
       {/* Controls */}
@@ -256,7 +261,7 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
           }`}
           style={{ fontWeight: 600 }}
         >
-          <NotebookPen className="size-4" /> Notes
+          <NotebookPen className="size-4" /> {vi ? 'Ghi chú' : 'Notes'}
         </button>
 
         <button
@@ -266,12 +271,12 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
           }`}
           style={{ fontWeight: 600 }}
         >
-          <Sparkles className="size-4" /> AI chat
+          <Sparkles className="size-4" /> {vi ? 'Chat AI' : 'AI chat'}
         </button>
 
         {uploading ? (
           <span className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 text-sm text-white">
-            <Loader2 className="size-4 animate-spin" /> Saving recording…
+            <Loader2 className="size-4 animate-spin" /> {vi ? 'Đang lưu bản ghi…' : 'Saving recording…'}
           </span>
         ) : recording ? (
           <button
@@ -279,7 +284,7 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
             className="flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 text-sm text-white transition-opacity hover:opacity-90"
             style={{ fontWeight: 600 }}
           >
-            <Square className="size-4 fill-white" /> Stop recording
+            <Square className="size-4 fill-white" /> {vi ? 'Dừng ghi' : 'Stop recording'}
           </button>
         ) : (
           <button
@@ -287,7 +292,7 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
             className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 text-sm text-white transition-colors hover:bg-white/20"
             style={{ fontWeight: 600 }}
           >
-            <Circle className="size-4 fill-red-500 text-red-500" /> Record session
+            <Circle className="size-4 fill-red-500 text-red-500" /> {vi ? 'Ghi buổi học' : 'Record session'}
           </button>
         )}
 
@@ -296,12 +301,12 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
           className="flex items-center gap-2 rounded-2xl bg-danger px-6 py-3 text-white transition-opacity hover:opacity-90"
           style={{ fontWeight: 600 }}
         >
-          <PhoneOff className="size-4" /> End
+          <PhoneOff className="size-4" /> {vi ? 'Kết thúc' : 'End'}
         </button>
       </div>
 
       <div className="flex items-center justify-center gap-1.5 pb-4 text-xs text-white/40">
-        <ShieldCheck className="size-3.5" /> Recordings are stored securely and only visible to DynForge admins for dispute review.
+        <ShieldCheck className="size-3.5" /> {vi ? 'Bản ghi được lưu an toàn và chỉ admin DynForge xem được để xử lý tranh chấp.' : 'Recordings are stored securely and only visible to DynForge admins for dispute review.'}
       </div>
     </div>
   );

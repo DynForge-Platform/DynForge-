@@ -8,19 +8,21 @@ import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
-const notifToggles = [
-  { label: 'New student bookings', description: 'Get notified when a student requests a session.', key: 'booking' },
-  { label: 'Session reminders', description: '24h and 1h reminder before each session.', key: 'reminder' },
-  { label: 'Payment releases', description: 'When escrow funds are released to your wallet.', key: 'payment' },
-  { label: 'Dispute updates', description: 'Progress updates on disputes involving your sessions.', key: 'dispute' },
-  { label: 'Review alerts', description: 'When a student leaves you a review.', key: 'review' },
-  { label: 'Platform news', description: 'Feature updates and DynForge announcements.', key: 'news' },
-];
-
 export function TeacherSettings() {
   const { user } = useAuth();
   const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const navigate = useNavigate();
+
+  const notifToggles = [
+    { key: 'booking', label: vi ? 'Yêu cầu đặt lịch mới' : 'New student bookings', description: vi ? 'Nhận thông báo khi học viên yêu cầu một buổi học.' : 'Get notified when a student requests a session.' },
+    { key: 'reminder', label: vi ? 'Nhắc lịch buổi học' : 'Session reminders', description: vi ? 'Nhắc trước mỗi buổi học 24 giờ và 1 giờ.' : '24h and 1h reminder before each session.' },
+    { key: 'payment', label: vi ? 'Giải ngân thanh toán' : 'Payment releases', description: vi ? 'Khi tiền ký quỹ được giải ngân về ví của bạn.' : 'When escrow funds are released to your wallet.' },
+    { key: 'dispute', label: vi ? 'Cập nhật tranh chấp' : 'Dispute updates', description: vi ? 'Cập nhật tiến độ các tranh chấp liên quan đến buổi học của bạn.' : 'Progress updates on disputes involving your sessions.' },
+    { key: 'review', label: vi ? 'Thông báo đánh giá' : 'Review alerts', description: vi ? 'Khi học viên để lại đánh giá cho bạn.' : 'When a student leaves you a review.' },
+    { key: 'news', label: vi ? 'Tin tức nền tảng' : 'Platform news', description: vi ? 'Cập nhật tính năng và thông báo từ DynForge.' : 'Feature updates and DynForge announcements.' },
+  ];
+
   const [notifs, setNotifs] = useState<Record<string, boolean>>(
     Object.fromEntries(notifToggles.map((n, i) => [n.key, i < 4]))
   );
@@ -29,20 +31,20 @@ export function TeacherSettings() {
   return (
     <div className="mx-auto max-w-[760px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Settings</h1>
-        <p className="mt-1 text-muted-foreground">Manage your account and notification preferences.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Cài đặt' : 'Settings'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Quản lý tài khoản và tùy chọn thông báo của bạn.' : 'Manage your account and notification preferences.'}</p>
       </div>
 
       <div className="space-y-6">
         <Card className="border-border p-6">
           <h2 className="mb-4 flex items-center gap-2" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-            <Lock className="size-5 text-muted-foreground" /> Account
+            <Lock className="size-5 text-muted-foreground" /> {vi ? 'Tài khoản' : 'Account'}
           </h2>
           <div className="space-y-3">
             {[
-              { label: 'Email address', value: user?.email ?? '—', action: 'Manage', onClick: () => navigate('/mentor/profile') },
-              { label: 'Account language', value: lang === 'vi' ? 'Tiếng Việt' : 'English', action: 'Change' },
-              { label: 'Time zone', value: 'GMT+7 (Ho Chi Minh City)', action: 'Change' },
+              { label: vi ? 'Địa chỉ email' : 'Email address', value: user?.email ?? '—', action: vi ? 'Quản lý' : 'Manage', onClick: () => navigate('/mentor/profile') },
+              { label: vi ? 'Ngôn ngữ tài khoản' : 'Account language', value: lang === 'vi' ? 'Tiếng Việt' : 'English', action: vi ? 'Đổi' : 'Change' },
+              { label: vi ? 'Múi giờ' : 'Time zone', value: 'GMT+7 (Ho Chi Minh City)', action: vi ? 'Đổi' : 'Change' },
             ].map((r) => (
               <div key={r.label} className="flex items-center justify-between rounded-xl border border-border p-3">
                 <div>
@@ -57,7 +59,7 @@ export function TeacherSettings() {
 
         <Card className="border-border p-6">
           <h2 className="mb-4 flex items-center gap-2" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-            <Bell className="size-5 text-muted-foreground" /> Notification preferences
+            <Bell className="size-5 text-muted-foreground" /> {vi ? 'Tùy chọn thông báo' : 'Notification preferences'}
           </h2>
           <div className="space-y-4">
             {notifToggles.map((n) => (
@@ -74,13 +76,13 @@ export function TeacherSettings() {
 
         <Card className="border-danger/20 border-border p-6">
           <h2 className="mb-2 flex items-center gap-2 text-danger" style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-            <Trash2 className="size-5" /> Danger zone
+            <Trash2 className="size-5" /> {vi ? 'Vùng nguy hiểm' : 'Danger zone'}
           </h2>
           <p className="mb-4 text-sm text-muted-foreground">
-            Deleting your mentor account removes your profile, all sessions, and earnings history permanently.
+            {vi ? 'Xoá tài khoản mentor sẽ xoá vĩnh viễn hồ sơ, toàn bộ buổi học và lịch sử thu nhập của bạn.' : 'Deleting your mentor account removes your profile, all sessions, and earnings history permanently.'}
           </p>
-          <Button variant="destructive" onClick={() => toast.error('Account deletion requires email confirmation.')}>
-            Delete mentor account
+          <Button variant="destructive" onClick={() => toast.error(vi ? 'Xoá tài khoản cần xác nhận qua email.' : 'Account deletion requires email confirmation.')}>
+            {vi ? 'Xoá tài khoản mentor' : 'Delete mentor account'}
           </Button>
         </Card>
       </div>

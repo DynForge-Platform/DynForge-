@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import {
   getMyMentorProfile, updateMyMentorProfile, type MentorProfileResponse,
 } from '../../services/mentorService';
+import { useLanguage } from '../../context/LanguageContext';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_FULL: Record<string, string> = {
@@ -40,6 +41,8 @@ function labelToFormats(label: string): string[] {
 }
 
 export function TeacherAvailability() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [profile, setProfile] = useState<MentorProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -103,9 +106,9 @@ export function TeacherAvailability() {
         formats: labelToFormats(format),
         availability,
       });
-      toast.success('Availability updated successfully.');
+      toast.success(vi ? 'Đã cập nhật lịch rảnh thành công.' : 'Availability updated successfully.');
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Could not save availability.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không lưu được lịch rảnh.' : 'Could not save availability.'));
     } finally {
       setSaving(false);
     }
@@ -114,7 +117,7 @@ export function TeacherAvailability() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
-        <Loader2 className="size-5 animate-spin" /> Loading availability…
+        <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải lịch rảnh…' : 'Loading availability…'}
       </div>
     );
   }

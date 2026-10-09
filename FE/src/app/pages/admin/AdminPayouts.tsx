@@ -18,6 +18,8 @@ import {
   listAdminTransactions, listAdminDisputes, resolveDispute,
   type AdminTransaction, type AdminDispute,
 } from '../../services/adminService';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatDate } from '../../lib/format';
 
 const typeColor: Record<string, string> = {
   PAYOUT: 'bg-success/10 text-success border-success/20',
@@ -26,6 +28,8 @@ const typeColor: Record<string, string> = {
 };
 
 export function AdminPayouts() {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [tab, setTab] = useState('payouts');
   const [txns, setTxns] = useState<AdminTransaction[]>([]);
   const [disputes, setDisputes] = useState<AdminDispute[]>([]);
@@ -55,11 +59,11 @@ export function AdminPayouts() {
     setActing(true);
     try {
       await resolveDispute(refundTarget.bookingId, false); // false = refund student
-      toast.success('Refund issued — funds returned to the student\'s wallet.');
+      toast.success(vi ? 'Đã hoàn tiền — tiền trả về ví của học viên.' : "Refund issued — funds returned to the student's wallet.");
       setRefundTarget(null);
       fetchAll();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Could not issue refund.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không thể hoàn tiền.' : 'Could not issue refund.'));
     } finally {
       setActing(false);
     }
@@ -68,34 +72,34 @@ export function AdminPayouts() {
   return (
     <div className="mx-auto max-w-[1200px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Payouts &amp; Refunds</h1>
-        <p className="mt-1 text-muted-foreground">Mentor payouts ledger and mentee refunds for disputed sessions.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Giải ngân & Hoàn tiền' : 'Payouts & Refunds'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Sổ giải ngân cho mentor và hoàn tiền cho học viên với các buổi bị tranh chấp.' : 'Mentor payouts ledger and mentee refunds for disputed sessions.'}</p>
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <KpiCard label="Total paid to mentors" value={formatCurrency(totalPaidOut)} icon={TrendingUp} tone="success" />
-        <KpiCard label="Total refunded" value={formatCurrency(totalRefunded)} icon={Wallet} tone="warning" />
-        <KpiCard label="Pending refunds" value={String(disputes.length)} icon={HandCoins} />
+        <KpiCard label={vi ? 'Tổng đã trả mentor' : 'Total paid to mentors'} value={formatCurrency(totalPaidOut)} icon={TrendingUp} tone="success" />
+        <KpiCard label={vi ? 'Tổng đã hoàn tiền' : 'Total refunded'} value={formatCurrency(totalRefunded)} icon={Wallet} tone="warning" />
+        <KpiCard label={vi ? 'Hoàn tiền chờ xử lý' : 'Pending refunds'} value={String(disputes.length)} icon={HandCoins} />
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="mb-6">
         <TabsList>
-          <TabsTrigger value="payouts">Mentor Payouts</TabsTrigger>
-          <TabsTrigger value="refunds">Mentee Refunds</TabsTrigger>
+          <TabsTrigger value="payouts">{vi ? 'Giải ngân Mentor' : 'Mentor Payouts'}</TabsTrigger>
+          <TabsTrigger value="refunds">{vi ? 'Hoàn tiền học viên' : 'Mentee Refunds'}</TabsTrigger>
         </TabsList>
       </Tabs>
 
       {loading ? (
         <Card className="border-border p-6">
           <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="size-5 animate-spin" /> Loading…
+            <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải…' : 'Loading…'}
           </div>
         </Card>
       ) : tab === 'payouts' ? (
         /* ── Mentor Payouts ledger ─────────────────────────────── */
         <Card className="border-border p-6">
           <p className="mb-4 text-sm text-muted-foreground">
-            {payouts.length} payout transactions · Total <strong>{formatCurrency(totalPaidOut)}</strong>
+            {vi ? <>{payouts.length} giao dịch giải ngân · Tổng <strong>{formatCurrency(totalPaidOut)}</strong></> : <>{payouts.length} payout transactions · Total <strong>{formatCurrency(totalPaidOut)}</strong></>}
           </p>
           {payouts.length ? (
             <div className="overflow-x-auto">
@@ -103,11 +107,11 @@ export function AdminPayouts() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Mentor</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{vi ? 'Loại' : 'Type'}</TableHead>
+                    <TableHead>{vi ? 'Mô tả' : 'Description'}</TableHead>
+                    <TableHead>{vi ? 'Ngày' : 'Date'}</TableHead>
+                    <TableHead>{vi ? 'Số tiền' : 'Amount'}</TableHead>
+                    <TableHead>{vi ? 'Trạng thái' : 'Status'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -117,7 +121,7 @@ export function AdminPayouts() {
                       <TableCell><Badge className={`border ${typeColor[t.type] ?? 'border-border'}`}>{t.type}</Badge></TableCell>
                       <TableCell className="max-w-[240px] truncate text-muted-foreground">{t.description}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">
-                        {new Date(t.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {formatDate(t.createdAt, lang, { day: '2-digit', month: 'short', year: 'numeric' })}
                       </TableCell>
                       <TableCell style={{ fontWeight: 700 }}>{formatCurrency(t.amount)}</TableCell>
                       <TableCell><StatusBadge status={t.status} /></TableCell>
@@ -127,7 +131,7 @@ export function AdminPayouts() {
               </Table>
             </div>
           ) : (
-            <EmptyState icon={TrendingUp} title="No payouts yet" description="Mentor payouts and withdrawals will appear here." />
+            <EmptyState icon={TrendingUp} title={vi ? 'Chưa có khoản giải ngân' : 'No payouts yet'} description={vi ? 'Các khoản giải ngân và rút tiền của mentor sẽ hiển thị ở đây.' : 'Mentor payouts and withdrawals will appear here.'} />
           )}
         </Card>
       ) : (
@@ -136,20 +140,20 @@ export function AdminPayouts() {
           <Card className="border-border p-6">
             <div className="mb-4 flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-sm text-warning">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-              Refunding a disputed session releases the escrow back to the mentee's wallet and closes the dispute.
+              {vi ? 'Hoàn tiền một buổi bị tranh chấp sẽ trả ký quỹ về ví học viên và đóng tranh chấp.' : "Refunding a disputed session releases the escrow back to the mentee's wallet and closes the dispute."}
             </div>
-            <h2 className="mb-3" style={{ fontSize: '1.125rem', fontWeight: 600 }}>Disputed sessions (awaiting decision)</h2>
+            <h2 className="mb-3" style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Buổi bị tranh chấp (chờ quyết định)' : 'Disputed sessions (awaiting decision)'}</h2>
             {disputes.length ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
+                      <TableHead>{vi ? 'Học viên' : 'Student'}</TableHead>
                       <TableHead>Mentor</TableHead>
-                      <TableHead>Course</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead>{vi ? 'Môn học' : 'Course'}</TableHead>
+                      <TableHead>{vi ? 'Lý do' : 'Reason'}</TableHead>
+                      <TableHead>{vi ? 'Số tiền' : 'Amount'}</TableHead>
+                      <TableHead className="text-right">{vi ? 'Thao tác' : 'Action'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -164,7 +168,7 @@ export function AdminPayouts() {
                         <TableCell style={{ fontWeight: 600 }}>{formatCurrency(d.price)}</TableCell>
                         <TableCell className="text-right">
                           <Button size="sm" variant="outline" className="gap-1.5 text-danger border-danger/30 hover:bg-danger/5" onClick={() => setRefundTarget(d)}>
-                            <RefreshCcw className="size-3.5" /> Refund
+                            <RefreshCcw className="size-3.5" /> {vi ? 'Hoàn tiền' : 'Refund'}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -173,23 +177,23 @@ export function AdminPayouts() {
                 </Table>
               </div>
             ) : (
-              <EmptyState icon={RefreshCcw} title="No pending refunds" description="Disputed sessions awaiting a refund decision will appear here." />
+              <EmptyState icon={RefreshCcw} title={vi ? 'Không có hoàn tiền chờ xử lý' : 'No pending refunds'} description={vi ? 'Các buổi bị tranh chấp đang chờ quyết định hoàn tiền sẽ hiển thị ở đây.' : 'Disputed sessions awaiting a refund decision will appear here.'} />
             )}
           </Card>
 
           {/* Refund history */}
           <Card className="border-border p-6">
-            <h2 className="mb-3" style={{ fontSize: '1.125rem', fontWeight: 600 }}>Refund history</h2>
+            <h2 className="mb-3" style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Lịch sử hoàn tiền' : 'Refund history'}</h2>
             {refundTxns.length ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{vi ? 'Học viên' : 'Student'}</TableHead>
+                      <TableHead>{vi ? 'Mô tả' : 'Description'}</TableHead>
+                      <TableHead>{vi ? 'Ngày' : 'Date'}</TableHead>
+                      <TableHead>{vi ? 'Số tiền' : 'Amount'}</TableHead>
+                      <TableHead>{vi ? 'Trạng thái' : 'Status'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -198,7 +202,7 @@ export function AdminPayouts() {
                         <TableCell style={{ fontWeight: 500 }}>{t.userName ?? t.userId.slice(0, 8)}</TableCell>
                         <TableCell className="max-w-[260px] truncate text-muted-foreground">{t.description}</TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
-                          {new Date(t.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {formatDate(t.createdAt, lang, { day: '2-digit', month: 'short', year: 'numeric' })}
                         </TableCell>
                         <TableCell style={{ fontWeight: 600 }}>{formatCurrency(t.amount)}</TableCell>
                         <TableCell><StatusBadge status={t.status} /></TableCell>
@@ -208,7 +212,7 @@ export function AdminPayouts() {
                 </Table>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No refunds issued yet.</p>
+              <p className="text-sm text-muted-foreground">{vi ? 'Chưa có khoản hoàn tiền nào.' : 'No refunds issued yet.'}</p>
             )}
           </Card>
         </div>
@@ -220,16 +224,16 @@ export function AdminPayouts() {
           <DialogContent className="max-w-md" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <RefreshCcw className="size-5 text-danger" /> Issue refund
+                <RefreshCcw className="size-5 text-danger" /> {vi ? 'Thực hiện hoàn tiền' : 'Issue refund'}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  ['Student', refundTarget.menteeName ?? refundTarget.menteeId],
+                  [vi ? 'Học viên' : 'Student', refundTarget.menteeName ?? refundTarget.menteeId],
                   ['Mentor', refundTarget.mentorName ?? refundTarget.mentorId],
-                  ['Course', refundTarget.courseCode],
-                  ['Amount', formatCurrency(refundTarget.price)],
+                  [vi ? 'Môn học' : 'Course', refundTarget.courseCode],
+                  [vi ? 'Số tiền' : 'Amount', formatCurrency(refundTarget.price)],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-xl border border-border p-3">
                     <p className="text-muted-foreground">{label}</p>
@@ -239,19 +243,19 @@ export function AdminPayouts() {
               </div>
               {refundTarget.reason && (
                 <div className="rounded-xl border border-border p-3">
-                  <p className="text-muted-foreground mb-1">Student's reason</p>
+                  <p className="text-muted-foreground mb-1">{vi ? 'Lý do của học viên' : "Student's reason"}</p>
                   <p className="whitespace-pre-wrap">{refundTarget.reason}</p>
                 </div>
               )}
               <div className="flex items-start gap-2 rounded-xl bg-danger/5 border border-danger/20 p-3 text-danger">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                The full escrow amount will be credited back to the student's wallet. This closes the dispute.
+                {vi ? 'Toàn bộ số tiền ký quỹ sẽ được hoàn về ví học viên. Thao tác này đóng tranh chấp.' : "The full escrow amount will be credited back to the student's wallet. This closes the dispute."}
               </div>
             </div>
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={() => setRefundTarget(null)} disabled={acting}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setRefundTarget(null)} disabled={acting}>{vi ? 'Huỷ' : 'Cancel'}</Button>
               <Button variant="destructive" onClick={doRefund} disabled={acting}>
-                {acting ? <Loader2 className="size-4 animate-spin" /> : <><RefreshCcw className="size-4" /> Confirm refund</>}
+                {acting ? <Loader2 className="size-4 animate-spin" /> : <><RefreshCcw className="size-4" /> {vi ? 'Xác nhận hoàn tiền' : 'Confirm refund'}</>}
               </Button>
             </DialogFooter>
           </DialogContent>

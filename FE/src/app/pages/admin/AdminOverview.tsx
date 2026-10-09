@@ -20,10 +20,14 @@ import {
   type AdminDashboard, type AdminTransaction,
 } from '../../services/adminService';
 import { listVerifications, type VerificationItem } from '../../services/verificationService';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatDate } from '../../lib/format';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_VI = ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'];
 
-function buildTrend(txns: AdminTransaction[]) {
+function buildTrend(txns: AdminTransaction[], vi: boolean) {
+  const MONTHS = vi ? MONTHS_VI : MONTHS_EN;
   const now = new Date();
   const buckets: { key: string; month: string; revenue: number }[] = [];
   for (let i = 5; i >= 0; i--) {
@@ -41,6 +45,8 @@ function buildTrend(txns: AdminTransaction[]) {
 
 export function AdminOverview() {
   const navigate = useNavigate();
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [dash, setDash] = useState<AdminDashboard | null>(null);
   const [txns, setTxns] = useState<AdminTransaction[]>([]);
   const [pendingV, setPendingV] = useState<VerificationItem[]>([]);
@@ -55,17 +61,17 @@ export function AdminOverview() {
       setDash(d);
       setTxns(t);
       setPendingV(v);
-    }).catch(() => toast.error('Failed to load dashboard.'))
+    }).catch(() => toast.error(vi ? 'Không tải được bảng điều khiển.' : 'Failed to load dashboard.'))
       .finally(() => setLoading(false));
   }, []);
 
-  const trend = useMemo(() => buildTrend(txns), [txns]);
+  const trend = useMemo(() => buildTrend(txns, vi), [txns, vi]);
   const compact = (v: number) => (v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}M₫` : formatCurrency(v));
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
-        <Loader2 className="size-5 animate-spin" /> Loading dashboard…
+        <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải bảng điều khiển…' : 'Loading dashboard…'}
       </div>
     );
   }
@@ -73,27 +79,27 @@ export function AdminOverview() {
   return (
     <div className="mx-auto max-w-[1200px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Admin Dashboard</h1>
-        <p className="mt-1 text-muted-foreground">Platform overview — revenue, users, verifications, and disputes.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Bảng điều khiển Admin' : 'Admin Dashboard'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Tổng quan nền tảng — doanh thu, người dùng, xác minh và tranh chấp.' : 'Platform overview — revenue, users, verifications, and disputes.'}</p>
       </div>
 
       {/* KPIs */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <KpiCard label="Total students" value={String(dash?.totalMentees ?? 0)} icon={Users} />
-        <KpiCard label="Active mentors" value={String(dash?.totalMentors ?? 0)} icon={User} />
-        <KpiCard label="Total revenue" value={formatCurrency(dash?.totalRevenue ?? 0)} icon={TrendingUp} tone="success" />
-        <KpiCard label="Platform commission" value={formatCurrency(dash?.totalCommission ?? 0)} icon={Wallet} tone="success" />
-        <KpiCard label="In escrow" value={formatCurrency(dash?.escrowHeld ?? 0)} icon={Clock} tone="warning" />
-        <KpiCard label="Open disputes" value={String(dash?.disputedBookings ?? 0)} icon={AlertTriangle} tone="warning" />
+        <KpiCard label={vi ? 'Tổng học viên' : 'Total students'} value={String(dash?.totalMentees ?? 0)} icon={Users} />
+        <KpiCard label={vi ? 'Mentor hoạt động' : 'Active mentors'} value={String(dash?.totalMentors ?? 0)} icon={User} />
+        <KpiCard label={vi ? 'Tổng doanh thu' : 'Total revenue'} value={formatCurrency(dash?.totalRevenue ?? 0)} icon={TrendingUp} tone="success" />
+        <KpiCard label={vi ? 'Hoa hồng nền tảng' : 'Platform commission'} value={formatCurrency(dash?.totalCommission ?? 0)} icon={Wallet} tone="success" />
+        <KpiCard label={vi ? 'Đang ký quỹ' : 'In escrow'} value={formatCurrency(dash?.escrowHeld ?? 0)} icon={Clock} tone="warning" />
+        <KpiCard label={vi ? 'Tranh chấp đang mở' : 'Open disputes'} value={String(dash?.disputedBookings ?? 0)} icon={AlertTriangle} tone="warning" />
       </div>
 
       <div className="mb-6 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         {/* Revenue chart */}
         <Card className="border-border p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Revenue trends</h2>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Xu hướng doanh thu' : 'Revenue trends'}</h2>
             <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/admin/commission-revenue')}>
-              Full report <ArrowRight className="size-4" />
+              {vi ? 'Báo cáo đầy đủ' : 'Full report'} <ArrowRight className="size-4" />
             </Button>
           </div>
           <div className="h-52">
@@ -111,7 +117,7 @@ export function AdminOverview() {
                 <XAxis key="x" dataKey="month" tickLine={false} axisLine={false} stroke="var(--muted-foreground)" fontSize={12} />
                 <YAxis key="y" tickFormatter={compact} tickLine={false} axisLine={false} stroke="var(--muted-foreground)" fontSize={12} width={48} />
                 <Tooltip key="tip" formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.1)', backgroundColor: '#090f1e', color: '#f8fafc' }} />
-                <Area key="area-rev" type="monotone" dataKey="revenue" stroke="var(--chart-1)" strokeWidth={2} fill="url(#arev)" name="Payments in" />
+                <Area key="area-rev" type="monotone" dataKey="revenue" stroke="var(--chart-1)" strokeWidth={2} fill="url(#arev)" name={vi ? 'Tiền vào' : 'Payments in'} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -120,9 +126,9 @@ export function AdminOverview() {
         {/* Pending verifications */}
         <Card className="border-border p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Pending verifications</h2>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Chờ xác minh' : 'Pending verifications'}</h2>
             <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/admin/mentor-verification')}>
-              Review all <ArrowRight className="size-4" />
+              {vi ? 'Xét tất cả' : 'Review all'} <ArrowRight className="size-4" />
             </Button>
           </div>
           {pendingV.length ? (
@@ -133,12 +139,12 @@ export function AdminOverview() {
                     <p style={{ fontWeight: 500 }}>{v.userName ?? v.userId}</p>
                     <p className="text-sm text-muted-foreground">{v.course} · {v.claimedGrade}</p>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => navigate('/admin/mentor-verification')}>Review</Button>
+                  <Button size="sm" variant="outline" onClick={() => navigate('/admin/mentor-verification')}>{vi ? 'Xét duyệt' : 'Review'}</Button>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No pending verifications.</p>
+            <p className="text-sm text-muted-foreground">{vi ? 'Không có hồ sơ chờ xác minh.' : 'No pending verifications.'}</p>
           )}
         </Card>
       </div>
@@ -146,21 +152,21 @@ export function AdminOverview() {
       {/* Recent transactions */}
       <Card className="border-border p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Recent transactions</h2>
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Giao dịch gần đây' : 'Recent transactions'}</h2>
           <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/admin/transactions')}>
-            View all <ArrowRight className="size-4" />
+            {vi ? 'Xem tất cả' : 'View all'} <ArrowRight className="size-4" />
           </Button>
         </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{vi ? 'Người dùng' : 'User'}</TableHead>
+                <TableHead>{vi ? 'Loại' : 'Type'}</TableHead>
+                <TableHead>{vi ? 'Mô tả' : 'Description'}</TableHead>
+                <TableHead>{vi ? 'Ngày' : 'Date'}</TableHead>
+                <TableHead>{vi ? 'Số tiền' : 'Amount'}</TableHead>
+                <TableHead>{vi ? 'Trạng thái' : 'Status'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -170,7 +176,7 @@ export function AdminOverview() {
                   <TableCell className="text-muted-foreground">{t.type}</TableCell>
                   <TableCell className="max-w-[200px] truncate text-muted-foreground">{t.description}</TableCell>
                   <TableCell className="text-muted-foreground whitespace-nowrap">
-                    {new Date(t.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {formatDate(t.createdAt, lang, { day: '2-digit', month: 'short', year: 'numeric' })}
                   </TableCell>
                   <TableCell style={{ fontWeight: 500 }}>{formatCurrency(t.amount)}</TableCell>
                   <TableCell><StatusBadge status={t.status} /></TableCell>

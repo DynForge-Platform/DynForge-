@@ -53,7 +53,7 @@ export function Logo({
           className={`font-bold tracking-tight leading-none ${textSizes[size]} ${
             light ? 'text-white' : 'text-slate-900'
           }`}
-          style={{ fontFamily: "'Inter', sans-serif" }}
+          style={{ fontFamily: "var(--font-sans)" }}
         >
           <span>Dyn</span>
           <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">

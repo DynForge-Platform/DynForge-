@@ -195,7 +195,7 @@ export function SectionHeading({
           {eyebrow}
         </span>
       )}
-      <h2 className="text-2xl sm:text-4xl font-normal text-white" style={{ fontFamily: "'Instrument Serif', serif" }}>
+      <h2 className="text-2xl sm:text-4xl font-bold text-white" style={{ fontFamily: "var(--font-heading)" }}>
         {title}
       </h2>
       {subtitle && (
@@ -231,7 +231,7 @@ export function PageHeader({
       )}
       <h1
         className="text-4xl sm:text-6xl text-white font-normal leading-tight tracking-tight drop-shadow-md"
-        style={{ fontFamily: "'Instrument Serif', serif" }}
+        style={{ fontFamily: "var(--font-heading)" }}
       >
         {title}{' '}
         {highlightWord && (

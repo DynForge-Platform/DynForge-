@@ -9,7 +9,7 @@ export function VelorahLanding() {
       style={{
         backgroundColor: 'hsl(201, 100%, 13%)',
         color: 'hsl(0, 0%, 100%)',
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "var(--font-sans)",
         // Scoped color variables for Velorah theme
         ['--foreground' as any]: '0 0% 100%',
         ['--muted-foreground' as any]: '240 4% 66%',
@@ -32,7 +32,7 @@ export function VelorahLanding() {
         <Link
           to="/"
           className="text-3xl tracking-tight text-white font-normal hover:opacity-90 transition-opacity"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
+          style={{ fontFamily: "var(--font-heading)" }}
         >
           Velorah®
         </Link>
@@ -70,7 +70,7 @@ export function VelorahLanding() {
         {/* H1 Heading */}
         <h1
           className="text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-[-2.46px] max-w-7xl font-normal animate-fade-rise"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
+          style={{ fontFamily: "var(--font-heading)" }}
         >
           Where <span className="text-white">dreams</span> rise{' '}
           <span className="text-white/70 italic">through the silence.</span>

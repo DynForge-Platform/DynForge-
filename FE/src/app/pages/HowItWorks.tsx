@@ -96,7 +96,7 @@ export function HowItWorks() {
             <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
               {vi ? 'DÀNH CHO SINH VIÊN' : 'FOR LEARNERS'}
             </span>
-            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="text-4xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {vi ? '4 bước học cùng Mentor' : 'How to learn with a mentor'}
             </h2>
           </div>
@@ -110,7 +110,7 @@ export function HowItWorks() {
                     <div className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
                       <Icon className="size-5" />
                     </div>
-                    <span className="text-2xl font-light text-slate-500" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                    <span className="text-2xl font-light text-slate-500" style={{ fontFamily: "var(--font-heading)" }}>
                       0{idx + 1}
                     </span>
                   </div>
@@ -128,7 +128,7 @@ export function HowItWorks() {
             <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
               {vi ? 'DÀNH CHO GIA SƯ' : 'FOR MENTORS'}
             </span>
-            <h2 className="text-4xl text-white font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="text-4xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {vi ? '3 bước chia sẻ kiến thức & nhận thù lao' : 'How to mentor on DynForge'}
             </h2>
           </div>
@@ -142,7 +142,7 @@ export function HowItWorks() {
                     <div className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
                       <Icon className="size-5" />
                     </div>
-                    <span className="text-2xl font-light text-slate-500" style={{ fontFamily: "'Instrument Serif', serif" }}>
+                    <span className="text-2xl font-light text-slate-500" style={{ fontFamily: "var(--font-heading)" }}>
                       0{idx + 1}
                     </span>
                   </div>
@@ -156,7 +156,7 @@ export function HowItWorks() {
 
         {/* CTA Bottom Section */}
         <section className="rounded-3xl border border-white/10 bg-[#090f1e]/60 backdrop-blur-md p-8 sm:p-14 text-center space-y-6 shadow-2xl">
-          <h2 className="text-3xl sm:text-5xl text-white font-normal max-w-2xl mx-auto" style={{ fontFamily: "'Instrument Serif', serif" }}>
+          <h2 className="text-3xl sm:text-5xl text-white font-bold max-w-2xl mx-auto" style={{ fontFamily: "var(--font-heading)" }}>
             {vi ? 'Sẵn sàng chinh phục môn học?' : 'Ready to master your courses?'}
           </h2>
           <p className="text-white/70 text-sm max-w-xl mx-auto">

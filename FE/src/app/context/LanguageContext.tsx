@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import t, { Lang, TranslationKeys } from '../i18n/translations';
 
 interface LangCtx {
@@ -8,21 +8,26 @@ interface LangCtx {
 }
 
 const LanguageContext = createContext<LangCtx>({
-  lang: 'en',
+  lang: 'vi',
   setLang: () => {},
-  T: t.en,
+  T: t.vi,
 });
 
 const STORAGE_KEY = 'dynforge_lang';
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(
-    () => (localStorage.getItem(STORAGE_KEY) as Lang) || (localStorage.getItem('gradora_lang') as Lang) || 'en'
+    () => (localStorage.getItem(STORAGE_KEY) as Lang) || (localStorage.getItem('gradora_lang') as Lang) || 'vi'
   );
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   const setLang = (l: Lang) => {
     setLangState(l);
     localStorage.setItem(STORAGE_KEY, l);
+    document.documentElement.lang = l;
   };
 
   return (

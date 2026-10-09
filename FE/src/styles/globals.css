@@ -1,14 +1,15 @@
 /* Custom utilities for DynForge Design System & Liquid Glass */
 
 :root {
-  --font-display: 'Instrument Serif', serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-body: 'Be Vietnam Pro', system-ui, sans-serif;
 }
 
 body {
   background-color: #020617;
   color: #f8fafc;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  line-height: 1.6;
 }
 
 /* Liquid Glass CSS */

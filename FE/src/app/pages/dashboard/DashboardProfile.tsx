@@ -8,12 +8,15 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '../../components/ui/dialog';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { toast } from 'sonner';
 import {
   getMe, updateProfile, changePassword, type UserProfile,
 } from '../../services/userService';
 
 function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -21,15 +24,15 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (next.length < 8) { toast.error('New password must be at least 8 characters.'); return; }
-    if (next !== confirm) { toast.error('Passwords do not match.'); return; }
+    if (next.length < 8) { toast.error(vi ? 'Mật khẩu mới phải có ít nhất 8 ký tự.' : 'New password must be at least 8 characters.'); return; }
+    if (next !== confirm) { toast.error(vi ? 'Mật khẩu nhập lại không khớp.' : 'Passwords do not match.'); return; }
     setSaving(true);
     try {
       await changePassword(current, next);
-      toast.success('Password changed. You may need to sign in again on other devices.');
+      toast.success(vi ? 'Đã đổi mật khẩu. Bạn có thể cần đăng nhập lại trên các thiết bị khác.' : 'Password changed. You may need to sign in again on other devices.');
       onClose();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Could not change password.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không đổi được mật khẩu.' : 'Could not change password.'));
     } finally {
       setSaving(false);
     }
@@ -38,24 +41,24 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md" aria-describedby={undefined}>
-        <DialogHeader><DialogTitle>Change password</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{vi ? 'Đổi mật khẩu' : 'Change password'}</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <Label className="mb-1.5 block">Current password</Label>
+            <Label className="mb-1.5 block">{vi ? 'Mật khẩu hiện tại' : 'Current password'}</Label>
             <Input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} className="bg-input-background" autoFocus />
           </div>
           <div>
-            <Label className="mb-1.5 block">New password</Label>
+            <Label className="mb-1.5 block">{vi ? 'Mật khẩu mới' : 'New password'}</Label>
             <Input type="password" value={next} onChange={(e) => setNext(e.target.value)} className="bg-input-background" />
           </div>
           <div>
-            <Label className="mb-1.5 block">Confirm new password</Label>
+            <Label className="mb-1.5 block">{vi ? 'Xác nhận mật khẩu mới' : 'Confirm new password'}</Label>
             <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="bg-input-background" />
           </div>
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{vi ? 'Huỷ' : 'Cancel'}</Button>
             <Button type="submit" disabled={saving}>
-              {saving ? <Loader2 className="size-4 animate-spin" /> : 'Update password'}
+              {saving ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Cập nhật mật khẩu' : 'Update password')}
             </Button>
           </DialogFooter>
         </form>
@@ -66,6 +69,8 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
 
 export function DashboardProfile() {
   const { refreshUser } = useAuth();
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -90,13 +95,13 @@ export function DashboardProfile() {
         setYear(me.year ?? '');
         setAvatarUrl(me.avatarUrl ?? '');
       })
-      .catch(() => toast.error('Failed to load profile.'))
+      .catch(() => toast.error(vi ? 'Không tải được hồ sơ.' : 'Failed to load profile.'))
       .finally(() => setLoading(false));
   }, []);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim()) { toast.error('Full name is required.'); return; }
+    if (!fullName.trim()) { toast.error(vi ? 'Vui lòng nhập họ và tên.' : 'Full name is required.'); return; }
     setSaving(true);
     try {
       await updateProfile({
@@ -108,9 +113,9 @@ export function DashboardProfile() {
         avatarUrl: avatarUrl.trim() || undefined,
       });
       await refreshUser();
-      toast.success('Profile updated successfully.');
+      toast.success(vi ? 'Cập nhật hồ sơ thành công.' : 'Profile updated successfully.');
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Could not save profile.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không lưu được hồ sơ.' : 'Could not save profile.'));
     } finally {
       setSaving(false);
     }
@@ -119,7 +124,7 @@ export function DashboardProfile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
-        <Loader2 className="size-5 animate-spin" /> Loading profile…
+        <Loader2 className="size-5 animate-spin" /> {vi ? 'Đang tải hồ sơ…' : 'Loading profile…'}
       </div>
     );
   }
@@ -129,14 +134,14 @@ export function DashboardProfile() {
   return (
     <div className="mx-auto max-w-[900px]">
       <div className="mb-6">
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>My Profile</h1>
-        <p className="mt-1 text-muted-foreground">Manage your personal information and account security.</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{vi ? 'Hồ sơ của tôi' : 'My Profile'}</h1>
+        <p className="mt-1 text-muted-foreground">{vi ? 'Quản lý thông tin cá nhân và bảo mật tài khoản của bạn.' : 'Manage your personal information and account security.'}</p>
       </div>
 
       <form onSubmit={save} className="space-y-6">
         {/* Avatar */}
         <Card className="border-border p-6">
-          <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>Profile photo</h2>
+          <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Ảnh đại diện' : 'Profile photo'}</h2>
           <div className="flex items-center gap-5">
             <div className="flex size-20 items-center justify-center overflow-hidden rounded-2xl bg-accent">
               {avatarUrl
@@ -144,7 +149,7 @@ export function DashboardProfile() {
                 : <span className="text-2xl" style={{ fontWeight: 600 }}>{initials || '?'}</span>}
             </div>
             <div className="flex-1">
-              <Label className="mb-1.5 block">Avatar URL</Label>
+              <Label className="mb-1.5 block">{vi ? 'Đường dẫn ảnh đại diện' : 'Avatar URL'}</Label>
               <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" className="bg-input-background" />
             </div>
           </div>
@@ -152,10 +157,10 @@ export function DashboardProfile() {
 
         {/* Personal info */}
         <Card className="border-border p-6">
-          <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>Personal information</h2>
+          <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Thông tin cá nhân' : 'Personal information'}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label className="mb-1.5 block">Full name</Label>
+              <Label className="mb-1.5 block">{vi ? 'Họ và tên' : 'Full name'}</Label>
               <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="bg-input-background" />
             </div>
             <div>
@@ -163,39 +168,39 @@ export function DashboardProfile() {
               <Input value={profile?.email ?? ''} disabled className="bg-muted/50" />
             </div>
             <div>
-              <Label className="mb-1.5 block">Phone number</Label>
+              <Label className="mb-1.5 block">{vi ? 'Số điện thoại' : 'Phone number'}</Label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" className="bg-input-background" />
             </div>
             <div>
-              <Label className="mb-1.5 block">Student ID</Label>
+              <Label className="mb-1.5 block">{vi ? 'Mã số sinh viên' : 'Student ID'}</Label>
               <Input value={studentId} onChange={(e) => setStudentId(e.target.value)} className="bg-input-background" />
             </div>
             <div>
-              <Label className="mb-1.5 block">Major</Label>
+              <Label className="mb-1.5 block">{vi ? 'Ngành học' : 'Major'}</Label>
               <Input value={major} onChange={(e) => setMajor(e.target.value)} className="bg-input-background" />
             </div>
             <div>
-              <Label className="mb-1.5 block">Year</Label>
-              <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 2022" className="bg-input-background" />
+              <Label className="mb-1.5 block">{vi ? 'Khoá / Năm' : 'Year'}</Label>
+              <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder={vi ? 'vd: 2022' : 'e.g. 2022'} className="bg-input-background" />
             </div>
           </div>
         </Card>
 
         {/* Security */}
         <Card className="border-border p-6">
-          <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>Security</h2>
+          <h2 className="mb-4" style={{ fontSize: '1.125rem', fontWeight: 600 }}>{vi ? 'Bảo mật' : 'Security'}</h2>
           <div className="flex items-center justify-between rounded-xl border border-border p-4">
             <div>
-              <p style={{ fontWeight: 500 }}>Password</p>
-              <p className="text-sm text-muted-foreground">Change your account password.</p>
+              <p style={{ fontWeight: 500 }}>{vi ? 'Mật khẩu' : 'Password'}</p>
+              <p className="text-sm text-muted-foreground">{vi ? 'Đổi mật khẩu tài khoản của bạn.' : 'Change your account password.'}</p>
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => setShowPassword(true)}>Change</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowPassword(true)}>{vi ? 'Đổi' : 'Change'}</Button>
           </div>
         </Card>
 
         <div className="flex justify-end">
           <Button type="submit" size="lg" disabled={saving}>
-            {saving ? <Loader2 className="size-4 animate-spin" /> : 'Save Changes'}
+            {saving ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Lưu thay đổi' : 'Save Changes')}
           </Button>
         </div>
       </form>

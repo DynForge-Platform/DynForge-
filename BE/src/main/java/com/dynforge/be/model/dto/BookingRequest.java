@@ -12,7 +12,7 @@ public record BookingRequest(
         @NotBlank String mentorId,
         @NotBlank String courseCode,
         @NotNull BookingFormat format,
-        @NotNull @Future Instant startAt,
-        @Min(15) int durationMin
+        @NotNull @Future(message = "Giờ học phải ở tương lai") Instant startAt,
+        @Min(value = 15, message = "Thời lượng tối thiểu 15 phút") int durationMin
 ) {
 }

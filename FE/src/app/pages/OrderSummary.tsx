@@ -566,6 +566,18 @@ export function OrderSummary() {
       return;
     }
 
+    // Guard: do not allow booking a slot that is already in the past
+    if (state.slot) {
+      const yr = state.year ?? now.getFullYear();
+      const mo = state.month ?? now.getMonth();
+      const [h, m] = state.slot.split(':').map(Number);
+      const startAt = new Date(yr, mo, state.day, h, m);
+      if (startAt.getTime() <= Date.now() + 60_000) {
+        toast.error(T.slotPassed);
+        return;
+      }
+    }
+
     // If balance is already known to be insufficient, guide user directly to top-up
     if (walletBalance !== null && walletBalance < total) {
       setShowTopUpModal(true);
@@ -612,7 +624,10 @@ export function OrderSummary() {
           },
         });
       } catch (err: any) {
-        const errMsg: string = err?.response?.data?.message ?? '';
+        const data = err?.response?.data;
+        const fieldErrors = data?.fieldErrors as Record<string, string> | undefined;
+        const firstFieldError = fieldErrors ? Object.values(fieldErrors)[0] : undefined;
+        const errMsg: string = data?.message ?? firstFieldError ?? '';
         // If wallet balance is insufficient, offer 1-click top-up and open modal
         if (
           errMsg.toLowerCase().includes('balance') ||
@@ -634,7 +649,7 @@ export function OrderSummary() {
             }
           );
         } else {
-          toast.error(errMsg || 'Payment failed. Please try again.');
+          toast.error(firstFieldError || errMsg || 'Payment failed. Please try again.');
         }
       } finally {
         setPaying(false);

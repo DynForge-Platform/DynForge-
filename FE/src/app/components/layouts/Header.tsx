@@ -26,7 +26,7 @@ export function Header() {
   const navigate = useNavigate();
 
   const navItems = [
-    { to: '/', label: 'Home', icon: Home },
+    { to: '/', label: lang === 'vi' ? 'Trang chủ' : 'Home', icon: Home },
     { to: '/mentors', label: lang === 'vi' ? 'Tìm gia sư' : 'Find Mentors', icon: Search },
     { to: '/become-a-mentor', label: lang === 'vi' ? 'Trở thành gia sư' : 'Become a Mentor', icon: Sparkles },
     { to: '/resources', label: lang === 'vi' ? 'Tài nguyên' : 'Resources', icon: BookOpen },
@@ -35,7 +35,7 @@ export function Header() {
 
   const handleLogout = async () => {
     await logout();
-    toast.success('Signed out successfully.');
+    toast.success(lang === 'vi' ? 'Đã đăng xuất thành công.' : 'Signed out successfully.');
     navigate('/');
   };
 
@@ -84,7 +84,7 @@ export function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-[#090f1e] border-white/10 text-slate-100 shadow-2xl">
               <div className="px-3 py-2">
-                <p className="text-xs text-slate-400">Signed in as</p>
+                <p className="text-xs text-slate-400">{lang === 'vi' ? 'Đăng nhập với' : 'Signed in as'}</p>
                 <p className="text-sm font-semibold text-white">{user.name}</p>
                 <span className="mt-1 inline-block rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-xs text-cyan-300 capitalize font-medium">
                   {user.role}
