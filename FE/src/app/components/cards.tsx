@@ -7,8 +7,23 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { StarRating } from './common';
 import { cn } from './ui/utils';
 import { GsapCounter } from './GsapCounter';
+import { useLanguage } from '../context/LanguageContext';
+import { formatDate } from '../lib/format';
 
-const typeMeta: Record<Resource['type'], { icon: React.ElementType; action: string; actionIcon: React.ElementType; color: string }> = {
+export const resourceTypeLabel: Record<Resource['type'], { en: string; vi: string }> = {
+  Article: { en: 'Article', vi: 'Bài viết' },
+  'PDF Guide': { en: 'PDF Guide', vi: 'Tài liệu PDF' },
+  Video: { en: 'Video', vi: 'Video' },
+  Template: { en: 'Template', vi: 'Biểu mẫu' },
+};
+
+const actionLabel = {
+  Read: { en: 'Read', vi: 'Đọc' },
+  Download: { en: 'Download', vi: 'Tải về' },
+  Watch: { en: 'Watch', vi: 'Xem' },
+} as const;
+
+const typeMeta: Record<Resource['type'], { icon: React.ElementType; action: keyof typeof actionLabel; actionIcon: React.ElementType; color: string }> = {
   Article: { icon: BookOpen, action: 'Read', actionIcon: ArrowUpRight, color: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' },
   'PDF Guide': { icon: FileText, action: 'Download', actionIcon: Download, color: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' },
   Video: { icon: Film, action: 'Watch', actionIcon: Play, color: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' },
@@ -16,7 +31,12 @@ const typeMeta: Record<Resource['type'], { icon: React.ElementType; action: stri
 };
 
 export function ResourceCard({ resource }: { resource: Resource }) {
+  const { lang } = useLanguage();
+  const vi = lang === 'vi';
   const meta = typeMeta[resource.type];
+  const title = (vi && resource.titleVi) || resource.title;
+  const description = (vi && resource.descriptionVi) || resource.description;
+  const source = (vi && resource.sourceVi) || resource.source;
   const Icon = meta.icon;
   const ActionIcon = meta.actionIcon;
   return (
@@ -26,17 +46,17 @@ export function ResourceCard({ resource }: { resource: Resource }) {
           <Icon className="size-5" />
         </span>
         <Badge className="bg-slate-950 text-cyan-300 border border-slate-800 text-xs">
-          {resource.type}
+          {resourceTypeLabel[resource.type]?.[lang] ?? resource.type}
         </Badge>
       </div>
       <div className="flex-1">
         <h3 className="mb-1 font-semibold text-white text-base">
-          {resource.title}
+          {title}
         </h3>
-        <p className="line-clamp-2 text-sm text-slate-400 leading-relaxed">{resource.description}</p>
+        <p className="line-clamp-2 text-sm text-slate-400 leading-relaxed">{description}</p>
       </div>
       <div className="flex items-center justify-between border-t border-slate-800 pt-4">
-        <span className="truncate text-xs text-slate-400 font-medium">{resource.source}</span>
+        <span className="truncate text-xs text-slate-400 font-medium">{source}</span>
         <Button
           variant="ghost"
           size="sm"
@@ -44,7 +64,7 @@ export function ResourceCard({ resource }: { resource: Resource }) {
           disabled={!resource.url}
           onClick={() => resource.url && window.open(resource.url, '_blank', 'noopener,noreferrer')}
         >
-          {meta.action} <ActionIcon className="size-4 ml-1" />
+          {actionLabel[meta.action][lang]} <ActionIcon className="size-4 ml-1" />
         </Button>
       </div>
     </Card>
@@ -52,6 +72,7 @@ export function ResourceCard({ resource }: { resource: Resource }) {
 }
 
 export function ReviewCard({ review }: { review: Review }) {
+  const { lang } = useLanguage();
   return (
     <Card className="flex flex-col gap-3 border border-slate-800 bg-slate-900/80 p-5 text-slate-100 rounded-2xl">
       <div className="flex items-center gap-3">
@@ -70,7 +91,7 @@ export function ReviewCard({ review }: { review: Review }) {
       </div>
       <p className="text-sm text-slate-300 leading-relaxed">{review.text}</p>
       <span className="text-xs text-slate-500 font-medium">
-        {new Date(review.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+        {formatDate(review.date, lang)}
       </span>
     </Card>
   );

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router';
 import {
   Menu, X, ChevronDown, LogOut, LayoutDashboard,
-  Home, Search, Sparkles, BookOpen, Info, ChevronRight,
+  Home, Search, Sparkles, BookOpen, Info, ChevronRight, GraduationCap,
 } from 'lucide-react';
 import { Logo } from '../Logo';
 import { cn } from '../ui/utils';
@@ -38,6 +38,8 @@ export function Header() {
     toast.success(lang === 'vi' ? 'Đã đăng xuất thành công.' : 'Signed out successfully.');
     navigate('/');
   };
+
+  const menteeDashLabel = lang === 'vi' ? 'Bảng điều khiển học viên' : 'Mentee dashboard';
 
   const dashLabel =
     user?.role === 'mentor' ? T.mentorPortal
@@ -94,6 +96,11 @@ export function Header() {
               <DropdownMenuItem onClick={() => navigate(user.dashboardPath)} className="cursor-pointer focus:bg-white/10 focus:text-white">
                 <LayoutDashboard className="size-4 mr-2 text-cyan-400" /> {dashLabel}
               </DropdownMenuItem>
+              {user.role === 'mentor' && (
+                <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer focus:bg-white/10 focus:text-white">
+                  <GraduationCap className="size-4 mr-2 text-cyan-400" /> {menteeDashLabel}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-400 focus:bg-white/10 focus:text-red-300">
                 <LogOut className="size-4 mr-2" /> {T.logOut}
@@ -200,6 +207,16 @@ export function Header() {
                     <LayoutDashboard className="size-4" />
                     <span>{dashLabel}</span>
                   </button>
+
+                  {user.role === 'mentor' && (
+                    <button
+                      onClick={() => { navigate('/dashboard'); setOpen(false); }}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-200 font-semibold text-sm py-2.5 cursor-pointer transition-all active:scale-[0.99]"
+                    >
+                      <GraduationCap className="size-4" />
+                      <span>{menteeDashLabel}</span>
+                    </button>
+                  )}
 
                   <div className="flex items-center justify-between pt-1">
                     <LanguageSwitcher />

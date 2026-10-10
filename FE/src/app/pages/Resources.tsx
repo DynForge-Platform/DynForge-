@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { Search, Loader2, RotateCcw } from 'lucide-react';
 import { Input } from '../components/ui/input';
-import { ResourceCard } from '../components/cards';
+import { ResourceCard, resourceTypeLabel } from '../components/cards';
 import { EditorialPageHeader } from '../components/EditorialPageHeader';
 import { EmptyState } from '../components/common';
 import { type Resource } from '../data/mockData';
@@ -29,7 +29,11 @@ export function Resources() {
   const filtered = useMemo(() => {
     return resources.filter((r) => {
       const q = query.toLowerCase();
-      const matchesQuery = !q || r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q);
+      const haystack = [r.title, r.description, r.titleVi, r.descriptionVi]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      const matchesQuery = !q || haystack.includes(q);
       const matchesType = selectedType === 'All' || r.type === selectedType;
       return matchesQuery && matchesType;
     });
@@ -107,7 +111,7 @@ export function Resources() {
                   : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/10'
               }`}
             >
-              {t === 'All' ? (lang === 'vi' ? 'Tất cả tài liệu' : 'All Resources') : t}
+              {t === 'All' ? (lang === 'vi' ? 'Tất cả tài liệu' : 'All Resources') : resourceTypeLabel[t][lang]}
             </button>
           ))}
           {(selectedType !== 'All' || query) && (
