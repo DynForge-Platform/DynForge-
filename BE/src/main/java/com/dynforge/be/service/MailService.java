@@ -43,6 +43,16 @@ public class MailService {
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
+    /**
+     * Link that opens the meeting room inside the DynForge web app (not meet.jit.si directly),
+     * so the session can be recorded and the recording reaches the admin recordings page.
+     */
+    private String joinRoomUrl(String dashboardPath, String bookingId) {
+        String base = (frontendBaseUrl != null && !frontendBaseUrl.isBlank()) ? frontendBaseUrl : "http://localhost:5173";
+        if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
+        return base + dashboardPath + "?join=" + bookingId;
+    }
+
     public boolean isConfigured() {
         return username != null && !username.isBlank();
     }
@@ -125,8 +135,7 @@ public class MailService {
         NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
         String formattedPrice = currencyFormat.format(price);
 
-        String effectiveRoom = (roomId != null && !roomId.isBlank()) ? roomId : ("DynForge-" + bookingId);
-        String meetingUrl = "https://meet.jit.si/" + effectiveRoom;
+        String meetingUrl = joinRoomUrl("/dashboard/sessions", bookingId);
         String dashboardUrl = (frontendBaseUrl != null && !frontendBaseUrl.isBlank())
                 ? frontendBaseUrl + "/dashboard/sessions"
                 : "http://localhost:5173/dashboard/sessions";
@@ -462,8 +471,7 @@ public class MailService {
         NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
         String formattedPrice = currencyFormat.format(earningsAmount);
 
-        String effectiveRoom = (roomId != null && !roomId.isBlank()) ? roomId : ("DynForge-" + bookingId);
-        String meetingUrl = "https://meet.jit.si/" + effectiveRoom;
+        String meetingUrl = joinRoomUrl("/mentor/dashboard", bookingId);
         String dashboardUrl = (frontendBaseUrl != null && !frontendBaseUrl.isBlank())
                 ? frontendBaseUrl + "/mentor/dashboard"
                 : "http://localhost:5173/mentor/dashboard";
@@ -791,8 +799,7 @@ public class MailService {
 
         String oldTimeStr = formatVnDateTimeRange(oldStartAt, durationMin);
         String newTimeStr = formatVnDateTimeRange(newStartAt, durationMin);
-        String effectiveRoom = (roomId != null && !roomId.isBlank()) ? roomId : ("DynForge-" + bookingId);
-        String meetingUrl = "https://meet.jit.si/" + effectiveRoom;
+        String meetingUrl = joinRoomUrl("/mentor/dashboard", bookingId);
 
         if (!isConfigured()) {
             log.info("[Reschedule Notice] (Mail not configured) Booking #{} rescheduled by {}. Old: {}, New: {}",
