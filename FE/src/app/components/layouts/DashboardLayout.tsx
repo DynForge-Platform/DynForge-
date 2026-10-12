@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ShieldCheck, Calendar, Clock, TrendingUp,
   BadgeCheck, Users, FileText, BarChart3, CreditCard,
   LogOut, BookMarked, MessageSquare, Tag, Video, Menu, X,
-  GraduationCap, Plus, Sparkles, ExternalLink, ChevronRight
+  GraduationCap, Plus, Sparkles, ExternalLink, ChevronRight, ArrowLeftRight
 } from 'lucide-react';
 import { Logo } from '../Logo';
 import { cn } from '../ui/utils';
@@ -119,6 +119,16 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
     : role === 'admin' ? (T.adminConsole ?? 'Admin Console')
     : (T.studentWorkspace ?? 'Student Workspace');
 
+  // A mentor account is also a mentee: let it hop between the two workspaces.
+  const canSwitchWorkspace = user?.role === 'mentor' && (role === 'student' || role === 'teacher');
+  const switchTo = role === 'teacher' ? '/dashboard' : '/mentor/dashboard';
+  const switchLabel = role === 'teacher'
+    ? (lang === 'vi' ? 'Chế độ học viên' : 'Mentee mode')
+    : (lang === 'vi' ? 'Chế độ mentor' : 'Mentor mode');
+  const switchTitle = role === 'teacher'
+    ? (lang === 'vi' ? 'Chuyển sang bảng điều khiển học viên' : 'Switch to the mentee dashboard')
+    : (lang === 'vi' ? 'Chuyển sang cổng mentor' : 'Switch to the mentor portal');
+
   const portalBadge =
     role === 'teacher' ? 'Mentor'
     : role === 'admin' ? 'Admin'
@@ -227,6 +237,19 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
 
         {/* Sidebar Footer Action */}
         <div className="mt-auto pt-3 border-t border-slate-800/80 flex flex-col gap-2">
+          {canSwitchWorkspace && (
+            <Link
+              to={switchTo}
+              title={switchTitle}
+              className="flex items-center justify-between rounded-xl border border-indigo-500/30 bg-indigo-950/30 px-3.5 py-2 text-xs font-semibold text-indigo-200 hover:border-indigo-400/50 hover:bg-indigo-950/50 transition-all"
+            >
+              <span className="flex items-center gap-2">
+                <ArrowLeftRight className="size-3.5 text-indigo-300" />
+                {switchTitle}
+              </span>
+              <ChevronRight className="size-3 opacity-60" />
+            </Link>
+          )}
           <Link
             to="/mentors"
             className="flex items-center justify-between rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-950/30 to-indigo-950/30 px-3.5 py-2 text-xs font-medium text-cyan-300 hover:border-cyan-500/40 hover:bg-cyan-950/40 transition-all"
@@ -412,6 +435,17 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
                 <span className="flex size-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300 group-hover:bg-emerald-500 group-hover:text-black transition-colors">
                   <Plus className="size-3" />
                 </span>
+              </Link>
+            )}
+
+            {canSwitchWorkspace && (
+              <Link
+                to={switchTo}
+                title={switchTitle}
+                className="flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-500/50 transition-all"
+              >
+                <ArrowLeftRight className="size-3.5" />
+                <span className="hidden sm:inline">{switchLabel}</span>
               </Link>
             )}
 

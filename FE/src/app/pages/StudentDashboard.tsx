@@ -37,6 +37,7 @@ import { createReview } from '../services/reviewService';
 import { askSession } from '../services/aiService';
 import { getMe, type UserProfile } from '../services/userService';
 import { MeetRoomOverlay } from '../components/MeetRoomOverlay';
+import { useJoinFromLink } from '../hooks/useJoinFromLink';
 
 const issueTypes = [
   'Session not attended',
@@ -728,6 +729,7 @@ export function StudentDashboard() {
 
   // Modals state
   const [meetBooking, setMeetBooking] = useState<BookingResponse | null>(null);
+  useJoinFromLink(setMeetBooking);
   const [viewBooking, setViewBooking] = useState<BookingResponse | null>(null);
   const [confirmBookingItem, setConfirmBookingItem] = useState<BookingResponse | null>(null);
   const [disputeBookingItem, setDisputeBookingItem] = useState<BookingResponse | null>(null);

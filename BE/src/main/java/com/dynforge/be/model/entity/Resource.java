@@ -39,5 +39,12 @@ public class Resource {
     /** External link opened by Read / Watch / Download. */
     private String url;
 
+    /** Vietnamese versions shown when the site language is Vietnamese. */
+    private String titleVi;
+
+    private String descriptionVi;
+
+    private String sourceVi;
+
     private Instant createdAt;
 }

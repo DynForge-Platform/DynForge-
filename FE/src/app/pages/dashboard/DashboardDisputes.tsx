@@ -71,9 +71,18 @@ export function DashboardDisputes() {
     () => bookings.filter((b) => b.status === 'DISPUTED' || b.status === 'REFUNDED'),
     [bookings],
   );
-  // Any paid, not-yet-completed session can be disputed.
+  // Same rule as the backend (EscrowService.dispute): a paid, not-yet-completed
+  // session, at least 15 minutes after it started.
+  const DISPUTE_DELAY_MS = 15 * 60 * 1000;
+  const disputableStatus = (b: BookingResponse) =>
+    b.status === 'ESCROW_HELD' || b.status === 'ACCEPTED' || b.status === 'TAUGHT';
   const disputable = useMemo(
-    () => bookings.filter((b) => b.status === 'ESCROW_HELD' || b.status === 'ACCEPTED' || b.status === 'TAUGHT'),
+    () => bookings.filter((b) => disputableStatus(b) && Date.now() >= new Date(b.startAt).getTime() + DISPUTE_DELAY_MS),
+    [bookings],
+  );
+  // Paid sessions that will become disputable once they have started.
+  const notYetDisputable = useMemo(
+    () => bookings.filter((b) => disputableStatus(b) && Date.now() < new Date(b.startAt).getTime() + DISPUTE_DELAY_MS),
     [bookings],
   );
 
@@ -110,7 +119,7 @@ export function DashboardDisputes() {
             {vi ? 'Mở và theo dõi các yêu cầu hỗ trợ về buổi học, hoàn tiền hoặc vấn đề với mentor.' : 'Open and track support requests for sessions, refunds, or mentor issues.'}
           </p>
         </div>
-        <Button onClick={() => setOpen(true)} disabled={disputable.length === 0}>
+        <Button onClick={() => setOpen(true)}>
           <Plus className="size-4" /> {vi ? 'Mở tranh chấp mới' : 'Open New Dispute'}
         </Button>
       </div>
@@ -161,7 +170,7 @@ export function DashboardDisputes() {
             icon={AlertTriangle}
             title={vi ? 'Chưa có tranh chấp nào' : 'No disputes yet'}
             description={vi ? 'Khi có vấn đề với một buổi học đã dạy, bạn có thể mở tranh chấp và DynForge sẽ xem xét một cách công bằng.' : 'When something goes wrong with a taught session, you can open a dispute and DynForge will review it fairly.'}
-            action={disputable.length > 0 ? <Button onClick={() => setOpen(true)}>{vi ? 'Mở tranh chấp' : 'Open a Dispute'}</Button> : undefined}
+            action={<Button onClick={() => setOpen(true)}>{vi ? 'Mở tranh chấp' : 'Open a Dispute'}</Button>}
           />
         )}
       </Card>
@@ -170,6 +179,36 @@ export function DashboardDisputes() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>{vi ? 'Mở tranh chấp mới' : 'Open a new dispute'}</DialogTitle></DialogHeader>
+          {disputable.length === 0 ? (
+            <div className="space-y-4">
+              <div className="flex items-start gap-2 rounded-xl bg-accent/60 p-4 text-sm text-muted-foreground">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
+                <div className="space-y-2">
+                  <p>
+                    {vi
+                      ? 'Hiện chưa có buổi học nào có thể khiếu nại. Bạn chỉ mở được tranh chấp cho buổi học đã thanh toán (đang ký quỹ, đã nhận lịch hoặc đã dạy) và sau khi buổi học bắt đầu ít nhất 15 phút.'
+                      : 'You have no session that can be disputed yet. Disputes can be opened for paid sessions (in escrow, accepted or taught), at least 15 minutes after the session starts.'}
+                  </p>
+                  {notYetDisputable.length > 0 && (
+                    <p>
+                      {vi ? 'Sắp mở được: ' : 'Available soon: '}
+                      {notYetDisputable
+                        .map((b) => `${b.courseCode} (${vi ? 'từ' : 'from'} ${formatDate(new Date(new Date(b.startAt).getTime() + DISPUTE_DELAY_MS), lang, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`)
+                        .join(', ')}
+                    </p>
+                  )}
+                  <p>
+                    {vi
+                      ? 'Buổi học đã xác nhận hoàn thành thì không thể khiếu nại nữa. Trước giờ học, hãy dùng Đổi lịch hoặc Huỷ lịch.'
+                      : 'Completed sessions can no longer be disputed. Before the session starts, use Reschedule or Cancel instead.'}
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>{vi ? 'Đóng' : 'Close'}</Button>
+              </DialogFooter>
+            </div>
+          ) : (
           <form className="space-y-4" onSubmit={submit}>
             <div>
               <Label className="mb-1.5 block">{vi ? 'Buổi học liên quan' : 'Related session'}</Label>
@@ -208,6 +247,7 @@ export function DashboardDisputes() {
               </Button>
             </DialogFooter>
           </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>

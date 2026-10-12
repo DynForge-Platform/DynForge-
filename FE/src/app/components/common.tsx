@@ -62,15 +62,50 @@ const statusStyles: Record<string, string> = {
   Suspended: 'bg-danger/10 text-danger border-danger/20',
   Paid: 'bg-success/10 text-success border-success/20',
   Failed: 'bg-danger/10 text-danger border-danger/20',
+  Accepted: 'bg-primary/10 text-primary border-primary/20',
+  Taught: 'bg-primary/10 text-primary border-primary/20',
+  Disputed: 'bg-danger/10 text-danger border-danger/20',
+  'Pending Payment': 'bg-warning/10 text-warning border-warning/20',
   Low: 'bg-success/10 text-success border-success/20',
   Medium: 'bg-warning/10 text-warning border-warning/20',
   High: 'bg-danger/10 text-danger border-danger/20',
 };
 
+const statusLabelsVi: Record<string, string> = {
+  Upcoming: 'Sắp diễn ra',
+  'In Escrow': 'Đang ký quỹ',
+  'Pending Payment': 'Chờ thanh toán',
+  Accepted: 'Đã nhận lịch',
+  Taught: 'Đã dạy',
+  Completed: 'Hoàn thành',
+  Scheduled: 'Đã lên lịch',
+  Cancelled: 'Đã huỷ',
+  Disputed: 'Đang tranh chấp',
+  Refunded: 'Đã hoàn tiền',
+  Released: 'Đã giải ngân',
+  'Pending Payout': 'Chờ chi trả',
+  Pending: 'Đang chờ',
+  Open: 'Đang mở',
+  'Under Review': 'Đang xem xét',
+  Resolved: 'Đã giải quyết',
+  Rejected: 'Bị từ chối',
+  'Waiting for Mentor': 'Chờ mentor',
+  Approved: 'Đã duyệt',
+  Active: 'Hoạt động',
+  Suspended: 'Bị khoá',
+  Paid: 'Đã thanh toán',
+  Failed: 'Thất bại',
+  Low: 'Thấp',
+  Medium: 'Trung bình',
+  High: 'Cao',
+};
+
 export function StatusBadge({ status }: { status: string }) {
+  const { lang } = useLanguage();
+  const label = lang === 'vi' ? statusLabelsVi[status] ?? status : status;
   return (
     <Badge className={cn('border', statusStyles[status] ?? 'bg-muted text-muted-foreground')}>
-      {status}
+      {label}
     </Badge>
   );
 }

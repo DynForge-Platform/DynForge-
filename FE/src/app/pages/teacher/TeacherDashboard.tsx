@@ -9,6 +9,7 @@ import {
 import { formatCurrency } from '../../data/mockData';
 import { Button } from '../../components/ui/button';
 import { MeetRoomOverlay } from '../../components/MeetRoomOverlay';
+import { useJoinFromLink } from '../../hooks/useJoinFromLink';
 import { StatusBadge } from '../../components/common';
 import { toast } from 'sonner';
 import {
@@ -33,6 +34,7 @@ export function TeacherDashboard() {
   const [loading, setLoading] = useState(true);
 
   const [meetBooking, setMeetBooking] = useState<BookingResponse | null>(null);
+  useJoinFromLink(setMeetBooking);
   const [actingId, setActingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {

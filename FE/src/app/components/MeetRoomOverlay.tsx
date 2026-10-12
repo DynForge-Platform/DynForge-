@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { PhoneOff, Circle, Square, Loader2, ShieldCheck, NotebookPen, Sparkles, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadRecording } from '../services/recordingService';
@@ -221,12 +222,14 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#0f1117]">
+  // Portal to <body>: inside the dashboard the overlay would be trapped in the main
+  // column's stacking context and the sidebar (z-30) would render on top of it.
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex flex-col bg-[#0f1117]">
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-3">
         <div className="flex items-center gap-3">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-white text-xs" style={{ fontWeight: 700 }}>G</span>
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-white text-xs" style={{ fontWeight: 700 }}>D</span>
           <div>
             <p className="text-sm text-white" style={{ fontWeight: 600 }}>{course}</p>
             <p className="text-xs text-white/50">{vi ? 'cùng' : 'with'} {partnerName} · {durationMinutes} {vi ? 'phút' : 'min'}</p>
@@ -308,6 +311,7 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
       <div className="flex items-center justify-center gap-1.5 pb-4 text-xs text-white/40">
         <ShieldCheck className="size-3.5" /> {vi ? 'Bản ghi được lưu an toàn và chỉ admin DynForge xem được để xử lý tranh chấp.' : 'Recordings are stored securely and only visible to DynForge admins for dispute review.'}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

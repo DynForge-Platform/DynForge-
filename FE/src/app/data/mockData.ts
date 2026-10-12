@@ -79,6 +79,10 @@ export interface Resource {
   subject: string;
   level: string;
   url?: string;
+  /** Vietnamese versions (optional; falls back to the English fields). */
+  titleVi?: string;
+  descriptionVi?: string;
+  sourceVi?: string;
 }
 
 export interface Transaction {
