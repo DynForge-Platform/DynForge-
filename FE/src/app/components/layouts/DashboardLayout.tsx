@@ -5,9 +5,9 @@ import {
   LayoutDashboard, ShieldCheck, Calendar, Clock, TrendingUp,
   BadgeCheck, Users, FileText, BarChart3, CreditCard,
   LogOut, BookMarked, MessageSquare, Tag, Video, Menu, X,
-  GraduationCap, Plus, Sparkles, ExternalLink, ChevronRight, ArrowLeftRight
+  GraduationCap, Plus, Sparkles, ExternalLink, ChevronRight, ArrowLeftRight,
+  Megaphone
 } from 'lucide-react';
-import { Logo } from '../Logo';
 import { cn } from '../ui/utils';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { LanguageSwitcher } from '../LanguageSwitcher';
@@ -62,6 +62,7 @@ const adminNav: NavItem[] = [
   { to: '/admin/disputes',            labelKey: 'adminDisputes',       icon: AlertTriangle },
   { to: '/admin/recordings',          labelKey: 'recordings',          icon: Video },
   { to: '/admin/resources',           labelKey: 'adminResources',      icon: BookMarked },
+  { to: '/admin/partnerships',        labelKey: 'partnerships',        icon: Megaphone },
   { to: '/admin/reports',             labelKey: 'reports',             icon: BarChart3 },
   { to: '/admin/settings',            labelKey: 'settings',            icon: Settings },
   { to: '/admin/audit-logs',          labelKey: 'auditLogs',           icon: FileText },

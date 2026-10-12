@@ -59,6 +59,7 @@ import { AdminVouchers } from './pages/admin/AdminVouchers';
 import { AdminDisputes } from './pages/admin/AdminDisputes';
 import { AdminAuditLogs } from './pages/admin/AdminAuditLogs';
 import { AdminRecordings } from './pages/admin/AdminRecordings';
+import { AdminPartnership } from './pages/admin/AdminPartnership';
 
 const router = createBrowserRouter([
   // ── Public ──────────────────────────────────────────────────
@@ -190,6 +191,7 @@ const router = createBrowserRouter([
           { path: '/admin/disputes', element: <AdminDisputes /> },
           { path: '/admin/recordings', element: <AdminRecordings /> },
           { path: '/admin/resources', element: <Resources /> },
+          { path: '/admin/partnerships', element: <AdminPartnership /> },
           { path: '/admin/reports', element: <AdminOverview /> },
           { path: '/admin/settings', element: <DashboardSettings /> },
           { path: '/admin/audit-logs', element: <AdminAuditLogs /> },

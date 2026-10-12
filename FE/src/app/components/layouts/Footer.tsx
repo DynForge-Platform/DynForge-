@@ -16,6 +16,12 @@ import { toast } from 'sonner';
 import { useLanguage } from '../../context/LanguageContext';
 import { formatCurrency } from '../../lib/format';
 
+import {
+  getPartnershipConfig,
+  submitPartnershipLead,
+  type PartnershipConfig,
+} from '../../services/partnershipService';
+
 type BillingCycle = 'monthly' | 'yearly';
 
 interface AdPlan {
@@ -36,6 +42,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [step, setStep] = useState<'plans' | 'contact'>('plans');
   const [selectedPlan, setSelectedPlan] = useState('Growth');
   const [billing, setBilling] = useState<BillingCycle>('monthly');
+  const [remoteConfig, setRemoteConfig] = useState<PartnershipConfig | null>(null);
 
   const [companyName, setCompanyName] = useState('');
   const [contactName, setContactName] = useState('');
@@ -43,98 +50,127 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [phone, setPhone] = useState('');
   const [goals, setGoals] = useState('');
 
-  const stats = [
-    { icon: Users, value: '12,000+', label: vi ? 'Sinh viên hoạt động hằng tháng' : 'Monthly active students' },
-    { icon: BarChart3, value: '85%', label: vi ? 'Tỷ lệ tương tác với quảng cáo' : 'Ad engagement rate' },
-    { icon: Star, value: '4.9/5', label: vi ? 'Mức hài lòng của đối tác' : 'Partner satisfaction' },
-    { icon: Megaphone, value: '40+', label: vi ? 'Trường đại học tiếp cận' : 'Universities reached' },
-  ];
+  // Fetch dynamic config from backend
+  useEffect(() => {
+    if (open) {
+      getPartnershipConfig()
+        .then((cfg) => setRemoteConfig(cfg))
+        .catch(() => {
+          // Fallback to defaults seamlessly
+        });
+    }
+  }, [open]);
 
-  const adPlans: AdPlan[] = [
-    {
-      name: 'Starter',
-      monthlyPrice: 2500000,
-      color: 'border-slate-800',
-      badge: null,
-      badgeColor: '',
-      description: vi
-        ? 'Phù hợp cho thương hiệu nhỏ và startup muốn tiếp cận thị trường sinh viên.'
-        : 'Ideal for small brands and startups looking to reach university students.',
-      features: vi
-        ? [
-            'Banner quảng cáo trên trang Tìm Mentor',
-            'Tối đa 10.000 lượt hiển thị / tháng',
-            'Link trực tiếp đến landing page của bạn',
-            'Báo cáo hiệu suất hàng tháng',
-          ]
-        : [
-            'Ad banner on Find Mentors page',
-            'Up to 10,000 impressions / month',
-            'Direct link to your landing page',
-            'Monthly performance report',
-          ],
-      cta: vi ? 'Bắt đầu ngay' : 'Get started',
-      highlight: false,
-    },
-    {
-      name: 'Growth',
-      monthlyPrice: 6000000,
-      color: 'border-cyan-500',
-      badge: vi ? 'Phổ biến nhất' : 'Most Popular',
-      badgeColor: 'bg-cyan-600',
-      description: vi
-        ? 'Lý tưởng cho thương hiệu muốn tiếp cận sinh viên đại học theo quy mô lớn.'
-        : 'Ideal for brands wanting to reach university students at scale.',
-      features: vi
-        ? [
-            'Banner + thẻ tài trợ in-feed nổi bật',
-            'Tối đa 50.000 lượt hiển thị / tháng',
-            'Vị trí nổi bật trên trang chủ',
-            'Huy hiệu tài trợ trên hồ sơ Mentor',
-            'Dashboard phân tích 2 tuần / lần',
-            'Account manager riêng',
-          ]
-        : [
-            'Prominent banner + in-feed sponsored card',
-            'Up to 50,000 impressions / month',
-            'Featured placement on homepage',
-            'Sponsor badge on Mentor profiles',
-            'Analytics dashboard bi-weekly',
-            'Dedicated account manager',
-          ],
-      cta: vi ? 'Bắt đầu ngay' : 'Get started',
-      highlight: true,
-    },
-    {
-      name: 'Enterprise',
-      monthlyPrice: null,
-      color: 'border-slate-700',
-      badge: vi ? 'Doanh nghiệp lớn' : 'Enterprise',
-      badgeColor: 'bg-slate-800',
-      description: vi
-        ? 'Tích hợp toàn nền tảng dành cho đối tác doanh nghiệp và trường đại học.'
-        : 'Full-platform integration for enterprise partners and universities.',
-      features: vi
-        ? [
-            'Tất cả tính năng của gói Growth',
-            'Tài nguyên & nội dung bài viết tài trợ',
-            'Sự kiện mentor đồng thương hiệu',
-            'Đặt quảng cáo trong email newsletter',
-            'Chiến lược chiến dịch tùy chỉnh',
-            'Hỗ trợ ưu tiên 24/7 & cam kết SLA',
-          ]
-        : [
-            'All features of Growth plan',
-            'Sponsored resources & content',
-            'Co-branded mentor workshops',
-            'Student newsletter placement',
-            'Custom marketing strategy',
-            'Priority 24/7 support & SLA',
-          ],
-      cta: vi ? 'Liên hệ tư vấn' : 'Contact us',
-      highlight: false,
-    },
-  ];
+  const stats = remoteConfig?.stats?.length
+    ? remoteConfig.stats.map((st) => ({
+        icon: st.icon === 'Users' ? Users : st.icon === 'BarChart3' ? BarChart3 : st.icon === 'Star' ? Star : Megaphone,
+        value: st.value,
+        label: vi ? st.labelVi : st.labelEn,
+      }))
+    : [
+        { icon: Users, value: '12,000+', label: vi ? 'Sinh viên hoạt động hằng tháng' : 'Monthly active students' },
+        { icon: BarChart3, value: '85%', label: vi ? 'Tỷ lệ tương tác với quảng cáo' : 'Ad engagement rate' },
+        { icon: Star, value: '4.9/5', label: vi ? 'Mức hài lòng của đối tác' : 'Partner satisfaction' },
+        { icon: Megaphone, value: '40+', label: vi ? 'Trường đại học tiếp cận' : 'Universities reached' },
+      ];
+
+  const adPlans: AdPlan[] = remoteConfig?.plans?.length
+    ? remoteConfig.plans.filter((p) => p.active !== false).map((p) => ({
+        name: p.name,
+        monthlyPrice: p.monthlyPrice,
+        color: p.color || (p.highlight ? 'border-cyan-500' : 'border-slate-800'),
+        badge: vi ? p.badgeVi : p.badgeEn,
+        badgeColor: p.badgeColor || (p.highlight ? 'bg-cyan-600' : 'bg-slate-800'),
+        description: vi ? p.descriptionVi : p.descriptionEn,
+        features: vi ? (p.featuresVi || []) : (p.featuresEn || []),
+        cta: vi ? 'Bắt đầu ngay' : 'Get started',
+        highlight: p.highlight,
+      }))
+    : [
+        {
+          name: 'Starter',
+          monthlyPrice: 2500000,
+          color: 'border-slate-800',
+          badge: null,
+          badgeColor: '',
+          description: vi
+            ? 'Phù hợp cho thương hiệu nhỏ và startup muốn tiếp cận thị trường sinh viên.'
+            : 'Ideal for small brands and startups looking to reach university students.',
+          features: vi
+            ? [
+                'Banner quảng cáo trên trang Tìm Mentor',
+                'Tối đa 10.000 lượt hiển thị / tháng',
+                'Link trực tiếp đến landing page của bạn',
+                'Báo cáo hiệu suất hàng tháng',
+              ]
+            : [
+                'Ad banner on Find Mentors page',
+                'Up to 10,000 impressions / month',
+                'Direct link to your landing page',
+                'Monthly performance report',
+              ],
+          cta: vi ? 'Bắt đầu ngay' : 'Get started',
+          highlight: false,
+        },
+        {
+          name: 'Growth',
+          monthlyPrice: 6000000,
+          color: 'border-cyan-500',
+          badge: vi ? 'Phổ biến nhất' : 'Most Popular',
+          badgeColor: 'bg-cyan-600',
+          description: vi
+            ? 'Lý tưởng cho thương hiệu muốn tiếp cận sinh viên đại học theo quy mô lớn.'
+            : 'Ideal for brands wanting to reach university students at scale.',
+          features: vi
+            ? [
+                'Banner + thẻ tài trợ in-feed nổi bật',
+                'Tối đa 50.000 lượt hiển thị / tháng',
+                'Vị trí nổi bật trên trang chủ',
+                'Huy hiệu tài trợ trên hồ sơ Mentor',
+                'Dashboard phân tích 2 tuần / lần',
+                'Account manager riêng',
+              ]
+            : [
+                'Prominent banner + in-feed sponsored card',
+                'Up to 50,000 impressions / month',
+                'Featured placement on homepage',
+                'Sponsor badge on Mentor profiles',
+                'Analytics dashboard bi-weekly',
+                'Dedicated account manager',
+              ],
+          cta: vi ? 'Bắt đầu ngay' : 'Get started',
+          highlight: true,
+        },
+        {
+          name: 'Enterprise',
+          monthlyPrice: null,
+          color: 'border-slate-700',
+          badge: vi ? 'Doanh nghiệp lớn' : 'Enterprise',
+          badgeColor: 'bg-slate-800',
+          description: vi
+            ? 'Tích hợp toàn nền tảng dành cho đối tác doanh nghiệp và trường đại học.'
+            : 'Full-platform integration for enterprise partners and universities.',
+          features: vi
+            ? [
+                'Tất cả tính năng của gói Growth',
+                'Tài nguyên & nội dung bài viết tài trợ',
+                'Sự kiện mentor đồng thương hiệu',
+                'Đặt quảng cáo trong email newsletter',
+                'Chiến lược chiến dịch tùy chỉnh',
+                'Hỗ trợ ưu tiên 24/7 & cam kết SLA',
+              ]
+            : [
+                'All features of Growth plan',
+                'Sponsored resources & content',
+                'Co-branded mentor workshops',
+                'Student newsletter placement',
+                'Custom marketing strategy',
+                'Priority 24/7 support & SLA',
+              ],
+          cta: vi ? 'Liên hệ tư vấn' : 'Contact us',
+          highlight: false,
+        },
+      ];
 
   const getPrice = (plan: AdPlan) => {
     if (!plan.monthlyPrice) return null;
@@ -150,22 +186,36 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
       : plan.monthlyPrice;
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(
-      vi
-        ? 'Yêu cầu hợp tác đã được gửi! Chúng tôi sẽ liên hệ trong vòng 1–2 ngày làm việc.'
-        : 'Partnership request submitted! We will get in touch within 1–2 business days.'
-    );
-    onClose();
-    setTimeout(() => {
-      setStep('plans');
-      setCompanyName('');
-      setContactName('');
-      setEmail('');
-      setPhone('');
-      setGoals('');
-    }, 300);
+    try {
+      await submitPartnershipLead({
+        companyName,
+        contactName,
+        email,
+        phone,
+        goals,
+        planName: selectedPlan,
+        billingCycle: billing,
+      });
+
+      toast.success(
+        vi
+          ? 'Yêu cầu hợp tác đã được gửi thành công! Chúng tôi sẽ liên hệ trong vòng 1–2 ngày làm việc.'
+          : 'Partnership inquiry submitted successfully! We will get in touch within 1–2 business days.'
+      );
+      onClose();
+      setTimeout(() => {
+        setStep('plans');
+        setCompanyName('');
+        setContactName('');
+        setEmail('');
+        setPhone('');
+        setGoals('');
+      }, 300);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || (vi ? 'Không thể gửi yêu cầu lúc này. Vui lòng thử lại.' : 'Failed to submit request.'));
+    }
   };
 
   return (

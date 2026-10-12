@@ -44,6 +44,7 @@ const t = {
     adminDisputes: 'Disputes',
     recordings: 'Recordings',
     adminResources: 'Resources',
+    partnerships: 'Ad & Partnerships',
     reports: 'Reports',
     auditLogs: 'Audit Logs',
 
@@ -568,6 +569,7 @@ const t = {
     adminDisputes: 'Tranh chấp',
     recordings: 'Bản ghi',
     adminResources: 'Tài nguyên',
+    partnerships: 'Quảng cáo & Đối tác',
     reports: 'Báo cáo',
     auditLogs: 'Nhật ký hoạt động',
 
