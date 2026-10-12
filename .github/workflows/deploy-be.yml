@@ -2,7 +2,7 @@ name: Deploy BE to Azure
 
 on:
   push:
-    branches: [main, VuongCoTu]
+    branches: [main]
     paths: ['BE/**']
   workflow_dispatch:
 
