@@ -6,6 +6,11 @@ on:
     paths: ['BE/**']
   workflow_dispatch:
 
+# Prevent concurrent deployments to the same Azure Web App from colliding
+concurrency:
+  group: azure-backend-deployment
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
