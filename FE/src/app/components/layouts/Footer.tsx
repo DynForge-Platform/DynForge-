@@ -224,9 +224,9 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
         className="w-full max-w-[96vw] sm:max-w-4xl md:max-w-5xl lg:max-w-5xl max-h-[92vh] overflow-y-auto p-0 bg-slate-900 border-slate-800 text-slate-100 shadow-2xl"
         aria-describedby={undefined}
       >
-        <div className="sticky top-0 z-20 rounded-t-lg border-b border-slate-800 bg-slate-900/95 px-6 py-4 backdrop-blur-md">
+        <div className="sticky top-0 z-20 rounded-t-lg border-b border-slate-800 bg-slate-900/95 px-6 py-3 sm:py-3.5 backdrop-blur-md">
           <DialogTitle className="flex items-center gap-2.5 text-lg font-bold text-white">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 shadow-sm shadow-cyan-500/20">
+            <span className="flex size-7 sm:size-8 items-center justify-center rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 shadow-sm shadow-cyan-500/20">
               <Megaphone className="size-4" />
             </span>
             {step === 'plans'
@@ -235,11 +235,11 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
           </DialogTitle>
         </div>
 
-        <div className="px-6 pb-6 pt-5">
+        <div className="px-5 sm:px-6 pb-4 pt-3.5">
           {step === 'plans' ? (
-            <div className="space-y-6">
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 backdrop-blur-sm">
-                <p className="mb-4 text-sm text-slate-300 text-center sm:text-left leading-relaxed">
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3.5 sm:p-4 backdrop-blur-sm">
+                <p className="mb-2.5 text-xs sm:text-sm text-slate-300 text-center sm:text-left leading-relaxed">
                   {vi ? (
                     <>
                       Tiếp cận <strong className="text-white font-semibold">12.000+ sinh viên đại học</strong> đang chủ động tìm kiếm tài nguyên học thuật và cố vấn chuyên sâu.
@@ -250,15 +250,15 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                     </>
                   )}
                 </p>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                   {stats.map(({ icon: Icon, value, label }) => (
                     <div
                       key={label}
-                      className="flex flex-col items-center rounded-xl border border-slate-800/80 bg-slate-900/70 p-3.5 text-center transition-all hover:border-cyan-500/30 hover:bg-slate-900"
+                      className="flex flex-col items-center rounded-xl border border-slate-800/80 bg-slate-900/70 p-2 sm:p-2.5 text-center transition-all hover:border-cyan-500/30 hover:bg-slate-900"
                     >
-                      <Icon className="mb-1.5 size-5 text-cyan-400" />
-                      <p className="font-extrabold text-white text-lg leading-tight tracking-tight">{value}</p>
-                      <p className="mt-1 text-xs text-slate-400 leading-tight">{label}</p>
+                      <Icon className="mb-1 size-4 text-cyan-400" />
+                      <p className="font-extrabold text-white text-base sm:text-lg leading-tight tracking-tight">{value}</p>
+                      <p className="mt-0.5 text-[11px] text-slate-400 leading-tight">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -269,7 +269,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                   <button
                     type="button"
                     onClick={() => setBilling('monthly')}
-                    className={`rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition-all ${
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                       billing === 'monthly'
                         ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-md shadow-cyan-500/25'
                         : 'text-slate-400 hover:text-white'
@@ -280,21 +280,21 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                   <button
                     type="button"
                     onClick={() => setBilling('yearly')}
-                    className={`rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 ${
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${
                       billing === 'yearly'
                         ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-md shadow-cyan-500/25'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     <span>{vi ? 'Theo năm' : 'Yearly'}</span>
-                    <span className="rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 text-[11px] font-bold">
+                    <span className="rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-bold">
                       -17%
                     </span>
                   </button>
                 </div>
               </div>
 
-              <div className="grid gap-5 md:grid-cols-3 items-stretch">
+              <div className="grid gap-3.5 md:grid-cols-3 items-stretch">
                 {adPlans.map((plan) => {
                   const price = getPrice(plan);
                   const perMonth = getPerMonth(plan);
@@ -303,56 +303,56 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                     <div
                       key={plan.name}
                       onClick={() => setSelectedPlan(plan.name)}
-                      className={`relative flex cursor-pointer flex-col rounded-3xl border-2 p-5 sm:p-6 transition-all duration-300 ${
+                      className={`relative flex cursor-pointer flex-col rounded-2xl sm:rounded-3xl border-2 p-4 sm:p-5 transition-all duration-300 ${
                         selected
                           ? 'border-cyan-500 bg-gradient-to-b from-cyan-950/30 via-slate-900 to-slate-950 shadow-2xl shadow-cyan-500/20 ring-1 ring-cyan-500/40 scale-[1.01]'
                           : 'border-slate-800 bg-slate-950/70 hover:border-slate-700 hover:bg-slate-900/50'
                       }`}
                     >
                       {plan.badge && (
-                        <span className={`absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg ${plan.badgeColor}`}>
+                        <span className={`absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-lg ${plan.badgeColor}`}>
                           {plan.badge}
                         </span>
                       )}
                       {selected && (
-                        <span className="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-bold">
-                          <Check className="size-3.5 stroke-[3]" />
+                        <span className="absolute right-3.5 top-3.5 flex size-5 sm:size-6 items-center justify-center rounded-full bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-bold">
+                          <Check className="size-3 stroke-[3]" />
                         </span>
                       )}
 
-                      <p className="font-bold text-white text-xl tracking-tight">{plan.name}</p>
-                      <p className="mt-1 text-xs text-slate-400 leading-relaxed min-h-[34px]">{plan.description}</p>
+                      <p className="font-bold text-white text-lg tracking-tight">{plan.name}</p>
+                      <p className="mt-0.5 text-xs text-slate-400 leading-snug min-h-[28px]">{plan.description}</p>
 
-                      {/* Pricing block - Generous width, responsive wrap, no cutoff */}
-                      <div className="mt-4 mb-2 pb-3 border-b border-slate-800/80">
+                      {/* Pricing block */}
+                      <div className="mt-3 mb-1.5 pb-2.5 border-b border-slate-800/80">
                         {price !== null ? (
                           <div>
-                            <div className="flex items-baseline gap-1.5 flex-wrap">
-                              <span className="text-2xl sm:text-[28px] font-extrabold text-white tracking-tight leading-none">
+                            <div className="flex items-baseline gap-1 flex-wrap">
+                              <span className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-none">
                                 {formatCurrency(price, lang)}
                               </span>
-                              <span className="text-xs sm:text-sm text-slate-400 font-semibold whitespace-nowrap">
+                              <span className="text-xs text-slate-400 font-semibold whitespace-nowrap">
                                 /&nbsp;{billing === 'yearly' ? (vi ? 'năm' : 'yr') : (vi ? 'tháng' : 'mo')}
                               </span>
                             </div>
                             {billing === 'yearly' && perMonth !== null ? (
-                              <div className="mt-2">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                              <div className="mt-1.5">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                                   ~ {formatCurrency(perMonth, lang)}/{vi ? 'tháng' : 'mo'} · {vi ? 'Tiết kiệm 2 tháng' : 'Save 2 mos'}
                                 </span>
                               </div>
                             ) : (
-                              <div className="h-6 mt-1" />
+                              <div className="h-5 mt-1" />
                             )}
                           </div>
                         ) : (
                           <div>
                             <div className="flex items-baseline">
-                              <span className="text-2xl sm:text-[28px] font-extrabold text-white tracking-tight leading-none">
+                              <span className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-none">
                                 {vi ? 'Liên hệ' : 'Contact Us'}
                               </span>
                             </div>
-                            <p className="mt-2 text-[11px] text-slate-400 font-medium">
+                            <p className="mt-1.5 text-[11px] text-slate-400 font-medium">
                               {vi ? 'Báo giá giải pháp theo nhu cầu riêng' : 'Custom solution pricing on request'}
                             </p>
                           </div>
@@ -360,11 +360,11 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                       </div>
 
                       {/* Feature list */}
-                      <ul className="mt-3 flex-1 space-y-2.5">
+                      <ul className="mt-2.5 flex-1 space-y-2">
                         {plan.features.map((f) => (
-                          <li key={f} className="flex items-start gap-2.5 text-xs text-slate-300 leading-snug">
-                            <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-400">
-                              <Check className="size-2.5 stroke-[3]" />
+                          <li key={f} className="flex items-start gap-2 text-xs text-slate-300 leading-snug">
+                            <span className="mt-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-400">
+                              <Check className="size-2 stroke-[3]" />
                             </span>
                             <span>{f}</span>
                           </li>
@@ -378,7 +378,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                           e.stopPropagation();
                           setSelectedPlan(plan.name);
                         }}
-                        className={`mt-6 w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                        className={`mt-4 w-full py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                           selected
                             ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-lg shadow-cyan-500/25 ring-1 ring-cyan-400'
                             : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700'
@@ -386,7 +386,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                       >
                         {selected ? (
                           <>
-                            <Check className="size-4 stroke-[3]" />
+                            <Check className="size-3.5 stroke-[3]" />
                             {vi ? 'Đã chọn gói này' : 'Selected Plan'}
                           </>
                         ) : (
@@ -399,7 +399,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
               </div>
 
               {/* Bottom Action Bar */}
-              <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-6 flex flex-col gap-3 border-t border-slate-800 bg-slate-900/95 px-6 py-4 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between rounded-b-lg">
+              <div className="sticky bottom-0 z-10 -mx-5 sm:-mx-6 -mb-4 mt-4 flex flex-col gap-2.5 border-t border-slate-800 bg-slate-900/95 px-5 sm:px-6 py-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between rounded-b-lg">
                 <div>
                   <p className="text-xs text-slate-400">
                     {vi ? 'Gói đang chọn:' : 'Selected plan:'}{' '}
@@ -413,7 +413,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                 </div>
                 <Button
                   onClick={() => setStep('contact')}
-                  className="shrink-0 gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg shadow-cyan-500/25 transition-all hover:scale-[1.02]"
+                  className="shrink-0 gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold px-5 py-2 text-xs sm:text-sm rounded-xl shadow-lg shadow-cyan-500/25 transition-all hover:scale-[1.02]"
                 >
                   {vi ? 'Tiếp tục đăng ký' : 'Continue to Register'} <ArrowRight className="size-4" />
                 </Button>
