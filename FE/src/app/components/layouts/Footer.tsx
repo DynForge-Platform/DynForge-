@@ -221,7 +221,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="w-full max-w-[96vw] sm:max-w-4xl md:max-w-5xl lg:max-w-5xl max-h-[92vh] overflow-y-auto p-0 bg-slate-900 border-slate-800 text-slate-100 shadow-2xl"
+        className="w-full max-w-[96vw] sm:max-w-4xl md:max-w-5xl lg:max-w-5xl max-h-[92vh] overflow-y-auto p-0 bg-slate-900 border-slate-800 text-slate-100 shadow-2xl [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.3)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/80 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-cyan-500"
         aria-describedby={undefined}
       >
         <div className="sticky top-0 z-20 rounded-t-lg border-b border-slate-800 bg-slate-900/95 px-6 py-3 sm:py-3.5 backdrop-blur-md">
