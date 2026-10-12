@@ -380,7 +380,7 @@ function RescheduleModal({ booking, onClose, onRescheduled }: { booking: Booking
             </div>
           )}
 
-          {isUnder12h && (
+          {isOldUnder12h && (
             <div className="rounded-xl bg-red-950/30 border border-red-500/30 p-3 text-xs text-red-300">
               ⚠️ Buổi học diễn ra trong vòng dưới 12 giờ. Hệ thống không cho phép đổi lịch để đảm bảo kế hoạch của Mentor.
             </div>
