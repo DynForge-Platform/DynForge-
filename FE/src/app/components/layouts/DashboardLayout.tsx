@@ -9,6 +9,7 @@ import {
   Megaphone
 } from 'lucide-react';
 import { cn } from '../ui/utils';
+import { Logo } from '../Logo';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { useLanguage } from '../../context/LanguageContext';
