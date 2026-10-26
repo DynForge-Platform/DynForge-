@@ -20,20 +20,43 @@ export async function loginApi(email: string, password: string): Promise<AuthTok
   return data.data as AuthTokens;
 }
 
+/**
+ * Gửi thông tin đăng ký để nhận mã xác thực OTP qua email.
+ */
 export async function registerApi(
   fullName: string,
   email: string,
   password: string,
   role: 'MENTEE' | 'MENTOR'
-): Promise<AuthTokens> {
-  // Backend RegisterRequest expects `asMentor` (boolean), not `role`.
+): Promise<string> {
   const { data } = await api.post('/api/auth/register', {
     fullName,
     email,
     password,
     asMentor: role === 'MENTOR',
   });
+  return data.message || 'Mã xác thực OTP đã được gửi đến email của bạn.';
+}
+
+/**
+ * Xác thực mã OTP để hoàn tất đăng ký và nhận session JWT.
+ */
+export async function verifyRegisterOtpApi(
+  email: string,
+  otp: string
+): Promise<AuthTokens> {
+  const { data } = await api.post('/api/auth/register/verify', { email, otp });
   return data.data as AuthTokens;
+}
+
+/**
+ * Gửi lại mã OTP xác thực đăng ký.
+ */
+export async function resendRegisterOtpApi(
+  email: string
+): Promise<string> {
+  const { data } = await api.post('/api/auth/register/resend', { email });
+  return data.message || 'Đã gửi lại mã xác thực OTP.';
 }
 
 export async function logoutApi(refreshToken: string): Promise<void> {

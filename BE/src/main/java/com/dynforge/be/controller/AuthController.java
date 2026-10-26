@@ -7,8 +7,10 @@ import com.dynforge.be.model.dto.GoogleLoginRequest;
 import com.dynforge.be.model.dto.LoginRequest;
 import com.dynforge.be.model.dto.RefreshRequest;
 import com.dynforge.be.model.dto.RegisterRequest;
+import com.dynforge.be.model.dto.ResendRegisterOtpRequest;
 import com.dynforge.be.model.dto.ResetPasswordRequest;
 import com.dynforge.be.model.dto.VerifyOtpRequest;
+import com.dynforge.be.model.dto.VerifyRegisterOtpRequest;
 import com.dynforge.be.service.AuthService;
 import com.dynforge.be.service.GoogleTokenVerifier;
 import com.dynforge.be.service.PasswordResetService;
@@ -33,10 +35,31 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final GoogleTokenVerifier googleTokenVerifier;
 
+    /**
+     * Bắt đầu quy trình đăng ký: Gửi mã OTP xác thực tới email.
+     */
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ApiResponse.ok("Account created successfully", authService.register(request));
+    @ResponseStatus(HttpStatus.OK)
+    public ApiResponse<Void> register(@Valid @RequestBody RegisterRequest request) {
+        authService.initiateRegister(request);
+        return ApiResponse.ok("Mã xác thực OTP đã được gửi đến email " + request.email() + ". Vui lòng kiểm tra hộp thư để kích hoạt tài khoản.", null);
+    }
+
+    /**
+     * Xác thực mã OTP và hoàn tất tạo tài khoản.
+     */
+    @PostMapping("/register/verify")
+    public ApiResponse<AuthResponse> verifyRegister(@Valid @RequestBody VerifyRegisterOtpRequest request) {
+        return ApiResponse.ok("Đăng ký tài khoản thành công!", authService.verifyRegisterOtp(request));
+    }
+
+    /**
+     * Gửi lại mã OTP đăng ký.
+     */
+    @PostMapping("/register/resend")
+    public ApiResponse<Void> resendRegisterOtp(@Valid @RequestBody ResendRegisterOtpRequest request) {
+        authService.resendRegisterOtp(request.email());
+        return ApiResponse.ok("Mã xác thực OTP mới đã được gửi đến email của bạn.", null);
     }
 
     @PostMapping("/login")

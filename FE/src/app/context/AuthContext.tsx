@@ -1,5 +1,13 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { loginApi, registerApi, logoutApi, googleLoginApi, type AuthTokens } from '../services/authService';
+import {
+  loginApi,
+  registerApi,
+  verifyRegisterOtpApi,
+  resendRegisterOtpApi,
+  logoutApi,
+  googleLoginApi,
+  type AuthTokens
+} from '../services/authService';
 import { getMe } from '../services/userService';
 
 export type AuthRole = 'mentee' | 'mentor' | 'admin';
@@ -18,12 +26,15 @@ interface AuthCtx {
   login: (role: AuthRole) => void;
   loginWithCredentials: (email: string, password: string) => Promise<AuthUser>;
   loginWithGoogle: (idToken: string) => Promise<AuthUser>;
+  initiateRegister: (fullName: string, email: string, password: string, role: 'MENTEE' | 'MENTOR') => Promise<string>;
+  verifyRegisterOtp: (email: string, otp: string) => Promise<AuthUser>;
+  resendRegisterOtp: (email: string) => Promise<string>;
   registerWithCredentials: (
     fullNameOrPayload: string | { name?: string; fullName?: string; email: string; password: string; role: string; university?: string },
     email?: string,
     password?: string,
     role?: 'MENTEE' | 'MENTOR' | 'mentee' | 'mentor'
-  ) => Promise<AuthUser>;
+  ) => Promise<string>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -107,9 +118,12 @@ function loadSavedUser(): AuthUser | null {
 const AuthContext = createContext<AuthCtx>({
   user: null,
   login: () => {},
-  loginWithCredentials: async () => {},
-  loginWithGoogle: async () => {},
-  registerWithCredentials: async () => {},
+  loginWithCredentials: async () => ({} as AuthUser),
+  loginWithGoogle: async () => ({} as AuthUser),
+  initiateRegister: async () => '',
+  verifyRegisterOtp: async () => ({} as AuthUser),
+  resendRegisterOtp: async () => '',
+  registerWithCredentials: async () => '',
   logout: async () => {},
   refreshUser: async () => {},
 });
@@ -117,7 +131,7 @@ const AuthContext = createContext<AuthCtx>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(loadSavedUser);
 
-  // Demo quick-login (no real API)
+  // Demo quick-login (no real JWT)
   const login = (role: AuthRole) => {
     clearTokens();
     const u = demoProfiles[role];
@@ -145,12 +159,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return u;
   };
 
+  const initiateRegister = async (fullName: string, email: string, password: string, role: 'MENTEE' | 'MENTOR'): Promise<string> => {
+    return await registerApi(fullName, email, password, role);
+  };
+
+  const verifyRegisterOtp = async (email: string, otp: string): Promise<AuthUser> => {
+    const tokens = await verifyRegisterOtpApi(email, otp);
+    storeTokens(tokens);
+    const u = buildUserFromTokens(tokens);
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
+    localStorage.removeItem(ROLE_KEY);
+    setUser(u);
+    return u;
+  };
+
+  const resendRegisterOtp = async (email: string): Promise<string> => {
+    return await resendRegisterOtpApi(email);
+  };
+
   const registerWithCredentials = async (
     fullNameOrPayload: string | { name?: string; fullName?: string; email: string; password: string; role: string; university?: string },
     emailArg?: string,
     passwordArg?: string,
     roleArg?: 'MENTEE' | 'MENTOR' | 'mentee' | 'mentor'
-  ): Promise<AuthUser> => {
+  ): Promise<string> => {
     let fullName = '';
     let email = '';
     let password = '';
@@ -170,13 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role = r === 'MENTOR' ? 'MENTOR' : 'MENTEE';
     }
 
-    const tokens = await registerApi(fullName, email, password, role);
-    storeTokens(tokens);
-    const u = buildUserFromTokens(tokens);
-    localStorage.setItem(USER_KEY, JSON.stringify(u));
-    localStorage.removeItem(ROLE_KEY);
-    setUser(u);
-    return u;
+    return await initiateRegister(fullName, email, password, role);
   };
 
   const logout = async () => {
@@ -207,7 +233,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithCredentials, loginWithGoogle, registerWithCredentials, logout, refreshUser }}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      loginWithCredentials,
+      loginWithGoogle,
+      initiateRegister,
+      verifyRegisterOtp,
+      resendRegisterOtp,
+      registerWithCredentials,
+      logout,
+      refreshUser
+    }}>
       {children}
     </AuthContext.Provider>
   );
