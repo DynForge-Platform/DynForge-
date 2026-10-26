@@ -157,6 +157,10 @@ public class BookingService {
                     "Mentor does not teach course: " + request.courseCode());
         }
 
+        if (request.durationMin() < 15 || request.durationMin() > 240) {
+            throw new BadRequestException("Thời lượng buổi học phải từ 15 đến 240 phút (4 giờ).");
+        }
+
         Instant reqStart = request.startAt();
         Instant reqEnd = reqStart.plus(request.durationMin(), ChronoUnit.MINUTES);
 

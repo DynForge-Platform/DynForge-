@@ -55,6 +55,13 @@ public class WalletService {
     }
 
     public TopUpResponse topUp(User user, TopUpRequest request) {
+        if (request.amount() < 10_000L) {
+            throw new BadRequestException("Số tiền nạp tối thiểu là 10.000₫");
+        }
+        if (request.amount() > 50_000_000L) {
+            throw new BadRequestException("Số tiền nạp tối đa là 50.000.000₫ mỗi giao dịch");
+        }
+
         // PayOS orderCode must be a unique positive number; millis works well and fits in a long.
         long orderCode = System.currentTimeMillis();
 
@@ -121,6 +128,9 @@ public class WalletService {
         }
         if (request.amount() < 50_000L) {
             throw new BadRequestException("Số tiền rút tối thiểu là 50.000₫");
+        }
+        if (request.amount() > 50_000_000L) {
+            throw new BadRequestException("Số tiền rút tối đa là 50.000.000₫ mỗi giao dịch");
         }
 
         ObjectId userId = new ObjectId(user.getId());

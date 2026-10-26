@@ -2,6 +2,7 @@ package com.dynforge.be.model.dto;
 
 import com.dynforge.be.model.enums.BookingFormat;
 import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +14,8 @@ public record BookingRequest(
         @NotBlank String courseCode,
         @NotNull BookingFormat format,
         @NotNull @Future(message = "Giờ học phải ở tương lai") Instant startAt,
-        @Min(value = 15, message = "Thời lượng tối thiểu 15 phút") int durationMin
+        @Min(value = 15, message = "Thời lượng tối thiểu 15 phút")
+        @Max(value = 240, message = "Thời lượng tối đa 240 phút (4 giờ)")
+        int durationMin
 ) {
 }

@@ -34,6 +34,7 @@ function AddFundsModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?
 
   const pay = async () => {
     if (num < 10000) { toast.error('Số tiền nạp tối thiểu là 10.000₫'); return; }
+    if (num > 50000000) { toast.error('Số tiền nạp tối đa mỗi lần là 50.000.000₫'); return; }
     setLoading(true);
     try {
       const { paymentUrl } = await topUp(num);
@@ -166,6 +167,10 @@ function WithdrawModal({
     }
     if (belowMin) {
       toast.error('Số tiền rút tối thiểu là 50.000₫.');
+      return;
+    }
+    if (num > 50000000) {
+      toast.error('Số tiền rút tối đa mỗi lần là 50.000.000₫.');
       return;
     }
     if (exceedsBalance) {

@@ -58,6 +58,7 @@ function WithdrawModal({
       return;
     }
     if (num < 50000) { toast.error(vi ? 'Số tiền rút tối thiểu là 50.000₫' : 'Minimum withdrawal is 50.000₫'); return; }
+    if (num > 50000000) { toast.error(vi ? 'Số tiền rút tối đa là 50.000.000₫' : 'Maximum withdrawal is 50,000,000₫'); return; }
     if (num > balance) { toast.error(vi ? 'Số tiền vượt quá số dư khả dụng.' : 'Amount exceeds your available balance.'); return; }
     if (!bankName.trim() || !bankAccount.trim()) { toast.error(vi ? 'Vui lòng nhập thông tin ngân hàng.' : 'Please enter your bank details.'); return; }
     setSubmitting(true);

@@ -28,8 +28,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -339,7 +341,9 @@ class BookingPhase1RulesTest {
     @Test
     @DisplayName("Reschedule outside Mentor availability should be rejected")
     void rescheduleOutsideAvailabilityShouldThrow() {
-        Instant startAt = Instant.now().plus(Duration.ofDays(2));
+        Instant fixedNow = Instant.parse("2026-10-10T00:00:00Z");
+        bookingService.setClock(Clock.fixed(fixedNow, ZoneOffset.UTC));
+        Instant startAt = fixedNow.plus(Duration.ofDays(2));
         // Pick Sunday 14:00 (Vietnam timezone)
         Instant newStart = Instant.parse("2026-10-11T07:00:00Z"); // Sunday 14:00 GMT+7
         Booking booking = createBooking(startAt, BookingStatus.ACCEPTED, 0);
@@ -361,7 +365,9 @@ class BookingPhase1RulesTest {
     @Test
     @DisplayName("Reschedule session where duration exceeds Mentor availability window should be rejected")
     void rescheduleExceedingAvailabilityDurationShouldThrow() {
-        Instant startAt = Instant.now().plus(Duration.ofDays(2));
+        Instant fixedNow = Instant.parse("2026-10-10T00:00:00Z");
+        bookingService.setClock(Clock.fixed(fixedNow, ZoneOffset.UTC));
+        Instant startAt = fixedNow.plus(Duration.ofDays(2));
         // Pick Monday 08:00 (Vietnam timezone)
         // 2026-10-12 is Monday. 08:00 GMT+7 is 01:00 UTC.
         Instant newStart = Instant.parse("2026-10-12T01:00:00Z");

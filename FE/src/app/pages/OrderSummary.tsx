@@ -125,6 +125,10 @@ function OrderTopUpModal({
       toast.error(lang === 'vi' ? 'Số tiền nạp tối thiểu là 10.000₫' : 'Minimum top-up is 10,000₫');
       return;
     }
+    if (numAmount > 50000000) {
+      toast.error(lang === 'vi' ? 'Số tiền nạp tối đa là 50.000.000₫' : 'Maximum top-up is 50,000,000₫');
+      return;
+    }
     setLoading(true);
     try {
       const res = await topUp(numAmount);
