@@ -31,6 +31,7 @@ import { MouseFollowLight } from '../components/MouseFollowLight';
 import { DynForgeEmblem } from '../components/Logo';
 import { formatDate } from '../lib/format';
 import { toast } from 'sonner';
+import { getMyBookings, type BookingResponse } from '../services/bookingService';
 
 interface EscrowLocationState {
   mentor?: string;
@@ -54,10 +55,37 @@ export function EscrowStatus() {
   const { lang } = useLanguage();
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [latestBooking, setLatestBooking] = useState<BookingResponse | null>(null);
   const isVi = lang === 'vi';
 
+  useEffect(() => {
+    if (!location.state && user?.id) {
+      getMyBookings()
+        .then((list) => {
+          if (list && list.length > 0) {
+            setLatestBooking(list[0]);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [location.state, user?.id]);
+
   const now = new Date();
-  const state: EscrowLocationState = (location.state as EscrowLocationState) ?? {
+  const locState = location.state as EscrowLocationState | undefined;
+
+  const state: EscrowLocationState = locState ?? (latestBooking ? {
+    mentor: latestBooking.mentorName ?? 'Mentor DynForge',
+    amount: latestBooking.price,
+    day: new Date(latestBooking.startAt).getDate(),
+    month: new Date(latestBooking.startAt).getMonth(),
+    year: new Date(latestBooking.startAt).getFullYear(),
+    slot: new Date(latestBooking.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+    duration: latestBooking.durationMin,
+    bookingId: latestBooking.id,
+    courseCode: latestBooking.courseCode,
+    courseName: latestBooking.courseCode,
+    mentorUniversity: 'DynForge Academic Partner',
+  } : {
     mentor: 'TS. Trần Anh Tuấn',
     amount: 350000,
     day: now.getDate() + 2,
@@ -70,7 +98,7 @@ export function EscrowStatus() {
     courseName: 'Thuật Toán Nâng Cao & Tối Ưu Hóa',
     mentorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     mentorUniversity: 'Đại Học FPT TP.HCM (FPTU-HCM)',
-  };
+  });
 
   const bookingId = state.bookingId || 'DF-2026-8866';
   const escrowId = 'ESC-' + (state.bookingId ? state.bookingId.replace(/[^0-9]/g, '') : '998842');
@@ -80,7 +108,7 @@ export function EscrowStatus() {
   const durationMin = state.duration || 90;
   const amount = state.amount || 350000;
   const meetingUrl = `https://meet.jit.si/${state.roomId?.trim() ? state.roomId.trim() : `DynForge-${bookingId}`}`;
-  const studentEmail = user?.email || 'kimcot098@gmail.com';
+  const studentEmail = user?.email || 'student@dynforge.tech';
 
   // Compute session date display
   const sessionYear = state.year ?? now.getFullYear();

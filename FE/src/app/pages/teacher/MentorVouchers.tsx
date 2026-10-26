@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Tag, Copy, CheckCircle2, Trash2, Info } from 'lucide-react';
 import { formatCurrency, mentors } from '../../data/mockData';
 import { Card } from '../../components/ui/card';
@@ -56,7 +56,20 @@ export function MentorVouchers() {
   const { lang } = useLanguage();
   const vi = lang === 'vi';
   const statusLabel = (s: VoucherStatus) => (vi ? STATUS_LABELS_VI[s] : s);
-  const [vouchers, setVouchers] = useState<MyVoucher[]>(initialVouchers);
+  const [vouchers, setVouchers] = useState<MyVoucher[]>(() => {
+    try {
+      const saved = localStorage.getItem('dynforge_mentor_vouchers');
+      return saved ? JSON.parse(saved) : initialVouchers;
+    } catch {
+      return initialVouchers;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dynforge_mentor_vouchers', JSON.stringify(vouchers));
+    } catch {}
+  }, [vouchers]);
   const [showCreate, setShowCreate] = useState(false);
   const [type, setType] = useState<VoucherType>('percentage');
   const [autoCode, setAutoCode] = useState(true);

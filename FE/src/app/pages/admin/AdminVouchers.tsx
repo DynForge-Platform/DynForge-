@@ -65,11 +65,13 @@ function VoucherFormDialog({
   onClose,
   createdBy = 'Admin',
   mentorLock,
+  onCreate,
 }: {
   open: boolean;
   onClose: () => void;
   createdBy?: string;
   mentorLock?: string;
+  onCreate?: (v: Voucher) => void;
 }) {
   const { lang } = useLanguage();
   const vi = lang === 'vi';
@@ -77,6 +79,11 @@ function VoucherFormDialog({
   const [scope, setScope] = useState<VoucherScope>(mentorLock ? 'mentor' : 'platform');
   const [autoCode, setAutoCode] = useState(true);
   const [code, setCode] = useState(() => `GRD${Math.random().toString(36).substring(2, 7).toUpperCase()}`);
+  const [val, setVal] = useState('20');
+  const [minOrder, setMinOrder] = useState('80000');
+  const [usageLimit, setUsageLimit] = useState('100');
+  const [mentorName, setMentorName] = useState(mentors[0]?.name ?? 'Mentor');
+  const [expiry, setExpiry] = useState('2026-08-31');
 
   const generate = () => {
     const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -85,7 +92,25 @@ function VoucherFormDialog({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(vi ? `Voucher ${code || ''} đã được kích hoạt!` : `Voucher ${code || 'created'} is now active!`);
+    const numVal = parseInt(val) || (type === 'percentage' ? 20 : 50000);
+    const numMin = parseInt(minOrder) || 0;
+    const numLimit = parseInt(usageLimit) || 100;
+    const newV: Voucher = {
+      id: `v-${Date.now()}`,
+      code: code || `GRD${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+      type,
+      value: numVal,
+      minOrder: numMin,
+      scope,
+      mentorName: scope === 'mentor' ? (mentorLock || mentorName) : undefined,
+      usageLimit: numLimit,
+      usedCount: 0,
+      expiry: expiry || '2026-08-31',
+      status: 'Active',
+      createdBy,
+    };
+    onCreate?.(newV);
+    toast.success(vi ? `Voucher ${newV.code} đã được kích hoạt!` : `Voucher ${newV.code} is now active!`);
     onClose();
   };
 
@@ -110,7 +135,7 @@ function VoucherFormDialog({
             </div>
             <div className="flex gap-2">
               <Input
-                value={autoCode ? code : code}
+                value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 readOnly={autoCode}
                 placeholder={vi ? 'vd: SUMMER30' : 'e.g. SUMMER30'}
@@ -129,7 +154,11 @@ function VoucherFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="mb-1.5 block">{vi ? 'Loại giảm giá' : 'Discount type'}</Label>
-              <Select value={type} onValueChange={(v) => setType(v as VoucherType)}>
+              <Select value={type} onValueChange={(v) => {
+                const t = v as VoucherType;
+                setType(t);
+                setVal(t === 'percentage' ? '20' : '50000');
+              }}>
                 <SelectTrigger className="bg-input-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="percentage">{vi ? 'Phần trăm (%)' : 'Percentage (%)'}</SelectItem>
@@ -140,7 +169,14 @@ function VoucherFormDialog({
             <div>
               <Label className="mb-1.5 block">{vi ? 'Giá trị giảm' : 'Discount value'}</Label>
               <div className="relative">
-                <Input type="number" placeholder={type === 'percentage' ? '20' : '50000'} className="bg-input-background pr-10" required />
+                <Input
+                  type="number"
+                  value={val}
+                  onChange={(e) => setVal(e.target.value)}
+                  placeholder={type === 'percentage' ? '20' : '50000'}
+                  className="bg-input-background pr-10"
+                  required
+                />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                   {type === 'percentage' ? '%' : '₫'}
                 </span>
@@ -152,11 +188,24 @@ function VoucherFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="mb-1.5 block">{vi ? 'Đơn tối thiểu (₫)' : 'Min. order (₫)'}</Label>
-              <Input type="number" placeholder="80000" className="bg-input-background" />
+              <Input
+                type="number"
+                value={minOrder}
+                onChange={(e) => setMinOrder(e.target.value)}
+                placeholder="80000"
+                className="bg-input-background"
+              />
             </div>
             <div>
               <Label className="mb-1.5 block">{vi ? 'Giới hạn lượt dùng' : 'Usage limit'}</Label>
-              <Input type="number" placeholder="100" className="bg-input-background" required />
+              <Input
+                type="number"
+                value={usageLimit}
+                onChange={(e) => setUsageLimit(e.target.value)}
+                placeholder="100"
+                className="bg-input-background"
+                required
+              />
             </div>
           </div>
 
@@ -180,10 +229,10 @@ function VoucherFormDialog({
               {mentorLock ? (
                 <Input value={mentorLock} readOnly className="bg-input-background" />
               ) : (
-                <Select>
+                <Select value={mentorName} onValueChange={setMentorName}>
                   <SelectTrigger className="bg-input-background"><SelectValue placeholder={vi ? 'Chọn mentor' : 'Select mentor'} /></SelectTrigger>
                   <SelectContent>
-                    {mentors.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                    {mentors.map((m) => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
@@ -193,7 +242,13 @@ function VoucherFormDialog({
           {/* Expiry */}
           <div>
             <Label className="mb-1.5 block">{vi ? 'Ngày hết hạn' : 'Expiry date'}</Label>
-            <Input type="date" className="bg-input-background" defaultValue="2026-08-31" required />
+            <Input
+              type="date"
+              value={expiry}
+              onChange={(e) => setExpiry(e.target.value)}
+              className="bg-input-background"
+              required
+            />
           </div>
 
           <DialogFooter className="gap-2">
@@ -209,7 +264,21 @@ function VoucherFormDialog({
 export function AdminVouchers() {
   const { lang } = useLanguage();
   const vi = lang === 'vi';
-  const [vouchers, setVouchers] = useState<Voucher[]>(seedVouchers);
+  const [vouchers, setVouchers] = useState<Voucher[]>(() => {
+    try {
+      const saved = localStorage.getItem('dynforge_admin_vouchers');
+      return saved ? JSON.parse(saved) : seedVouchers;
+    } catch {
+      return seedVouchers;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dynforge_admin_vouchers', JSON.stringify(vouchers));
+    } catch {}
+  }, [vouchers]);
+
   const [showCreate, setShowCreate] = useState(false);
   const [tabFilter, setTabFilter] = useState('All');
   const [query, setQuery] = useState('');
@@ -338,7 +407,11 @@ export function AdminVouchers() {
         </div>
       </Card>
 
-      <VoucherFormDialog open={showCreate} onClose={() => setShowCreate(false)} />
+      <VoucherFormDialog
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreate={(v) => setVouchers((prev) => [v, ...prev])}
+      />
     </div>
   );
 }

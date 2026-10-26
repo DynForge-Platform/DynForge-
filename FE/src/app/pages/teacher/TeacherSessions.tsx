@@ -18,7 +18,7 @@ import { MeetRoomOverlay } from '../../components/MeetRoomOverlay';
 import { CalendarCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  getMentorSchedule, markTaught, acceptBooking, declineBooking, mapStatusToDisplay, respondRescheduleBooking,
+  getMentorSchedule, markTaught, acceptBooking, declineBooking, mapStatusToDisplay, respondRescheduleBooking, respondDispute,
   type BookingResponse, type BookingStatus,
 } from '../../services/bookingService';
 import { useLanguage } from '../../context/LanguageContext';
@@ -56,6 +56,8 @@ export function TeacherSessions() {
   const [viewBooking, setViewBooking] = useState<BookingResponse | null>(null);
   const [markDoneBooking, setMarkDoneBooking] = useState<BookingResponse | null>(null);
   const [disputeBooking, setDisputeBooking] = useState<BookingResponse | null>(null);
+  const [disputeResponse, setDisputeResponse] = useState('');
+  const [submittingDispute, setSubmittingDispute] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
 
   const fetchBookings = useCallback(async () => {
@@ -149,10 +151,25 @@ export function TeacherSessions() {
     }
   };
 
-  const handleDisputeSubmit = (e: React.FormEvent) => {
+  const handleDisputeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(vi ? 'Phản hồi của bạn đã được gửi tới DynForge.' : 'Your response has been submitted to DynForge.');
-    setDisputeBooking(null);
+    if (!disputeBooking) return;
+    if (!disputeResponse.trim()) {
+      toast.error(vi ? 'Vui lòng nhập nội dung phản hồi.' : 'Please enter your response.');
+      return;
+    }
+    setSubmittingDispute(true);
+    try {
+      await respondDispute(disputeBooking.id, { response: disputeResponse.trim() });
+      toast.success(vi ? 'Đã gửi phản hồi khiếu nại thành công tới DynForge!' : 'Dispute response submitted to DynForge successfully!');
+      fetchBookings();
+      setDisputeBooking(null);
+      setDisputeResponse('');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? (vi ? 'Không thể gửi phản hồi.' : 'Failed to submit dispute response.'));
+    } finally {
+      setSubmittingDispute(false);
+    }
   };
 
   return (
@@ -406,7 +423,7 @@ export function TeacherSessions() {
 
       {/* Respond to dispute */}
       {disputeBooking && (
-        <Dialog open onOpenChange={() => setDisputeBooking(null)}>
+        <Dialog open onOpenChange={() => { setDisputeBooking(null); setDisputeResponse(''); }}>
           <DialogContent className="max-w-md" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -417,14 +434,29 @@ export function TeacherSessions() {
               <div className="rounded-xl border border-border bg-accent/40 p-4">
                 <p style={{ fontWeight: 600 }}>{disputeBooking.courseCode}</p>
                 <StatusBadge status={mapStatusToDisplay(disputeBooking.status)} />
+                {disputeBooking.disputeReason && (
+                  <p className="mt-2 text-xs text-rose-300 bg-rose-950/30 border border-rose-500/20 p-2.5 rounded-lg">
+                    <strong>{vi ? 'Lý do của học viên:' : "Student's reason:"}</strong> {disputeBooking.disputeReason}
+                  </p>
+                )}
               </div>
               <div>
                 <Label className="mb-1.5 block">{vi ? 'Phản hồi của bạn' : 'Your response'}</Label>
-                <Textarea placeholder={vi ? 'Trình bày rõ ràng, trung thực quan điểm của bạn. DynForge sẽ xem xét công bằng cả hai bên.' : 'Explain your side of the situation clearly and factually. DynForge will review both sides fairly.'} rows={4} required />
+                <Textarea
+                  value={disputeResponse}
+                  onChange={(e) => setDisputeResponse(e.target.value)}
+                  placeholder={vi ? 'Trình bày rõ ràng, trung thực quan điểm của bạn. DynForge sẽ xem xét công bằng cả hai bên.' : 'Explain your side of the situation clearly and factually. DynForge will review both sides fairly.'}
+                  rows={4}
+                  required
+                />
               </div>
               <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => setDisputeBooking(null)}>{vi ? 'Huỷ' : 'Cancel'}</Button>
-                <Button type="submit">{vi ? 'Gửi phản hồi' : 'Submit response'}</Button>
+                <Button type="button" variant="outline" onClick={() => { setDisputeBooking(null); setDisputeResponse(''); }} disabled={submittingDispute}>
+                  {vi ? 'Huỷ' : 'Cancel'}
+                </Button>
+                <Button type="submit" disabled={submittingDispute || !disputeResponse.trim()}>
+                  {submittingDispute ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Gửi phản hồi' : 'Submit response')}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>

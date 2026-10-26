@@ -535,12 +535,31 @@ export function OrderSummary() {
     setVoucherError('');
 
     setTimeout(() => {
-      const found = VALID_VOUCHERS[code];
+      let found = VALID_VOUCHERS[code];
       if (!found) {
-        setVoucherError('Invalid voucher code. Please check and try again.');
+        try {
+          const adminV = JSON.parse(localStorage.getItem('dynforge_admin_vouchers') || '[]');
+          const mentorV = JSON.parse(localStorage.getItem('dynforge_mentor_vouchers') || '[]');
+          const all = [...adminV, ...mentorV];
+          const matched = all.find((v: any) => v.code === code && v.status === 'Active');
+          if (matched) {
+            found = {
+              type: matched.type,
+              value: matched.value,
+              minOrder: matched.minOrder || 0,
+              label: matched.type === 'percentage' ? `${matched.value}% off` : `${formatCurrency(matched.value)} off`,
+            };
+          }
+        } catch {}
+      }
+
+      if (!found) {
+        setVoucherError(lang === 'vi' ? 'Mã voucher không hợp lệ. Vui lòng kiểm tra lại.' : 'Invalid voucher code. Please check and try again.');
       } else if (sessionFee < found.minOrder) {
         setVoucherError(
-          `Minimum order ${formatCurrency(found.minOrder)} required for this voucher.`
+          lang === 'vi'
+            ? `Cần đơn hàng tối thiểu ${formatCurrency(found.minOrder)} để áp dụng voucher này.`
+            : `Minimum order ${formatCurrency(found.minOrder)} required for this voucher.`
         );
       } else {
         setAppliedVoucher({ code, data: found });
@@ -548,7 +567,7 @@ export function OrderSummary() {
         setVoucherError('');
       }
       setApplying(false);
-    }, 600);
+    }, 300);
   };
 
   const removeVoucher = () => {

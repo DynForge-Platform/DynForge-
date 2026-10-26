@@ -43,6 +43,8 @@ export function AdminMentors() {
     try {
       await updateUserStatus(m.userId, 'SUSPENDED');
       toast.success(vi ? `Đã tạm khoá ${m.name}.` : `${m.name} suspended.`);
+      const profiles = await listAdminMentors();
+      setRows(profiles.map((p) => ({ ...backendToMentor(p), userId: p.userId })));
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? (vi ? 'Không thể tạm khoá mentor.' : 'Could not suspend mentor.'));
     } finally {

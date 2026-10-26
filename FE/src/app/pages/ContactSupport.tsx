@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   CalendarX, CreditCard, RefreshCcw, BadgeCheck, Lock, Monitor,
-  Clock, Mail, ExternalLink, CheckCircle2, LifeBuoy,
+  Clock, Mail, ExternalLink, CheckCircle2, LifeBuoy, Loader2,
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -17,6 +17,8 @@ import {
 } from '../components/ui/accordion';
 import { PageHeader } from '../components/common';
 import { useLanguage } from '../context/LanguageContext';
+import { submitPartnershipLead } from '../services/partnershipService';
+import { toast } from 'sonner';
 
 export function ContactSupport() {
   const navigate = useNavigate();
@@ -24,7 +26,12 @@ export function ContactSupport() {
   const vi = lang === 'vi';
   const [submitted, setSubmitted] = useState(false);
   const [ticketId] = useState(`TKT-${Math.floor(100000 + Math.random() * 900000)}`);
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('booking');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const categories = [
     { icon: CalendarX, label: vi ? 'Vấn đề đặt lịch' : 'Booking issue', value: 'booking' },
@@ -47,9 +54,30 @@ export function ContactSupport() {
     { q: 'How do I verify my mentor account?', a: 'Go to your Mentor Dashboard → Verification. Upload your transcript or proof of expertise, verify your university email, and schedule a short verification call. Approval takes 2–3 business days.' },
   ];
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
+      toast.error(vi ? 'Vui lòng điền đầy đủ các thông tin bắt buộc.' : 'Please fill in all required fields.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await submitPartnershipLead({
+        companyName: `[Hỗ trợ: ${category || 'Chung'}] ${subject.trim()}`,
+        contactName: name.trim(),
+        email: email.trim(),
+        phone: '',
+        goals: message.trim(),
+        planName: 'Customer Support',
+        billingCycle: 'TICKET',
+      });
+      setSubmitted(true);
+      toast.success(vi ? 'Yêu cầu hỗ trợ đã được gửi thành công!' : 'Support request submitted successfully!');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || (vi ? 'Không thể gửi yêu cầu hỗ trợ lúc này. Vui lòng thử lại.' : 'Failed to submit support request.'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -101,11 +129,24 @@ export function ContactSupport() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <Label className="mb-1.5 block text-xs uppercase tracking-wider text-slate-400">{vi ? 'Họ và tên' : 'Your Name'}</Label>
-                    <Input placeholder={vi ? 'Nguyễn Văn A' : 'John Doe'} className="bg-[#020b18] border-white/10 text-white placeholder:text-slate-500 rounded-xl" required />
+                    <Input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder={vi ? 'Nguyễn Văn A' : 'John Doe'}
+                      className="bg-[#020b18] border-white/10 text-white placeholder:text-slate-500 rounded-xl"
+                      required
+                    />
                   </div>
                   <div>
                     <Label className="mb-1.5 block text-xs uppercase tracking-wider text-slate-400">{vi ? 'Email của bạn' : 'Your Email'}</Label>
-                    <Input type="email" placeholder="student@university.edu.vn" className="bg-[#020b18] border-white/10 text-white placeholder:text-slate-500 rounded-xl" required />
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="student@university.edu.vn"
+                      className="bg-[#020b18] border-white/10 text-white placeholder:text-slate-500 rounded-xl"
+                      required
+                    />
                   </div>
                 </div>
 
@@ -123,16 +164,33 @@ export function ContactSupport() {
 
                 <div>
                   <Label className="mb-1.5 block text-xs uppercase tracking-wider text-slate-400">{vi ? 'Tiêu đề' : 'Subject'}</Label>
-                  <Input placeholder={vi ? 'Mô tả ngắn gọn vấn đề của bạn' : 'Brief description of your issue'} className="bg-[#020b18] border-white/10 text-white placeholder:text-slate-500 rounded-xl" required />
+                  <Input
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder={vi ? 'Mô tả ngắn gọn vấn đề của bạn' : 'Brief description of your issue'}
+                    className="bg-[#020b18] border-white/10 text-white placeholder:text-slate-500 rounded-xl"
+                    required
+                  />
                 </div>
 
                 <div>
                   <Label className="mb-1.5 block text-xs uppercase tracking-wider text-slate-400">{vi ? 'Nội dung / Chi tiết vấn đề' : 'Message / Issue Details'}</Label>
-                  <Textarea placeholder={vi ? 'Kèm mã đặt lịch, tên mentor hoặc chi tiết lỗi…' : 'Include booking code, mentor name, or error details...'} rows={4} className="bg-[#020b18] border-white/10 text-white placeholder:text-slate-500 rounded-xl" required />
+                  <Textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder={vi ? 'Kèm mã đặt lịch, tên mentor hoặc chi tiết lỗi…' : 'Include booking code, mentor name, or error details...'}
+                    rows={4}
+                    className="bg-[#020b18] border-white/10 text-white placeholder:text-slate-500 rounded-xl"
+                    required
+                  />
                 </div>
 
-                <Button type="submit" className="w-full h-12 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl shadow-xl text-base">
-                  {vi ? 'Gửi yêu cầu' : 'Submit Ticket'}
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full h-12 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-xl shadow-xl text-base disabled:opacity-50"
+                >
+                  {submitting ? <Loader2 className="size-5 animate-spin mx-auto" /> : (vi ? 'Gửi yêu cầu' : 'Submit Ticket')}
                 </Button>
               </form>
             </Card>
