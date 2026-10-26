@@ -49,6 +49,14 @@ function WithdrawModal({
   const num = parseInt(amount.replace(/\D/g, '')) || 0;
 
   const submit = async () => {
+    if (balance <= 0) {
+      toast.error(vi ? 'Số dư ví hiện tại là 0₫. Không thể rút tiền.' : 'Current wallet balance is 0₫. Cannot withdraw.');
+      return;
+    }
+    if (balance < 50000) {
+      toast.error(vi ? 'Số dư ví chưa đạt hạn mức tối thiểu 50.000₫.' : 'Balance is below minimum withdrawal threshold of 50.000₫.');
+      return;
+    }
     if (num < 50000) { toast.error(vi ? 'Số tiền rút tối thiểu là 50.000₫' : 'Minimum withdrawal is 50.000₫'); return; }
     if (num > balance) { toast.error(vi ? 'Số tiền vượt quá số dư khả dụng.' : 'Amount exceeds your available balance.'); return; }
     if (!bankName.trim() || !bankAccount.trim()) { toast.error(vi ? 'Vui lòng nhập thông tin ngân hàng.' : 'Please enter your bank details.'); return; }
@@ -121,8 +129,22 @@ function WithdrawModal({
             </div>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={onClose}>{vi ? 'Huỷ' : 'Cancel'}</Button>
-              <Button className="flex-1" onClick={submit} disabled={submitting}>
-                {submitting ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Xác nhận rút tiền' : 'Confirm withdrawal')}
+              <Button
+                className="flex-1"
+                onClick={submit}
+                disabled={submitting || balance < 50000 || num < 50000 || num > balance || !bankName.trim() || !bankAccount.trim()}
+              >
+                {submitting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : balance <= 0 ? (
+                  vi ? 'Số dư là 0₫' : 'Balance is 0₫'
+                ) : balance < 50000 ? (
+                  vi ? 'Chưa đủ tối thiểu 50K' : 'Below 50K minimum'
+                ) : num > balance ? (
+                  vi ? 'Vượt quá số dư' : 'Exceeds balance'
+                ) : (
+                  vi ? 'Xác nhận rút tiền' : 'Confirm withdrawal'
+                )}
               </Button>
             </div>
           </div>
@@ -224,7 +246,22 @@ export function TeacherEarnings() {
           <Button variant="outline" onClick={() => toast.info(vi ? 'Tính năng xuất dữ liệu sắp ra mắt.' : 'Export feature coming soon.')}>
             <Download className="size-4" /> {vi ? 'Xuất' : 'Export'}
           </Button>
-          <Button className="gap-1.5" onClick={() => setShowWithdraw(true)} disabled={available <= 0}>
+          <Button
+            className="gap-1.5"
+            onClick={() => {
+              if (available <= 0) {
+                toast.error(vi ? 'Số dư ví hiện tại là 0₫. Bạn không có số dư để rút tiền.' : 'Current wallet balance is 0₫. Cannot withdraw.');
+                return;
+              }
+              if (available < 50000) {
+                toast.error(vi ? `Số dư khả dụng (${formatCurrency(available)}) chưa đạt mức rút tối thiểu (50.000₫).` : `Available balance (${formatCurrency(available)}) is below minimum withdrawal (50,000₫).`);
+                return;
+              }
+              setShowWithdraw(true);
+            }}
+            disabled={available < 50000}
+            title={available <= 0 ? (vi ? 'Số dư trong ví là 0₫' : 'Wallet balance is 0₫') : available < 50000 ? (vi ? 'Cần tối thiểu 50.000₫ để rút' : 'Minimum 50,000₫ required') : undefined}
+          >
             <ArrowDownToLine className="size-4" /> {vi ? 'Rút tiền' : 'Withdraw'}
           </Button>
         </div>
@@ -240,7 +277,23 @@ export function TeacherEarnings() {
             </p>
             <p className="text-sm text-muted-foreground">{vi ? 'Rút về tài khoản ngân hàng · 1–3 ngày làm việc' : 'Withdraw to your bank account · 1–3 business days'}</p>
           </div>
-          <Button size="lg" className="gap-1.5" onClick={() => setShowWithdraw(true)} disabled={available <= 0}>
+          <Button
+            size="lg"
+            className="gap-1.5"
+            onClick={() => {
+              if (available <= 0) {
+                toast.error(vi ? 'Số dư ví hiện tại là 0₫. Bạn không có số dư để rút tiền.' : 'Current wallet balance is 0₫. Cannot withdraw.');
+                return;
+              }
+              if (available < 50000) {
+                toast.error(vi ? `Số dư khả dụng (${formatCurrency(available)}) chưa đạt mức rút tối thiểu (50.000₫).` : `Available balance (${formatCurrency(available)}) is below minimum withdrawal (50,000₫).`);
+                return;
+              }
+              setShowWithdraw(true);
+            }}
+            disabled={available < 50000}
+            title={available <= 0 ? (vi ? 'Số dư trong ví là 0₫' : 'Wallet balance is 0₫') : available < 50000 ? (vi ? 'Cần tối thiểu 50.000₫ để rút' : 'Minimum 50,000₫ required') : undefined}
+          >
             <ArrowDownToLine className="size-4" /> {vi ? 'Rút ngay' : 'Withdraw now'}
           </Button>
         </div>

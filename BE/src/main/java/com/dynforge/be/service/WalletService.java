@@ -47,7 +47,11 @@ public class WalletService {
                 .map(this::toResponse)
                 .toList();
 
-        return new WalletResponse(user.getWalletBalance(), history);
+        long balance = userRepository.findById(user.getId())
+                .map(User::getWalletBalance)
+                .orElse(user.getWalletBalance());
+
+        return new WalletResponse(balance, history);
     }
 
     public TopUpResponse topUp(User user, TopUpRequest request) {
@@ -112,8 +116,26 @@ public class WalletService {
      * (Demo: no real bank transfer — settlement is assumed instant.)
      */
     public TransactionResponse withdraw(User user, WithdrawRequest request) {
+        if (request.amount() <= 0) {
+            throw new BadRequestException("Số tiền rút phải lớn hơn 0");
+        }
+        if (request.amount() < 50_000L) {
+            throw new BadRequestException("Số tiền rút tối thiểu là 50.000₫");
+        }
+
+        ObjectId userId = new ObjectId(user.getId());
+        User currentUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (currentUser.getWalletBalance() <= 0) {
+            throw new BadRequestException("Số dư ví hiện tại là 0₫. Bạn không có số dư để thực hiện rút tiền.");
+        }
+        if (currentUser.getWalletBalance() < request.amount()) {
+            throw new BadRequestException("Số dư khả dụng (" + currentUser.getWalletBalance() + "₫) không đủ để rút " + request.amount() + "₫.");
+        }
+
         // Atomic wallet deduction (Anti race-condition)
-        Query debitQuery = new Query(Criteria.where("_id").is(new ObjectId(user.getId()))
+        Query debitQuery = new Query(Criteria.where("_id").is(userId)
                 .and("walletBalance").gte(request.amount()));
         Update debitUpdate = new Update().inc("walletBalance", -request.amount());
         User updated = mongoTemplate.findAndModify(debitQuery, debitUpdate,
@@ -124,7 +146,7 @@ public class WalletService {
         }
 
         WalletTransaction txn = WalletTransaction.builder()
-                .userId(new ObjectId(user.getId()))
+                .userId(userId)
                 .type(TransactionType.WITHDRAWAL)
                 .status(TransactionStatus.COMPLETED)
                 .amount(request.amount())

@@ -7,7 +7,7 @@ import {
   ExternalLink, Info, Check, AlertCircle
 } from 'lucide-react';
 import { formatCurrency } from '../../data/mockData';
-import { getWallet, topUp, confirmPayos, type TransactionResponse } from '../../services/walletService';
+import { getWallet, topUp, confirmPayos, withdraw, type TransactionResponse } from '../../services/walletService';
 import { useAuth } from '../../context/AuthContext';
 import { getMe, type UserProfile } from '../../services/userService';
 import { Button } from '../../components/ui/button';
@@ -132,28 +132,131 @@ function AddFundsModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?
 }
 
 // ── Withdraw modal ─────────────────────────────────────────────
-function WithdrawModal({ onClose, balance }: { onClose: () => void; balance: number }) {
+function WithdrawModal({
+  onClose,
+  balance,
+  onSuccess,
+}: {
+  onClose: () => void;
+  balance: number;
+  onSuccess?: () => void;
+}) {
   const [method, setMethod] = useState<'momo' | 'bank' | null>(null);
-  const [amount, setAmount] = useState('100000');
+  const [amount, setAmount] = useState(balance >= 50000 ? '50000' : '');
+  const [bankName, setBankName] = useState('Vietcombank');
+  const [bankAccount, setBankAccount] = useState('');
+  const [accountHolder, setAccountHolder] = useState('');
+  const [momoPhone, setMomoPhone] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const confirm = () => {
-    toast.success(`Yêu cầu rút ${formatCurrency(Number(amount))} đã được tiếp nhận. Tiền sẽ về tài khoản trong 1–3 ngày làm việc.`);
-    onClose();
+  const num = parseInt(amount.replace(/\D/g, '')) || 0;
+  const isZero = balance <= 0;
+  const isBelowMin = balance > 0 && balance < 50000;
+  const exceedsBalance = num > balance;
+  const belowMin = num < 50000;
+
+  const confirm = async () => {
+    if (isZero) {
+      toast.error('Số dư ví hiện tại là 0₫. Bạn không có số dư để rút tiền.');
+      return;
+    }
+    if (isBelowMin) {
+      toast.error(`Số dư ví (${formatCurrency(balance)}) chưa đạt hạn mức rút tối thiểu (50.000₫).`);
+      return;
+    }
+    if (belowMin) {
+      toast.error('Số tiền rút tối thiểu là 50.000₫.');
+      return;
+    }
+    if (exceedsBalance) {
+      toast.error(`Số tiền rút (${formatCurrency(num)}) vượt quá số dư khả dụng (${formatCurrency(balance)}).`);
+      return;
+    }
+
+    let targetBank = '';
+    let targetAccount = '';
+
+    if (method === 'bank') {
+      if (!bankName.trim() || !bankAccount.trim()) {
+        toast.error('Vui lòng nhập tên ngân hàng và số tài khoản thụ hưởng.');
+        return;
+      }
+      targetBank = bankName.trim();
+      targetAccount = bankAccount.trim() + (accountHolder.trim() ? ` · ${accountHolder.trim()}` : '');
+    } else {
+      if (!momoPhone.trim()) {
+        toast.error('Vui lòng nhập số điện thoại ví MoMo.');
+        return;
+      }
+      targetBank = 'Ví MoMo';
+      targetAccount = momoPhone.trim() + (accountHolder.trim() ? ` · ${accountHolder.trim()}` : '');
+    }
+
+    setSubmitting(true);
+    try {
+      await withdraw(num, targetBank, targetAccount);
+      toast.success(`Yêu cầu rút ${formatCurrency(num)} đã được gửi thành công!`);
+      onSuccess?.();
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Yêu cầu rút tiền thất bại. Vui lòng kiểm tra lại số dư.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md bg-slate-950 border border-slate-800 text-slate-100 backdrop-blur-2xl shadow-2xl" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-white">Rút tiền từ ví về tài khoản</DialogTitle>
+          <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
+            <Building2 className="size-5 text-cyan-400" />
+            Rút tiền từ ví về tài khoản
+          </DialogTitle>
         </DialogHeader>
 
+        {/* Warning banner if 0đ or < 50k */}
+        {isZero && (
+          <div className="flex items-start gap-3 rounded-2xl border border-rose-500/30 bg-rose-950/40 p-4 text-xs text-rose-300">
+            <AlertCircle className="size-5 shrink-0 text-rose-400 mt-0.5" />
+            <div>
+              <p className="font-bold text-rose-200 text-sm">Số dư ví hiện tại là 0₫</p>
+              <p className="mt-1 text-rose-300/80 leading-relaxed">
+                Bạn không có số dư khả dụng trong ví để thực hiện rút tiền. Vui lòng nạp tiền hoặc hoàn thành các phiên học/dịch vụ để tích luỹ số dư.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isBelowMin && (
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-950/40 p-4 text-xs text-amber-300">
+            <AlertCircle className="size-5 shrink-0 text-amber-400 mt-0.5" />
+            <div>
+              <p className="font-bold text-amber-200 text-sm">Chưa đạt hạn mức rút tối thiểu</p>
+              <p className="mt-1 text-amber-300/80 leading-relaxed">
+                Số dư ví hiện tại là <strong>{formatCurrency(balance)}</strong>, chưa đạt mức rút tối thiểu quy định là <strong>50.000₫</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+
         {!method ? (
-          <div className="space-y-3 pt-2">
+          <div className="space-y-3 pt-1">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3.5 flex justify-between items-center text-xs">
+              <span className="text-slate-400">Số dư khả dụng để rút:</span>
+              <strong className={cn('text-sm font-black', isZero ? 'text-rose-400' : isBelowMin ? 'text-amber-400' : 'text-emerald-400')}>
+                {formatCurrency(balance)}
+              </strong>
+            </div>
+
             <p className="text-xs text-slate-400">Chọn phương thức rút tiền về:</p>
             <button
               onClick={() => setMethod('momo')}
-              className="flex w-full items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition-all hover:border-cyan-500/40 hover:bg-slate-900 text-left"
+              disabled={isZero || isBelowMin}
+              className={cn(
+                "flex w-full items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition-all text-left",
+                isZero || isBelowMin ? "opacity-50 cursor-not-allowed" : "hover:border-cyan-500/40 hover:bg-slate-900"
+              )}
             >
               <div className="flex items-center gap-3">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-[#d82d8b]/15 text-[#d82d8b]">
@@ -161,14 +264,18 @@ function WithdrawModal({ onClose, balance }: { onClose: () => void; balance: num
                 </span>
                 <div>
                   <p className="text-sm font-bold text-white">Ví MoMo</p>
-                  <p className="text-xs text-slate-400">Xử lý ngay tức thì</p>
+                  <p className="text-xs text-slate-400">Nhận tiền qua số điện thoại ví MoMo</p>
                 </div>
               </div>
               <ChevronRight className="size-4 text-slate-400" />
             </button>
             <button
               onClick={() => setMethod('bank')}
-              className="flex w-full items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition-all hover:border-cyan-500/40 hover:bg-slate-900 text-left"
+              disabled={isZero || isBelowMin}
+              className={cn(
+                "flex w-full items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition-all text-left",
+                isZero || isBelowMin ? "opacity-50 cursor-not-allowed" : "hover:border-cyan-500/40 hover:bg-slate-900"
+              )}
             >
               <div className="flex items-center gap-3">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-400">
@@ -176,52 +283,183 @@ function WithdrawModal({ onClose, balance }: { onClose: () => void; balance: num
                 </span>
                 <div>
                   <p className="text-sm font-bold text-white">Tài khoản Ngân hàng (Napas 24/7)</p>
-                  <p className="text-xs text-slate-400">Chuyển khoản trực tiếp</p>
+                  <p className="text-xs text-slate-400">Chuyển khoản trực tiếp đến mọi ngân hàng</p>
                 </div>
               </div>
               <ChevronRight className="size-4 text-slate-400" />
             </button>
+
+            {(isZero || isBelowMin) && (
+              <Button variant="outline" className="w-full mt-2 rounded-2xl border-slate-800 text-slate-400 hover:bg-slate-900" onClick={onClose}>
+                Đóng
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-4 pt-1">
             <button onClick={() => setMethod(null)} className="flex items-center gap-1 text-xs text-cyan-400 hover:underline">
               ← Chọn lại phương thức
             </button>
+
             <div>
               <Label className="mb-1.5 block text-xs font-semibold text-slate-300">Số tiền cần rút (₫)</Label>
               <Input
                 value={amount}
+                disabled={isZero || isBelowMin}
                 onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
-                className="bg-slate-900 border-slate-800 text-lg font-bold text-white rounded-2xl"
+                placeholder="vd: 100000"
+                className={cn(
+                  "bg-slate-900 border-slate-800 text-lg font-bold text-white rounded-2xl",
+                  (exceedsBalance || (num > 0 && belowMin)) && "border-rose-500 focus-visible:ring-rose-500"
+                )}
+                autoFocus
               />
-              <p className="mt-1.5 text-xs text-slate-400">
-                Khả dụng: <strong className="text-emerald-400">{formatCurrency(balance)}</strong> · Tối thiểu: 50.000₫
-              </p>
-            </div>
+              <div className="mt-1.5 flex items-center justify-between text-xs">
+                <span className="text-slate-400">
+                  Khả dụng: <strong className={isZero ? "text-rose-400" : "text-emerald-400"}>{formatCurrency(balance)}</strong>
+                </span>
+                <span className="text-slate-500">Tối thiểu: 50.000₫</span>
+              </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3.5 text-xs text-slate-300">
-              {method === 'momo' ? (
-                <div className="flex items-center gap-3">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-[#d82d8b]/15 text-[#d82d8b]"><Smartphone className="size-4" /></span>
-                  <div>
-                    <p className="font-bold text-white">Rút về MoMo</p>
-                    <p className="text-slate-400">Đã liên kết số điện thoại tài khoản</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-400"><Building2 className="size-4" /></span>
-                  <div>
-                    <p className="font-bold text-white">Ngân hàng thụ hưởng</p>
-                    <p className="text-slate-400">Chuyển khoản nhanh qua tài khoản đã đăng ký</p>
-                  </div>
+              {/* Validation errors */}
+              {exceedsBalance && (
+                <p className="mt-1.5 text-xs text-rose-400 font-semibold flex items-center gap-1">
+                  <AlertCircle className="size-3.5" />
+                  Số tiền rút vượt quá số dư khả dụng ({formatCurrency(balance)})
+                </p>
+              )}
+              {num > 0 && belowMin && (
+                <p className="mt-1.5 text-xs text-amber-400 font-semibold flex items-center gap-1">
+                  <AlertCircle className="size-3.5" />
+                  Số tiền rút tối thiểu là 50.000₫
+                </p>
+              )}
+
+              {/* Quick preset chips */}
+              {balance >= 50000 && (
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  {[50000, 100000, 200000, 500000, 1000000]
+                    .filter((v) => v <= balance)
+                    .map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setAmount(String(v))}
+                        className={cn(
+                          'rounded-xl border px-2.5 py-1 text-xs font-semibold transition-all',
+                          num === v
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300'
+                            : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-white'
+                        )}
+                      >
+                        {formatCurrency(v)}
+                      </button>
+                    ))}
+                  <button
+                    type="button"
+                    onClick={() => setAmount(String(balance))}
+                    className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-2.5 py-1 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/40"
+                  >
+                    Rút tất cả
+                  </button>
                 </div>
               )}
             </div>
 
-            <Button className="w-full rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold" onClick={confirm}>
-              Xác nhận rút tiền
-            </Button>
+            {/* Destination inputs */}
+            {method === 'bank' ? (
+              <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-3.5">
+                <p className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                  <Building2 className="size-4 text-cyan-400" /> Thông tin tài khoản ngân hàng thụ hưởng
+                </p>
+                <div>
+                  <Label className="mb-1 block text-[11px] text-slate-400">Tên Ngân hàng</Label>
+                  <Input
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="vd: Vietcombank, MB Bank, Techcombank..."
+                    className="bg-slate-950 border-slate-800 text-xs rounded-xl h-9"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <Label className="mb-1 block text-[11px] text-slate-400">Số tài khoản</Label>
+                    <Input
+                      value={bankAccount}
+                      onChange={(e) => setBankAccount(e.target.value)}
+                      placeholder="vd: 0123456789"
+                      className="bg-slate-950 border-slate-800 text-xs rounded-xl h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label className="mb-1 block text-[11px] text-slate-400">Tên chủ tài khoản</Label>
+                    <Input
+                      value={accountHolder}
+                      onChange={(e) => setAccountHolder(e.target.value)}
+                      placeholder="vd: NGUYEN VAN A"
+                      className="bg-slate-950 border-slate-800 text-xs rounded-xl h-9 uppercase"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-3.5">
+                <p className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                  <Smartphone className="size-4 text-[#d82d8b]" /> Thông tin ví MoMo thụ hưởng
+                </p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <Label className="mb-1 block text-[11px] text-slate-400">Số điện thoại MoMo</Label>
+                    <Input
+                      value={momoPhone}
+                      onChange={(e) => setMomoPhone(e.target.value)}
+                      placeholder="vd: 0987654321"
+                      className="bg-slate-950 border-slate-800 text-xs rounded-xl h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label className="mb-1 block text-[11px] text-slate-400">Tên chủ ví</Label>
+                    <Input
+                      value={accountHolder}
+                      onChange={(e) => setAccountHolder(e.target.value)}
+                      placeholder="vd: NGUYEN VAN A"
+                      className="bg-slate-950 border-slate-800 text-xs rounded-xl h-9 uppercase"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2.5 pt-1">
+              <Button variant="outline" className="flex-1 rounded-2xl border-slate-800 text-slate-400 hover:bg-slate-900" onClick={onClose} disabled={submitting}>
+                Hủy
+              </Button>
+              <Button
+                className="flex-1 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/20"
+                onClick={confirm}
+                disabled={
+                  submitting ||
+                  isZero ||
+                  isBelowMin ||
+                  belowMin ||
+                  exceedsBalance ||
+                  (method === 'bank' && (!bankName.trim() || !bankAccount.trim())) ||
+                  (method === 'momo' && !momoPhone.trim())
+                }
+              >
+                {submitting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : isZero ? (
+                  'Số dư ví là 0₫'
+                ) : isBelowMin ? (
+                  'Số dư không đủ'
+                ) : exceedsBalance ? (
+                  'Vượt quá số dư'
+                ) : (
+                  'Xác nhận rút tiền'
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
@@ -320,8 +558,23 @@ export function DashboardWallet() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => setShowWithdraw(true)}
-            className="rounded-2xl border-slate-700 bg-slate-900/80 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-200 hover:bg-slate-800"
+            onClick={() => {
+              if (balance <= 0) {
+                toast.error('Số dư ví hiện tại là 0₫. Bạn không có số dư để rút tiền.');
+                return;
+              }
+              if (balance < 50000) {
+                toast.error(`Số dư ví hiện tại (${formatCurrency(balance)}) chưa đạt hạn mức rút tối thiểu (50.000₫).`);
+                return;
+              }
+              setShowWithdraw(true);
+            }}
+            disabled={balance < 50000}
+            title={balance <= 0 ? 'Số dư trong ví là 0₫' : balance < 50000 ? 'Cần tối thiểu 50.000₫ để rút tiền' : undefined}
+            className={cn(
+              "rounded-2xl border-slate-700 bg-slate-900/80 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-all",
+              balance < 50000 && "opacity-50 cursor-not-allowed hover:bg-slate-900/80"
+            )}
           >
             Rút tiền
           </Button>
@@ -561,7 +814,7 @@ export function DashboardWallet() {
       </div>
 
       {showAddFunds && <AddFundsModal onClose={() => setShowAddFunds(false)} onSuccess={fetchWallet} />}
-      {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} balance={balance} />}
+      {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} balance={balance} onSuccess={fetchWallet} />}
     </div>
   );
 }
