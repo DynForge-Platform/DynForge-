@@ -48,8 +48,8 @@ public class AiMenteeService {
     // ── #1 Mentor matchmaker ──────────────────────────────────────────────────
 
     private static final String MATCH_SYSTEM = """
-            Bạn là trợ lý tư vấn chọn gia sư thông minh cho DynForge — sàn kết nối gia sư và học viên đại học.
-            Hãy đưa ra lời tư vấn ngắn gọn, mạch lạc, thân thiện bằng tiếng Việt (tư vấn giải pháp/lộ trình học tập và giải thích vì sao từng gia sư phù hợp).
+            Bạn là trợ lý tư vấn chọn mentor thông minh cho DynForge — sàn kết nối mentor và học viên đại học.
+            Hãy đưa ra lời tư vấn ngắn gọn, mạch lạc, thân thiện bằng tiếng Việt (tư vấn giải pháp/lộ trình học tập và giải thích vì sao từng mentor phù hợp).
             
             QUY TẮC BẮT BUỘC Ở 2 DÒNG CUỐI CÙNG:
             
@@ -58,7 +58,7 @@ public class AiMenteeService {
             LƯU Ý QUAN TRỌNG:
             - Trả lời đầy đủ, hoàn chỉnh bài tư vấn trước khi ghi 2 dòng MENTORS: và SUGGESTIONS:.
             - KHÔNG viết các mã thẻ như (M1), (M2) vào trong văn bản tư vấn chính.
-            - Nếu học viên chỉ chào hỏi (như "hello", "hi", "xin chào"): Hãy chào lại và hỏi họ cần tìm gia sư môn gì (vd: PRJ301, MAL301, CSD201...). Ở dòng MENTORS: ghi "MENTORS:".
+            - Nếu học viên chỉ chào hỏi (như "hello", "hi", "xin chào"): Hãy chào lại và hỏi họ cần tìm mentor môn gì (vd: PRJ301, MAL301, CSD201...). Ở dòng MENTORS: ghi "MENTORS:".
             """;
 
     public MentorMatchResponse matchMentors(String query) {
@@ -80,8 +80,8 @@ public class AiMenteeService {
             for (int i = 0; i < filteredMentors.size(); i++) {
                 cat.append("[M").append(i + 1).append("] ").append(describe(filteredMentors.get(i))).append('\n');
             }
-            String prompt = "Học viên hỏi: " + query + "\n\nDanh sách gia sư hiện có:\n"
-                    + (cat.length() == 0 ? "(Chưa tìm thấy gia sư nào.)" : cat);
+            String prompt = "Học viên hỏi: " + query + "\n\nDanh sách mentor hiện có:\n"
+                    + (cat.length() == 0 ? "(Chưa tìm thấy mentor nào.)" : cat);
 
             String text = geminiClient.complete(MATCH_SYSTEM, prompt, 2048).trim();
             List<MentorMatchResponse.Item> matches = parseMentorTags(text, filteredMentors);
@@ -134,8 +134,8 @@ public class AiMenteeService {
         boolean isGreeting = List.of("hello", "hi", "xin chào", "chào", "chào bạn", "alo", "test", "giúp tôi", "tư vấn")
                 .contains(q);
         if (isGreeting) {
-            String advice = "Chào bạn! Bạn đang cần tìm gia sư môn học nào (ví dụ: PRJ301, MAL301, CSD201...) hoặc đang gặp khó khăn gì trong học tập? Hãy nhập môn học để mình chọn gia sư phù hợp nhất nhé!";
-            List<String> suggestions = List.of("Gia sư môn PRJ301", "Gia sư học phí tốt nhất", "Gia sư đánh giá 5 sao");
+            String advice = "Chào bạn! Bạn đang cần tìm mentor môn học nào (ví dụ: PRJ301, MAL301, CSD201...) hoặc đang gặp khó khăn gì trong học tập? Hãy nhập môn học để mình chọn mentor phù hợp nhất nhé!";
+            List<String> suggestions = List.of("Mentor môn PRJ301", "Mentor học phí tốt nhất", "Mentor đánh giá 5 sao");
             return new MentorMatchResponse(advice, List.of(), suggestions, true);
         }
 
@@ -187,13 +187,13 @@ public class AiMenteeService {
                 .map(s -> new MentorMatchResponse.Item(s.m().id(), s.m().fullName(), s.reason()))
                 .toList();
 
-        StringBuilder advice = new StringBuilder("Dựa trên nhu cầu của bạn, hệ thống đã lọc được các gia sư phù hợp nhất:\n");
+        StringBuilder advice = new StringBuilder("Dựa trên nhu cầu của bạn, hệ thống đã lọc được các mentor phù hợp nhất:\n");
         for (ScoredMentor s : scoredList) {
             advice.append("• **").append(s.m().fullName()).append("** — ").append(s.reason())
                     .append(" (Học phí từ ").append(String.format("%,d", s.minPrice())).append("₫)\n");
         }
         if (matches.isEmpty()) {
-            advice = new StringBuilder("Hiện chưa tìm thấy gia sư nào khớp chính xác với tiêu chí này.");
+            advice = new StringBuilder("Hiện chưa tìm thấy mentor nào khớp chính xác với tiêu chí này.");
         }
         advice.append("\n───────────────\n💡 *[Chế độ Demo Fallback] Hệ thống trả kết quả phân tích theo bộ lọc dự phòng do AI đang bảo trì.*");
 
@@ -215,9 +215,9 @@ public class AiMenteeService {
     private List<String> generateDefaultSuggestions(String query, List<MentorMatchResponse.Item> matches) {
         List<String> list = new ArrayList<>();
         if (!matches.isEmpty()) {
-            list.add("Gia sư " + matches.get(0).name() + " dạy hình thức nào?");
+            list.add("Mentor " + matches.get(0).name() + " dạy hình thức nào?");
         }
-        list.add("Gia sư nào có học phí tốt nhất?");
+        list.add("Mentor nào có học phí tốt nhất?");
         list.add("Làm sao để đặt lịch học 1-on-1?");
         return list;
     }
@@ -304,17 +304,17 @@ public class AiMenteeService {
     // ── #2 Post-session tutor & General Chatbot ───────────────────────────────
 
     private static final String GENERAL_CHAT_SYSTEM = """
-            Bạn là Trợ lý AI thông minh của DynForge — sàn kết nối gia sư và học viên đại học.
+            Bạn là Trợ lý AI thông minh của DynForge — sàn kết nối mentor và học viên đại học.
             Hãy trò chuyện lịch sự, thân thiện bằng tiếng Việt.
-            - Nếu người dùng chào hỏi (như hello, hi, xin chào), hãy chào lại và giải thích bạn có thể giúp họ tìm gia sư, hướng dẫn nạp tiền PayOS, học trực tuyến hoặc giải đáp thắc mắc.
+            - Nếu người dùng chào hỏi (như hello, hi, xin chào), hãy chào lại và giải thích bạn có thể giúp họ tìm mentor, hướng dẫn nạp tiền PayOS, học trực tuyến hoặc giải đáp thắc mắc.
             - Dòng CUỐI CÙNG ghi 3 câu hỏi gợi ý theo định dạng:
               "SUGGESTIONS: <câu hỏi 1> | <câu hỏi 2> | <câu hỏi 3>"
             """;
 
     public SessionAskResponse generalChat(String message) {
         if (!geminiClient.isConfigured()) {
-            String answer = "Chào bạn! Mình là Trợ lý AI DynForge (Chế độ Demo). Bạn đang muốn tìm gia sư môn học nào hay cần hướng dẫn sử dụng tính năng gì trên hệ thống?";
-            List<String> suggestions = List.of("Tìm gia sư môn PRJ301", "Quy trình thanh toán ký quỹ", "Học phí gia sư bao nhiêu?");
+            String answer = "Chào bạn! Mình là Trợ lý AI DynForge (Chế độ Demo). Bạn đang muốn tìm mentor môn học nào hay cần hướng dẫn sử dụng tính năng gì trên hệ thống?";
+            List<String> suggestions = List.of("Tìm mentor môn PRJ301", "Quy trình thanh toán ký quỹ", "Học phí mentor bao nhiêu?");
             return new SessionAskResponse(answer, suggestions, true);
         }
         try {
@@ -322,19 +322,19 @@ public class AiMenteeService {
             List<String> suggestions = parseSuggestions(rawText);
             String answer = stripMentorsAndSuggestions(rawText);
             if (suggestions.isEmpty()) {
-                suggestions = List.of("Tìm gia sư môn PRJ301", "Cách nạp tiền ví PayOS", "Thanh toán ký quỹ hoạt động thế nào?");
+                suggestions = List.of("Tìm mentor môn PRJ301", "Cách nạp tiền ví PayOS", "Thanh toán ký quỹ hoạt động thế nào?");
             }
             return new SessionAskResponse(answer, suggestions, false);
         } catch (Exception e) {
             log.warn("Gemini API generalChat failed (quota/rate limit/error): {}. Falling back.", e.getMessage());
-            String answer = "Chào bạn! Mình là Trợ lý AI DynForge (Chế độ Demo). Bạn đang muốn tìm gia sư môn học nào hay cần hướng dẫn sử dụng tính năng gì trên hệ thống?";
-            List<String> suggestions = List.of("Tìm gia sư môn PRJ301", "Quy trình thanh toán ký quỹ", "Học phí gia sư bao nhiêu?");
+            String answer = "Chào bạn! Mình là Trợ lý AI DynForge (Chế độ Demo). Bạn đang muốn tìm mentor môn học nào hay cần hướng dẫn sử dụng tính năng gì trên hệ thống?";
+            List<String> suggestions = List.of("Tìm mentor môn PRJ301", "Quy trình thanh toán ký quỹ", "Học phí mentor bao nhiêu?");
             return new SessionAskResponse(answer, suggestions, true);
         }
     }
 
     private static final String ASK_SYSTEM = """
-            Bạn là trợ lý học tập AI của DynForge, giúp học viên ôn luyện bám sát sau buổi học với gia sư.
+            Bạn là trợ lý học tập AI của DynForge, giúp học viên ôn luyện bám sát sau buổi học với mentor.
             Hãy giải thích rõ ràng, dễ hiểu, trình bày bằng Markdown tiếng Việt.
             Dòng CUỐI CÙNG luôn kèm 3 câu hỏi gợi ý ôn tập theo định dạng:
             "SUGGESTIONS: <câu hỏi 1> | <câu hỏi 2> | <câu hỏi 3>"
@@ -346,7 +346,7 @@ public class AiMenteeService {
         String menteeName = userRepository.findById(b.getMenteeId().toHexString())
                 .map(User::getFullName).orElse("Học viên");
         String mentorName = userRepository.findById(b.getMentorId().toHexString())
-                .map(User::getFullName).orElse("Gia sư");
+                .map(User::getFullName).orElse("Mentor");
         String chat = buildChatTranscript(b.getMenteeId(), b.getMentorId(), menteeName, mentorName);
 
         if (!geminiClient.isConfigured()) {
@@ -356,7 +356,7 @@ public class AiMenteeService {
         try {
             String prompt = "BUỔI HỌC\n"
                     + "- Môn: " + nz(b.getCourseCode()) + "\n"
-                    + "- Gia sư: " + mentorName + " · Học viên: " + menteeName + "\n\n"
+                    + "- Mentor: " + mentorName + " · Học viên: " + menteeName + "\n\n"
                     + "NỘI DUNG TRAO ĐỔI GIỮA HAI BÊN\n"
                     + (chat.isBlank() ? "(Không có tin nhắn chat nào trong hệ thống.)" : chat) + "\n\n"
                     + "CÂU HỎI CỦA HỌC VIÊN:\n" + question;
@@ -384,7 +384,7 @@ public class AiMenteeService {
         String answer = String.join("\n",
                 "Về câu hỏi \"" + question.trim() + "\" (môn " + nz(b.getCourseCode()) + "):",
                 "",
-                "Bạn nên kiểm tra lại phần ghi chú buổi học hoặc đặt thêm một câu hỏi chi tiết hơn cho gia sư.",
+                "Bạn nên kiểm tra lại phần ghi chú buổi học hoặc đặt thêm một câu hỏi chi tiết hơn cho mentor.",
                 "",
                 "───────────────",
                 "💡 *[Chế độ Demo Fallback] Trả lời từ động cơ dự phòng do AI đang bảo trì.*"
@@ -392,7 +392,7 @@ public class AiMenteeService {
         List<String> suggestions = List.of(
                 "Tóm tắt các kiến thức cốt lõi môn " + nz(b.getCourseCode()),
                 "Các dạng bài tập hay xuất hiện trong đề thi?",
-                "Hỏi thêm gia sư qua khung tin nhắn 1-1"
+                "Hỏi thêm mentor qua khung tin nhắn 1-1"
         );
         return new SessionAskResponse(answer, suggestions, true);
     }

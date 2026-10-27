@@ -94,7 +94,7 @@ export function DynForgeCinematicHome() {
             className="liquid-glass rounded-full px-10 py-4 text-base font-semibold text-white cursor-pointer hover:scale-[1.03] transition-transform shadow-xl flex items-center gap-2 bg-white/10 border border-white/30"
           >
             <Search className="size-4 text-cyan-300" />
-            {lang === 'vi' ? 'Tìm gia sư môn học' : 'Find a Mentor'}
+            {lang === 'vi' ? 'Tìm mentor môn học' : 'Find a Mentor'}
           </button>
 
           <button

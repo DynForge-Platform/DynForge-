@@ -141,14 +141,14 @@ export function MentorListing() {
         eyebrow={lang === 'vi' ? 'HỆ THỐNG CỐ VẤN DYNFORGE' : 'DYNFORGE ACADEMIC MENTORING'}
         title={
           lang === 'vi' ? (
-            <GsapTypewriter key="vi" prefix="Tìm gia sư " highlight="phù hợp." duration={2} />
+            <GsapTypewriter key="vi" prefix="Tìm mentor " highlight="phù hợp." duration={2} />
           ) : (
             <GsapTypewriter key="en" prefix="Find your " highlight="mentor." duration={2} />
           )
         }
         subtitle={
           lang === 'vi'
-            ? 'Kết nối cùng anh chị gia sư uy tín thấu hiểu môn học, đồ án và lộ trình học tập của bạn.'
+            ? 'Kết nối cùng anh chị mentor uy tín thấu hiểu môn học, đồ án và lộ trình học tập của bạn.'
             : 'Connect with experienced student mentors, alumni, and lecturers who understand your courses and projects.'
         }
       />
@@ -160,7 +160,7 @@ export function MentorListing() {
             <Search className="size-5 text-slate-400 ml-4 mr-2 shrink-0" />
             <input
               type="text"
-              placeholder={lang === 'vi' ? 'Tìm theo mã môn (PRJ301, CSD201...), tên gia sư, chuyên ngành...' : 'Search by course code (PRJ301...), mentor name, major...'}
+              placeholder={lang === 'vi' ? 'Tìm theo mã môn (PRJ301, CSD201...), tên mentor, chuyên ngành...' : 'Search by course code (PRJ301...), mentor name, major...'}
               className="w-full bg-transparent border-none text-white placeholder:text-slate-500 outline-none text-base sm:text-sm py-2"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -272,13 +272,13 @@ export function MentorListing() {
 
               {/* Role Select */}
               <div className="space-y-1.5">
-                <label className="text-xs text-slate-400 font-medium">{lang === 'vi' ? 'Loại gia sư' : 'Role'}</label>
+                <label className="text-xs text-slate-400 font-medium">{lang === 'vi' ? 'Loại mentor' : 'Role'}</label>
                 <Select value={selectedRole} onValueChange={setSelectedRole}>
                   <SelectTrigger className="w-full bg-white/5 border-white/10 text-white text-xs rounded-xl h-10">
-                    <SelectValue placeholder={lang === 'vi' ? 'Loại gia sư' : 'All Roles'} />
+                    <SelectValue placeholder={lang === 'vi' ? 'Loại mentor' : 'All Roles'} />
                   </SelectTrigger>
                   <SelectContent className="bg-[#090f1e] text-white border-white/10">
-                    <SelectItem value="all">{lang === 'vi' ? 'Tất cả Loại gia sư' : 'All Roles'}</SelectItem>
+                    <SelectItem value="all">{lang === 'vi' ? 'Tất cả loại mentor' : 'All Roles'}</SelectItem>
                     {roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -361,10 +361,10 @@ export function MentorListing() {
             {/* Role Filter */}
             <Select value={selectedRole} onValueChange={setSelectedRole}>
               <SelectTrigger className="w-[160px] bg-white/5 border-white/10 text-white text-xs rounded-xl h-9">
-                <SelectValue placeholder={lang === 'vi' ? 'Loại gia sư' : 'All Roles'} />
+                <SelectValue placeholder={lang === 'vi' ? 'Loại mentor' : 'All Roles'} />
               </SelectTrigger>
               <SelectContent className="bg-[#090f1e] text-white border-white/10">
-                <SelectItem value="all">{lang === 'vi' ? 'Tất cả Loại gia sư' : 'All Roles'}</SelectItem>
+                <SelectItem value="all">{lang === 'vi' ? 'Tất cả loại mentor' : 'All Roles'}</SelectItem>
                 {roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -428,7 +428,7 @@ export function MentorListing() {
             <div className="flex items-center gap-2">
               <Sparkles className="size-5 text-cyan-400" />
               <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-                {lang === 'vi' ? 'Tư vấn chọn Gia sư bằng AI' : 'AI Mentor Advisor'}
+                {lang === 'vi' ? 'Tư vấn chọn Mentor bằng AI' : 'AI Mentor Advisor'}
               </h3>
             </div>
             <span className="text-xs text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-0.5 rounded-full">
@@ -438,7 +438,7 @@ export function MentorListing() {
 
           <p className="text-xs text-slate-400 mb-4">
             {lang === 'vi'
-              ? 'Mô tả nhu cầu học tập của bạn (môn học, dự án, thời gian chuẩn bị), AI sẽ gợi ý gia sư phù hợp nhất.'
+              ? 'Mô tả nhu cầu học tập của bạn (môn học, dự án, thời gian chuẩn bị), AI sẽ gợi ý mentor phù hợp nhất.'
               : 'Describe your learning goals, course difficulties, or project prep, and AI will suggest top mentors.'}
           </p>
 
@@ -474,7 +474,7 @@ export function MentorListing() {
         <div className="space-y-6">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>
-              {lang === 'vi' ? `Tìm thấy ${visible.length} gia sư` : `Found ${visible.length} mentor(s)`}
+              {lang === 'vi' ? `Tìm thấy ${visible.length} mentor` : `Found ${visible.length} mentor(s)`}
             </span>
           </div>
 
@@ -504,7 +504,7 @@ export function MentorListing() {
             </div>
           ) : visible.length === 0 ? (
             <EmptyState
-              title={lang === 'vi' ? 'Không tìm thấy gia sư phù hợp' : 'No mentors match your filters'}
+              title={lang === 'vi' ? 'Không tìm thấy mentor phù hợp' : 'No mentors match your filters'}
               description={lang === 'vi' ? 'Thử mở rộng giá hoặc đổi từ khóa tìm kiếm.' : 'Try widening your price range or removing some filters.'}
               actionLabel={lang === 'vi' ? 'Xóa bộ lọc' : 'Reset filters'}
               onAction={reset}

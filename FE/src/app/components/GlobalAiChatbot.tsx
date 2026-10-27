@@ -14,13 +14,13 @@ export function GlobalAiChatbot() {
   const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([
     {
       role: 'ai',
-      text: 'Chào bạn! Mình là DynForge AI. Bạn cần mình tư vấn gia sư môn học nào hay giải đáp thắc mắc gì không?',
+      text: 'Chào bạn! Mình là DynForge AI. Bạn cần mình tư vấn mentor môn học nào hay giải đáp thắc mắc gì không?',
     },
   ]);
   const [suggestions, setSuggestions] = useState<string[]>([
-    'Tìm gia sư môn PRJ301',
+    'Tìm mentor môn PRJ301',
     'Quy trình thanh toán ký quỹ',
-    'Học phí gia sư bao nhiêu?',
+    'Học phí mentor bao nhiêu?',
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
