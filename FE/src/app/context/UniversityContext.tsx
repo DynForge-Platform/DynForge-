@@ -28,14 +28,21 @@ export function UniversityProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [universities, setUniversities] = useState<UniversityResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCode, setSelectedCodeState] = useState<string | null>(
-    () => localStorage.getItem(STORAGE_KEY),
-  );
+  const [selectedCode, setSelectedCodeState] = useState<string | null>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored || stored === 'ALL' || stored === 'all') return null;
+    return stored;
+  });
 
   const setSelectedCode = (code: string | null) => {
-    setSelectedCodeState(code);
-    if (code) localStorage.setItem(STORAGE_KEY, code);
-    else localStorage.removeItem(STORAGE_KEY);
+    const normalized = (!code || code === 'all' || code === 'ALL') ? null : code;
+    setSelectedCodeState(normalized);
+    if (normalized) {
+      localStorage.setItem(STORAGE_KEY, normalized);
+    } else {
+      // Persist explicit 'ALL' so page reload remembers the user chose all universities
+      localStorage.setItem(STORAGE_KEY, 'ALL');
+    }
   };
 
   // Load the public university list once.
@@ -46,14 +53,18 @@ export function UniversityProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // Default to the logged-in user's university when no explicit choice is stored yet.
+  // Default to the logged-in user's university ONLY when no explicit choice has been stored yet.
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return; // user already chose
+    // If user already chose a specific school or explicitly chose "All" ('ALL'), do not override.
+    if (localStorage.getItem(STORAGE_KEY) !== null) return;
     if (!user) return;
     let cancelled = false;
     getMe()
       .then((me) => {
-        if (!cancelled && me.universityCode) setSelectedCodeState(me.universityCode);
+        if (!cancelled && me.universityCode) {
+          setSelectedCodeState(me.universityCode);
+          localStorage.setItem(STORAGE_KEY, me.universityCode);
+        }
       })
       .catch(() => { /* stay on "all universities" */ });
     return () => { cancelled = true; };
