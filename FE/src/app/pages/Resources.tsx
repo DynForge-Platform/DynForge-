@@ -71,7 +71,7 @@ export function Resources() {
         }
         subtitle={
           lang === 'vi'
-            ? 'Khám phá bộ sưu tập tài liệu, đề thi, hướng dẫn và template đồ án được biên soạn bởi các gia sư uy tín.'
+            ? 'Khám phá bộ sưu tập tài liệu, đề thi, hướng dẫn và template đồ án được biên soạn bởi các mentor uy tín.'
             : 'Explore curated study guides, templates, and exam prep resources shared by verified mentors.'
         }
       />

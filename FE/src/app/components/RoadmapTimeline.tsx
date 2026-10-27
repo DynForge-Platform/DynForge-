@@ -245,7 +245,7 @@ export function RoadmapTimeline({ lang = 'vi' }: { lang: 'vi' | 'en' }) {
 
         <p className="mt-4 text-slate-300 text-sm sm:text-base leading-relaxed font-normal">
           {lang === 'vi'
-            ? 'Quy trình 4 bước chuẩn hóa, minh bạch và an toàn tuyệt đối cho cả Học viên (Mentee) và Gia sư (Mentor).'
+            ? 'Quy trình 4 bước chuẩn hóa, minh bạch và an toàn tuyệt đối cho cả Học viên (Mentee) và Mentor.'
             : 'A transparent, secure 4-step roadmap tailored for both Mentees and Mentors.'}
         </p>
 
@@ -272,7 +272,7 @@ export function RoadmapTimeline({ lang = 'vi' }: { lang: 'vi' | 'en' }) {
             }`}
           >
             <Sparkles className="size-4" />
-            <span>{lang === 'vi' ? 'Dành cho Gia sư (Mentor)' : 'For Mentors'}</span>
+            <span>{lang === 'vi' ? 'Dành cho Mentor' : 'For Mentors'}</span>
           </button>
         </div>
       </div>

@@ -126,7 +126,7 @@ export function HowItWorks() {
         <section className="space-y-8 pt-12 border-t border-white/10">
           <div className="text-center space-y-2">
             <span className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
-              {vi ? 'DÀNH CHO GIA SƯ' : 'FOR MENTORS'}
+              {vi ? 'DÀNH CHO MENTOR' : 'FOR MENTORS'}
             </span>
             <h2 className="text-4xl text-white font-bold" style={{ fontFamily: "var(--font-heading)" }}>
               {vi ? '3 bước chia sẻ kiến thức & nhận thù lao' : 'How to mentor on DynForge'}
@@ -169,14 +169,14 @@ export function HowItWorks() {
               onClick={() => navigate('/mentors')}
               className="rounded-full border border-white/30 bg-white/10 backdrop-blur-md px-8 py-3.5 text-sm font-semibold text-white hover:bg-white/20 transition-all cursor-pointer shadow-lg hover:scale-[1.02] inline-flex items-center gap-2"
             >
-              <span>{vi ? 'Tìm gia sư ngay' : 'Find a Mentor'}</span>
+              <span>{vi ? 'Tìm mentor ngay' : 'Find a Mentor'}</span>
               <ArrowRight className="size-4 text-cyan-400" />
             </button>
             <button
               onClick={() => navigate('/become-a-mentor')}
               className="rounded-full border border-white/15 bg-white/5 backdrop-blur-md px-8 py-3.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
             >
-              {vi ? 'Đăng ký làm Gia sư' : 'Become a Mentor'}
+              {vi ? 'Đăng ký làm Mentor' : 'Become a Mentor'}
             </button>
           </div>
         </section>

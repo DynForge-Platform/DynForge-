@@ -27,8 +27,8 @@ export function Header() {
 
   const navItems = [
     { to: '/', label: lang === 'vi' ? 'Trang chủ' : 'Home', icon: Home },
-    { to: '/mentors', label: lang === 'vi' ? 'Tìm gia sư' : 'Find Mentors', icon: Search },
-    { to: '/become-a-mentor', label: lang === 'vi' ? 'Trở thành gia sư' : 'Become a Mentor', icon: Sparkles },
+    { to: '/mentors', label: lang === 'vi' ? 'Tìm mentor' : 'Find Mentors', icon: Search },
+    { to: '/become-a-mentor', label: lang === 'vi' ? 'Trở thành mentor' : 'Become a Mentor', icon: Sparkles },
     { to: '/resources', label: lang === 'vi' ? 'Tài nguyên' : 'Resources', icon: BookOpen },
     { to: '/about', label: lang === 'vi' ? 'Giới thiệu' : 'About', icon: Info },
   ];
@@ -242,7 +242,7 @@ export function Header() {
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-medium text-sm py-2.5 transition-all cursor-pointer"
                   >
                     <Search className="size-4" />
-                    <span>{lang === 'vi' ? 'Tìm gia sư' : 'Find a Mentor'}</span>
+                    <span>{lang === 'vi' ? 'Tìm mentor' : 'Find a Mentor'}</span>
                   </button>
                   <div className="flex items-center justify-center pt-2 border-t border-white/5">
                     <LanguageSwitcher />

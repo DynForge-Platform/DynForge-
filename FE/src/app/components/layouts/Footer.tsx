@@ -553,8 +553,8 @@ export function Footer() {
   const trustBadges = [
     {
       icon: ShieldCheck,
-      title: lang === 'vi' ? 'Gia sư đã xác minh' : 'Verified Mentors',
-      desc: lang === 'vi' ? '100% gia sư được kiểm định hồ sơ & học vấn' : 'Identity & credentials verified',
+      title: lang === 'vi' ? 'Mentor đã xác minh' : 'Verified Mentors',
+      desc: lang === 'vi' ? '100% mentor được kiểm định hồ sơ & học vấn' : 'Identity & credentials verified',
     },
     {
       icon: Star,
