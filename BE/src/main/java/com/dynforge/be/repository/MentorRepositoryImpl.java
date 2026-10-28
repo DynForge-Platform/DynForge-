@@ -1,6 +1,8 @@
 package com.dynforge.be.repository;
 
 import com.dynforge.be.model.entity.MentorProfile;
+import com.dynforge.be.model.entity.User;
+import com.dynforge.be.model.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
@@ -38,6 +40,15 @@ public class MentorRepositoryImpl implements MentorRepositoryCustom {
         }
         if (format != null && !format.isBlank()) {
             and.add(Criteria.where("formats").is(format));
+        }
+        // Mentors whose account was suspended by an admin must not be shown to mentees.
+        List<ObjectId> suspendedUserIds = mongoTemplate.find(
+                        Query.query(Criteria.where("status").is(UserStatus.SUSPENDED)), User.class)
+                .stream()
+                .map(u -> new ObjectId(u.getId()))
+                .toList();
+        if (!suspendedUserIds.isEmpty()) {
+            and.add(Criteria.where("userId").nin(suspendedUserIds));
         }
         if (universityId != null) {
             // Belongs to this university OR teaches a cross-university general-education course.

@@ -9,6 +9,7 @@ import com.dynforge.be.model.entity.MentorProfile;
 import com.dynforge.be.model.entity.University;
 import com.dynforge.be.model.entity.User;
 import com.dynforge.be.model.enums.Role;
+import com.dynforge.be.model.enums.UserStatus;
 import com.dynforge.be.model.enums.VerificationStatus;
 import com.dynforge.be.repository.MentorRepository;
 import com.dynforge.be.repository.UniversityRepository;
@@ -49,6 +50,7 @@ public class MentorService {
 
         return profiles.stream()
                 .map(this::toResponse)
+                .filter(r -> !UserStatus.SUSPENDED.name().equals(r.accountStatus()))
                 .toList();
     }
 
@@ -101,7 +103,12 @@ public class MentorService {
     public MentorProfileResponse getById(String id) {
         MentorProfile profile = mentorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Mentor profile not found: " + id));
-        return toResponse(profile);
+        MentorProfileResponse response = toResponse(profile);
+        // A suspended mentor's public profile is no longer reachable (also blocks new bookings from it).
+        if (UserStatus.SUSPENDED.name().equals(response.accountStatus())) {
+            throw new ResourceNotFoundException("Mentor profile not found: " + id);
+        }
+        return response;
     }
 
     public MentorProfileResponse getOwnProfile(User user) {

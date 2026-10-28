@@ -29,7 +29,8 @@ public class MentorMapper {
                 profile.getRatingCount(),
                 profile.getSessionsCount(),
                 profile.getMentorCancelCount(),
-                profile.getMentorNoShowCount()
+                profile.getMentorNoShowCount(),
+                user.getStatus() != null ? user.getStatus().name() : "ACTIVE"
         );
     }
 }
