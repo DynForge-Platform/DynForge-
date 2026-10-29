@@ -13,6 +13,7 @@ import com.dynforge.be.model.entity.Course;
 import com.dynforge.be.model.entity.EscrowTransaction;
 import com.dynforge.be.model.entity.MentorProfile;
 import com.dynforge.be.model.entity.User;
+import com.dynforge.be.model.enums.UserStatus;
 import com.dynforge.be.model.enums.BookingFormat;
 import com.dynforge.be.model.enums.BookingStatus;
 import com.dynforge.be.model.enums.EscrowStatus;
@@ -145,6 +146,13 @@ public class BookingService {
 
         if (!mentor.isVerified()) {
             throw new BadRequestException("This mentor has not been verified yet");
+        }
+
+        boolean mentorSuspended = userRepository.findById(mentorUserId.toHexString())
+                .map(u -> u.getStatus() == UserStatus.SUSPENDED)
+                .orElse(false);
+        if (mentorSuspended) {
+            throw new BadRequestException("Mentor này hiện đang tạm khoá, không thể đặt lịch.");
         }
 
         Course course = mentor.getCourses() == null ? null : mentor.getCourses().stream()

@@ -25,6 +25,8 @@ public record MentorProfileResponse(
         int ratingCount,
         int sessionsCount,
         int mentorCancelCount,
-        int mentorNoShowCount
+        int mentorNoShowCount,
+        /** Status of the mentor's user account: ACTIVE or SUSPENDED (suspended mentors are hidden from mentees). */
+        String accountStatus
 ) {
 }

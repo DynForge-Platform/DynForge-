@@ -34,6 +34,8 @@ export interface MentorProfileResponse {
   sessionsCount: number;
   mentorCancelCount?: number;
   mentorNoShowCount?: number;
+  /** ACTIVE | SUSPENDED — suspended mentors are hidden from mentees. */
+  accountStatus?: string;
 }
 
 export async function listMentors(course?: string): Promise<MentorProfileResponse[]> {
