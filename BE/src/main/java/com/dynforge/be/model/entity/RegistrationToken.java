@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -34,6 +35,9 @@ public class RegistrationToken {
     private String phone;
 
     private Set<Role> roles;
+
+    /** University chosen at sign-up, applied when the account is activated. */
+    private ObjectId universityId;
 
     /** 6-digit one-time code (hashed). */
     private String otp;

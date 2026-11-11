@@ -9,6 +9,8 @@ public record RegisterRequest(
         @NotBlank @Email String email,
         @NotBlank @Size(min = 8, message = "Password must be at least 8 characters") String password,
         String phone,
-        boolean asMentor
+        boolean asMentor,
+        /** University picked in the sign-up form (any school; "OTHER" = Trường khác). Optional. */
+        String universityCode
 ) {
 }

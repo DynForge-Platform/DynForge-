@@ -49,8 +49,8 @@ const t = {
     auditLogs: 'Audit Logs',
 
     // ── Home ─────────────────────────────────────────────────
-    heroTitle: "Don't let challenges hold you back — connect with your FPT mentor now!",
-    heroSubtitle: 'The place where you can easily connect with FPTU seniors and alumni to receive dedicated support, share knowledge, and find direction for your future. Book appointments with peace of mind through our secure escrow feature.',
+    heroTitle: "Don't let challenges hold you back — connect with a mentor from your school now!",
+    heroSubtitle: 'The place where you can easily connect with seniors and alumni from your university to receive dedicated support, share knowledge, and find direction for your future. Book appointments with peace of mind through our secure escrow feature.',
     searchPlaceholder: 'Search by course code, mentor name, major, or university',
     subject: 'Subject',
     university: 'University',
@@ -103,7 +103,7 @@ const t = {
 
     // ── Find Mentors ─────────────────────────────────────────
     findMentorsTitle: 'Find Mentors',
-    findMentorsSubtitle: 'Browse verified FPTU HCM mentors and book a session with escrow protection.',
+    findMentorsSubtitle: 'Browse verified mentors from universities across Vietnam and book a session with escrow protection.',
     filters: 'Filters',
     reset: 'Reset',
     majors: 'Majors',
@@ -574,8 +574,8 @@ const t = {
     auditLogs: 'Nhật ký hoạt động',
 
     // ── Home ─────────────────────────────────────────────────
-    heroTitle: 'Đừng để khó khăn cản bước, kết nối ngay với Mentor "nhà F"!',
-    heroSubtitle: 'Nơi bạn dễ dàng gặp gỡ anh chị khóa trên và cựu sinh viên FPTU để nhận hỗ trợ tận tình, chia sẻ kiến thức và định hướng tương lai. Đặt lịch hẹn an tâm hơn với tính năng ký quỹ an toàn.',
+    heroTitle: 'Đừng để khó khăn cản bước, kết nối ngay với Mentor cùng trường!',
+    heroSubtitle: 'Nơi bạn dễ dàng gặp gỡ anh chị khóa trên và cựu sinh viên trường bạn để nhận hỗ trợ tận tình, chia sẻ kiến thức và định hướng tương lai. Đặt lịch hẹn an tâm hơn với tính năng ký quỹ an toàn.',
     searchPlaceholder: 'Tìm theo mã môn, tên mentor, chuyên ngành hoặc trường đại học',
     subject: 'Môn học',
     university: 'Trường đại học',
@@ -628,7 +628,7 @@ const t = {
 
     // ── Find Mentors ─────────────────────────────────────────
     findMentorsTitle: 'Tìm Mentor',
-    findMentorsSubtitle: 'Khám phá các mentor đã xác minh tại FPT HCM và đặt lịch học với tính năng ký quỹ an toàn.',
+    findMentorsSubtitle: 'Khám phá các mentor đã xác minh tại nhiều trường đại học trên cả nước và đặt lịch học với tính năng ký quỹ an toàn.',
     filters: 'Bộ lọc',
     reset: 'Xóa bộ lọc',
     majors: 'Chuyên ngành',

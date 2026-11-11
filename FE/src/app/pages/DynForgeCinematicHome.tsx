@@ -83,7 +83,7 @@ export function DynForgeCinematicHome() {
         {/* Subtitle */}
         <p className="mt-8 text-white/80 text-base sm:text-lg max-w-2xl leading-relaxed animate-fade-rise-delay font-normal">
           {lang === 'vi'
-            ? 'Kết nối với anh chị khóa trên, cựu sinh viên & giảng viên đáng tin cậy — những người thấu hiểu môn học, đồ án và lộ trình học tập của bạn tại FPT University.'
+            ? 'Kết nối với anh chị khóa trên, cựu sinh viên & giảng viên đáng tin cậy — những người thấu hiểu môn học, đồ án và lộ trình học tập của bạn tại trường.'
             : 'Connect with trusted student mentors, alumni, and lecturers who understand your courses, your projects, and the academic path you are building.'}
         </p>
 

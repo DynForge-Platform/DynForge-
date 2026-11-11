@@ -26,7 +26,7 @@ interface AuthCtx {
   login: (role: AuthRole) => void;
   loginWithCredentials: (email: string, password: string) => Promise<AuthUser>;
   loginWithGoogle: (idToken: string) => Promise<AuthUser>;
-  initiateRegister: (fullName: string, email: string, password: string, role: 'MENTEE' | 'MENTOR') => Promise<string>;
+  initiateRegister: (fullName: string, email: string, password: string, role: 'MENTEE' | 'MENTOR', universityCode?: string) => Promise<string>;
   verifyRegisterOtp: (email: string, otp: string) => Promise<AuthUser>;
   resendRegisterOtp: (email: string) => Promise<string>;
   registerWithCredentials: (
@@ -159,8 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return u;
   };
 
-  const initiateRegister = async (fullName: string, email: string, password: string, role: 'MENTEE' | 'MENTOR'): Promise<string> => {
-    return await registerApi(fullName, email, password, role);
+  const initiateRegister = async (fullName: string, email: string, password: string, role: 'MENTEE' | 'MENTOR', universityCode?: string): Promise<string> => {
+    return await registerApi(fullName, email, password, role, universityCode);
   };
 
   const verifyRegisterOtp = async (email: string, otp: string): Promise<AuthUser> => {

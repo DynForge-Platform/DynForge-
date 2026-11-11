@@ -211,7 +211,7 @@ export function Login() {
         <div>
           <Label htmlFor="email" className="mb-1.5 block text-xs text-slate-300">{T.email}</Label>
           <Input
-            id="email" type="email" placeholder="you@fpt.edu.vn"
+            id="email" type="email" placeholder="you@gmail.com"
             className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11 text-sm"
             value={email} onChange={(e) => setEmail(e.target.value)}
           />
@@ -289,7 +289,8 @@ export function Register() {
         name.trim(),
         email.trim(),
         password,
-        role === 'mentor' ? 'MENTOR' : 'MENTEE'
+        role === 'mentor' ? 'MENTOR' : 'MENTEE',
+        universityCode || undefined
       );
       toast.success(msg || (lang === 'vi' ? `Mã xác thực đã được gửi đến email ${email.trim()}` : `Verification code sent to ${email.trim()}`));
       setStep('otp');
@@ -311,7 +312,7 @@ export function Register() {
     setLoading(true);
     try {
       const u = await verifyRegisterOtp(email.trim(), otp.trim());
-      if (universityCode) setSelectedCode(universityCode);
+      if (universityCode && universityCode !== 'OTHER') setSelectedCode(universityCode);
       toast.success(lang === 'vi' ? 'Xác thực tài khoản thành công! Chào mừng bạn gia nhập DynForge.' : 'Account verified successfully! Welcome to DynForge.');
       navigate(u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
     } catch (err: any) {
@@ -482,7 +483,7 @@ export function Register() {
             <div>
               <Label htmlFor="reg-email" className="mb-1 block text-xs text-slate-300">{T.email}</Label>
               <Input
-                id="reg-email" type="email" placeholder="you@fpt.edu.vn"
+                id="reg-email" type="email" placeholder="you@gmail.com"
                 className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-10 text-sm"
                 value={email} onChange={(e) => setEmail(e.target.value)}
               />
@@ -503,9 +504,14 @@ export function Register() {
                   <SelectValue placeholder={T.selectUniversity} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#090f1e] text-white border-white/10">
-                  {universities.map((u) => (
-                    <SelectItem key={u.code} value={u.code}>{u.shortName || u.name}</SelectItem>
-                  ))}
+                  {/* Every university, A→Z, with "Trường khác" last */}
+                  {[...universities]
+                    .sort((a, b) => (a.code === 'OTHER' ? 1 : b.code === 'OTHER' ? -1 : (a.shortName || a.name).localeCompare(b.shortName || b.name, 'vi')))
+                    .map((u) => (
+                      <SelectItem key={u.code} value={u.code}>
+                        {u.code === 'OTHER' ? u.name : `${u.shortName || u.code} — ${u.name}`}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               {role === 'mentor' && (

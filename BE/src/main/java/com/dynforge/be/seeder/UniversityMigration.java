@@ -60,26 +60,40 @@ public class UniversityMigration implements CommandLineRunner {
                 });
         ObjectId fptuId = new ObjectId(fptu.getId());
 
+        // Users/profiles that still have no university belong to "Trường khác" (DynForge is open to
+        // every school now) — they are no longer assigned to FPTU by default.
+        University other = universityRepository.findByCode(UniversityCatalogSeeder.OTHER_CODE)
+                .orElseGet(() -> universityRepository.save(University.builder()
+                        .code(UniversityCatalogSeeder.OTHER_CODE)
+                        .name("Trường khác")
+                        .shortName("Trường khác")
+                        .aliases(List.of("Trường khác"))
+                        .emailDomains(List.of())
+                        .status(UniversityStatus.ACTIVE)
+                        .createdAt(Instant.now())
+                        .build()));
+        ObjectId otherId = new ObjectId(other.getId());
+
         // b. Backfill users without a university.
         List<User> usersWithoutUni = userRepository.findByUniversityIdIsNull();
         for (User user : usersWithoutUni) {
-            user.setUniversityId(fptuId);
+            user.setUniversityId(otherId);
         }
         if (!usersWithoutUni.isEmpty()) {
             userRepository.saveAll(usersWithoutUni);
         }
-        log.info("[UniversityMigration] Assigned {} user(s) to {}", usersWithoutUni.size(), DEFAULT_CODE);
+        log.info("[UniversityMigration] Assigned {} user(s) to {}", usersWithoutUni.size(), UniversityCatalogSeeder.OTHER_CODE);
 
         // c. Backfill mentor profiles without a university.
         List<MentorProfile> mentorsWithoutUni = mentorRepository.findByUniversityIdIsNull();
         for (MentorProfile profile : mentorsWithoutUni) {
-            profile.setUniversityId(fptuId);
-            profile.setUniversity(DEFAULT_NAME);
+            profile.setUniversityId(otherId);
+            profile.setUniversity(other.getName());
         }
         if (!mentorsWithoutUni.isEmpty()) {
             mentorRepository.saveAll(mentorsWithoutUni);
         }
-        log.info("[UniversityMigration] Assigned {} mentor profile(s) to {}", mentorsWithoutUni.size(), DEFAULT_CODE);
+        log.info("[UniversityMigration] Assigned {} mentor profile(s) to {}", mentorsWithoutUni.size(), UniversityCatalogSeeder.OTHER_CODE);
 
         // d. Backfill verification requests, copying the owning user's university.
         List<VerificationRequest> requestsWithoutUni = verificationRepository.findByUniversityIdIsNull();
@@ -93,8 +107,8 @@ public class UniversityMigration implements CommandLineRunner {
             ObjectId uniId = userToUni.computeIfAbsent(userId, id ->
                     userRepository.findById(id.toHexString())
                             .map(User::getUniversityId)
-                            .orElse(fptuId));
-            request.setUniversityId(uniId != null ? uniId : fptuId);
+                            .orElse(otherId));
+            request.setUniversityId(uniId != null ? uniId : otherId);
             updatedRequests++;
         }
         if (updatedRequests > 0) {
