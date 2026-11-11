@@ -16,6 +16,7 @@ import com.dynforge.be.model.enums.Role;
 import com.dynforge.be.model.enums.UserStatus;
 import com.dynforge.be.repository.RefreshTokenRepository;
 import com.dynforge.be.repository.RegistrationTokenRepository;
+import com.dynforge.be.repository.UniversityRepository;
 import com.dynforge.be.repository.UserRepository;
 import com.dynforge.be.security.JwtService;
 import com.dynforge.be.security.UserPrincipal;
@@ -45,6 +46,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final RegistrationTokenRepository registrationTokenRepository;
+    private final UniversityRepository universityRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -82,6 +84,7 @@ public class AuthService {
                 .phone(request.phone())
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .roles(request.asMentor() ? EnumSet.of(Role.MENTEE, Role.MENTOR) : EnumSet.of(Role.MENTEE))
+                .universityId(resolveUniversityId(request.universityCode()))
                 .otp(hashedOtp)
                 .failedAttempts(0)
                 .expiresAt(Instant.now().plusMillis(otpExpirationMs))
@@ -133,6 +136,7 @@ public class AuthService {
                 .phone(token.getPhone())
                 .passwordHash(token.getPasswordHash())
                 .roles(token.getRoles() != null && !token.getRoles().isEmpty() ? token.getRoles() : EnumSet.of(Role.MENTEE))
+                .universityId(token.getUniversityId() != null ? token.getUniversityId() : resolveUniversityId(null))
                 .walletBalance(0)
                 .status(UserStatus.ACTIVE)
                 .createdAt(Instant.now())
@@ -163,6 +167,20 @@ public class AuthService {
         mailService.sendRegistrationOtpEmail(email, rawOtp, otpExpirationMs / 60_000);
     }
 
+    /**
+     * University picked at sign-up (any school). Unknown/blank -> "Trường khác", so a new account is
+     * never silently assigned to FPTU.
+     */
+    private ObjectId resolveUniversityId(String universityCode) {
+        String code = (universityCode == null || universityCode.isBlank())
+                ? com.dynforge.be.seeder.UniversityCatalogSeeder.OTHER_CODE
+                : universityCode.trim();
+        return universityRepository.findByCode(code)
+                .or(() -> universityRepository.findByCode(com.dynforge.be.seeder.UniversityCatalogSeeder.OTHER_CODE))
+                .map(u -> new ObjectId(u.getId()))
+                .orElse(null);
+    }
+
     public AuthResponse register(RegisterRequest request) {
         initiateRegister(request);
         return null;
@@ -191,6 +209,7 @@ public class AuthService {
                 .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
                 .roles(EnumSet.of(Role.MENTEE))
                 .avatarUrl(google.avatarUrl())
+                .universityId(resolveUniversityId(null))
                 .walletBalance(0)
                 .status(UserStatus.ACTIVE)
                 .createdAt(Instant.now())

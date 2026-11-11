@@ -27,13 +27,15 @@ export async function registerApi(
   fullName: string,
   email: string,
   password: string,
-  role: 'MENTEE' | 'MENTOR'
+  role: 'MENTEE' | 'MENTOR',
+  universityCode?: string
 ): Promise<string> {
   const { data } = await api.post('/api/auth/register', {
     fullName,
     email,
     password,
     asMentor: role === 'MENTOR',
+    universityCode: universityCode || undefined,
   });
   return data.message || 'Mã xác thực OTP đã được gửi đến email của bạn.';
 }

@@ -97,7 +97,7 @@ export function EscrowStatus() {
     courseCode: 'CS501',
     courseName: 'Thuật Toán Nâng Cao & Tối Ưu Hóa',
     mentorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    mentorUniversity: 'Đại Học FPT TP.HCM (FPTU-HCM)',
+    mentorUniversity: '',
   });
 
   const bookingId = state.bookingId || 'DF-2026-8866';
@@ -378,7 +378,7 @@ export function EscrowStatus() {
                   </div>
                   <p className="text-xs text-slate-400 truncate flex items-center gap-1.5 mt-1">
                     <GraduationCap className="size-3.5 text-cyan-400 shrink-0" />
-                    {state.mentorUniversity || 'Đại Học FPT TP.HCM (FPTU-HCM)'}
+                    {state.mentorUniversity || '—'}
                   </p>
                 </div>
               </div>

@@ -61,7 +61,7 @@ export function UniversityProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     getMe()
       .then((me) => {
-        if (!cancelled && me.universityCode) {
+        if (!cancelled && me.universityCode && me.universityCode !== 'OTHER') {
           setSelectedCodeState(me.universityCode);
           localStorage.setItem(STORAGE_KEY, me.universityCode);
         }

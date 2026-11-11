@@ -290,7 +290,7 @@ export function MentorProfile() {
                   <Video className="size-4 text-cyan-400" /> <span>Google Meet / Zoom</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MapPin className="size-4 text-cyan-400" /> <span>On-campus / FPT University</span>
+                  <MapPin className="size-4 text-cyan-400" /> <span>{mentor.university || (lang === 'vi' ? 'Gặp trực tiếp tại trường' : 'On-campus')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="size-4 text-emerald-400" /> <span>100% Escrow Protected</span>

@@ -154,7 +154,7 @@ export function TeacherVerification() {
   const [title, setTitle] = useState('');
   const [bio, setBio] = useState('');
   const [major, setMajor] = useState('');
-  const [university, setUniversity] = useState('FPT University HCM');
+  const [university, setUniversity] = useState('');
   const [universityCode, setUniversityCode] = useState('');
 
   // School-email verification (see mục A — copies the OTP flow)
@@ -442,7 +442,7 @@ export function TeacherVerification() {
                             type="email"
                             value={schoolEmail}
                             onChange={(e) => setSchoolEmail(e.target.value)}
-                            placeholder={lang === 'vi' ? 'ban@fpt.edu.vn' : 'you@fpt.edu.vn'}
+                            placeholder={lang === 'vi' ? 'email@gmail.com hoặc email trường' : 'you@gmail.com or school email'}
                             className="bg-input-background"
                           />
                           <Button type="button" onClick={requestSchool} disabled={schoolBusy}>

@@ -153,7 +153,7 @@ export function backendToMentor(p: MentorProfileResponse): Mentor {
     avatar: p.avatarUrl ?? '',
     role: (p.teachingRole?.trim() ? (p.teachingRole as MentorRole) : titleToRole(p.title ?? '')),
     verified: p.verified,
-    university: p.university?.trim() ? p.university : 'FPT University HCM',
+    university: p.university?.trim() ? p.university : '',
     major: p.major ?? '',
     headline: (p.bio ?? '').split('.')[0] + '.',
     about: p.bio ?? '',
