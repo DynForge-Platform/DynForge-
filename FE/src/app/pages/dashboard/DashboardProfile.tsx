@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { VN_PROVINCES } from '../../lib/provinces';
 import { Loader2 } from 'lucide-react';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -8,6 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '../../components/ui/dialog';
 import { useAuth } from '../../context/AuthContext';
+import { useUniversity } from '../../context/UniversityContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { toast } from 'sonner';
 import {
@@ -82,6 +84,10 @@ export function DashboardProfile() {
   const [studentId, setStudentId] = useState('');
   const [major, setMajor] = useState('');
   const [year, setYear] = useState('');
+  const [birthYear, setBirthYear] = useState('');
+  const [province, setProvince] = useState('');
+  const [universityCode, setUniversityCode] = useState('');
+  const { universities } = useUniversity();
   const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
@@ -93,6 +99,9 @@ export function DashboardProfile() {
         setStudentId(me.studentId ?? '');
         setMajor(me.major ?? '');
         setYear(me.year ?? '');
+        setBirthYear(me.birthYear ? String(me.birthYear) : '');
+        setProvince(me.province ?? '');
+        setUniversityCode(me.universityCode ?? '');
         setAvatarUrl(me.avatarUrl ?? '');
       })
       .catch(() => toast.error(vi ? 'Không tải được hồ sơ.' : 'Failed to load profile.'))
@@ -102,6 +111,11 @@ export function DashboardProfile() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) { toast.error(vi ? 'Vui lòng nhập họ và tên.' : 'Full name is required.'); return; }
+    const by = birthYear.trim() ? Number(birthYear) : undefined;
+    if (by !== undefined && (!Number.isInteger(by) || by < 1940 || by > 2015)) {
+      toast.error(vi ? 'Năm sinh không hợp lệ (1940–2015).' : 'Invalid birth year (1940–2015).');
+      return;
+    }
     setSaving(true);
     try {
       await updateProfile({
@@ -111,6 +125,9 @@ export function DashboardProfile() {
         major: major.trim() || undefined,
         year: year.trim() || undefined,
         avatarUrl: avatarUrl.trim() || undefined,
+        birthYear: by,
+        province: province || undefined,
+        universityCode: universityCode || undefined,
       });
       await refreshUser();
       toast.success(vi ? 'Cập nhật hồ sơ thành công.' : 'Profile updated successfully.');
@@ -176,12 +193,44 @@ export function DashboardProfile() {
               <Input value={studentId} onChange={(e) => setStudentId(e.target.value)} className="bg-input-background" />
             </div>
             <div>
+              <Label className="mb-1.5 block">{vi ? 'Trường' : 'University'}</Label>
+              <select
+                value={universityCode}
+                onChange={(e) => setUniversityCode(e.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-input-background px-3 text-sm"
+              >
+                <option value="">{vi ? '— Chọn trường —' : '— Select —'}</option>
+                {[...universities]
+                  .sort((a, b) => (a.code === 'OTHER' ? 1 : b.code === 'OTHER' ? -1 : (a.shortName || a.name).localeCompare(b.shortName || b.name, 'vi')))
+                  .map((u) => (
+                    <option key={u.code} value={u.code}>
+                      {u.code === 'OTHER' ? u.name : `${u.shortName || u.code} — ${u.name}`}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
               <Label className="mb-1.5 block">{vi ? 'Ngành học' : 'Major'}</Label>
               <Input value={major} onChange={(e) => setMajor(e.target.value)} className="bg-input-background" />
             </div>
             <div>
               <Label className="mb-1.5 block">{vi ? 'Khoá / Năm' : 'Year'}</Label>
               <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder={vi ? 'vd: 2022' : 'e.g. 2022'} className="bg-input-background" />
+            </div>
+            <div>
+              <Label className="mb-1.5 block">{vi ? 'Năm sinh' : 'Birth year'}</Label>
+              <Input type="number" min={1940} max={2015} value={birthYear} onChange={(e) => setBirthYear(e.target.value)} placeholder={vi ? 'vd: 2004' : 'e.g. 2004'} className="bg-input-background" />
+            </div>
+            <div>
+              <Label className="mb-1.5 block">{vi ? 'Tỉnh / Thành phố' : 'Province / City'}</Label>
+              <select
+                value={province}
+                onChange={(e) => setProvince(e.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-input-background px-3 text-sm"
+              >
+                <option value="">{vi ? '— Chọn tỉnh/thành —' : '— Select —'}</option>
+                {VN_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
             </div>
           </div>
         </Card>

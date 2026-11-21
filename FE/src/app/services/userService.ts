@@ -18,6 +18,8 @@ export interface UserProfile {
   status: string;
   createdAt: string;
   mentorVerified?: boolean;
+  birthYear?: number;
+  province?: string;
 }
 
 export interface UpdateProfilePayload {
@@ -27,6 +29,9 @@ export interface UpdateProfilePayload {
   major?: string;
   year?: string;
   avatarUrl?: string;
+  birthYear?: number;
+  province?: string;
+  universityCode?: string;
 }
 
 export async function getMe(): Promise<UserProfile> {

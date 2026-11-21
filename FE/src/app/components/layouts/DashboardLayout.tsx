@@ -6,7 +6,7 @@ import {
   BadgeCheck, Users, FileText, BarChart3, CreditCard,
   LogOut, BookMarked, MessageSquare, Tag, Video, Menu, X,
   GraduationCap, Plus, Sparkles, ExternalLink, ChevronRight, ArrowLeftRight,
-  Megaphone, Lock
+  Megaphone, Lock, PieChart, MessageSquareText
 } from 'lucide-react';
 import { cn } from '../ui/utils';
 import { Logo } from '../Logo';
@@ -65,6 +65,8 @@ const lockedTeacherRoutes = [
 const adminNav: NavItem[] = [
   { to: '/admin/dashboard',           labelKey: 'dashboard',           icon: LayoutDashboard, end: true },
   { to: '/admin/users',               labelKey: 'users',               icon: Users },
+  { to: '/admin/user-insights',       labelKey: 'userInsights',        icon: PieChart },
+  { to: '/admin/feedback',            labelKey: 'userFeedback',        icon: MessageSquareText },
   { to: '/admin/mentors',             labelKey: 'mentors',             icon: User },
   { to: '/admin/mentor-verification', labelKey: 'mentorVerification',  icon: ShieldCheck },
   { to: '/admin/transactions',        labelKey: 'transactions',        icon: CreditCard },

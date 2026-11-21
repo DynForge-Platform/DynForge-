@@ -46,7 +46,9 @@ public class UserMapper {
                 user.getWalletBalance(),
                 user.getStatus(),
                 user.getCreatedAt(),
-                mentorVerified
+                mentorVerified,
+                user.getBirthYear(),
+                user.getProvince()
         );
     }
 }

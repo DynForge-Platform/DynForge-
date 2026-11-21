@@ -7,6 +7,7 @@ import com.dynforge.be.model.dto.UpdateProfileRequest;
 import com.dynforge.be.model.dto.UserResponse;
 import com.dynforge.be.model.entity.User;
 import com.dynforge.be.repository.RefreshTokenRepository;
+import com.dynforge.be.repository.UniversityRepository;
 import com.dynforge.be.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
@@ -21,6 +22,7 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final UniversityRepository universityRepository;
 
     public UserResponse updateProfile(User user, UpdateProfileRequest request) {
         user.setFullName(request.fullName());
@@ -28,10 +30,35 @@ public class UserService {
         user.setStudentId(request.studentId());
         user.setMajor(request.major());
         user.setYear(request.year());
+        if (request.birthYear() != null) {
+            user.setBirthYear(request.birthYear());
+        }
+        if (request.universityCode() != null && !request.universityCode().isBlank()) {
+            changeUniversity(user, request.universityCode().trim());
+        }
+        if (request.province() != null) {
+            user.setProvince(request.province().isBlank() ? null : request.province().trim());
+        }
         if (request.avatarUrl() != null) {
             user.setAvatarUrl(request.avatarUrl());
         }
         return userMapper.toResponse(userRepository.save(user));
+    }
+
+    /**
+     * Lets any user pick/change their university freely from the profile (no verification needed).
+     * If the old school had been confirmed by school email, that badge no longer applies to the new
+     * school, so the flag is cleared.
+     */
+    private void changeUniversity(User user, String code) {
+        var university = universityRepository.findByCode(code)
+                .orElseThrow(() -> new BadRequestException("Trường không hợp lệ: " + code));
+        ObjectId newId = new ObjectId(university.getId());
+        if (newId.equals(user.getUniversityId())) {
+            return;
+        }
+        user.setUniversityId(newId);
+        user.setSchoolVerified(false);
     }
 
     public void changePassword(User user, ChangePasswordRequest request) {
