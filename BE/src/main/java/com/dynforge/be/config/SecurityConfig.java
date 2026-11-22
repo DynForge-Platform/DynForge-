@@ -132,6 +132,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/mentors/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/mentors/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/universities/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/avatars/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/reviews").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/resources").permitAll()
                         .requestMatchers("/api/partnerships/**").permitAll()
