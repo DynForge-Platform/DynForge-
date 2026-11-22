@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCcw, AlertTriangle, Loader2, TrendingUp, Wallet, HandCoins } from 'lucide-react';
+import { RefreshCcw, AlertTriangle, Loader2, TrendingUp, Wallet, HandCoins, ExternalLink } from 'lucide-react';
 import { formatCurrency } from '../../data/mockData';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -49,9 +49,12 @@ export function AdminPayouts() {
   useEffect(() => { fetchAll(); }, []);
 
   const payouts = useMemo(() => txns.filter((t) => t.type === 'PAYOUT' || t.type === 'WITHDRAWAL'), [txns]);
+  const payoutOnly = useMemo(() => txns.filter((t) => t.type === 'PAYOUT'), [txns]);
+  const withdrawalOnly = useMemo(() => txns.filter((t) => t.type === 'WITHDRAWAL'), [txns]);
   const refundTxns = useMemo(() => txns.filter((t) => t.type === 'REFUND'), [txns]);
 
-  const totalPaidOut = payouts.reduce((s, t) => s + t.amount, 0);
+  const totalPaidOut = payoutOnly.reduce((s, t) => s + t.amount, 0);
+  const totalWithdrawn = withdrawalOnly.reduce((s, t) => s + t.amount, 0);
   const totalRefunded = refundTxns.reduce((s, t) => s + t.amount, 0);
 
   const doRefund = async () => {
@@ -99,7 +102,9 @@ export function AdminPayouts() {
         /* ── Mentor Payouts ledger ─────────────────────────────── */
         <Card className="border-border p-6">
           <p className="mb-4 text-sm text-muted-foreground">
-            {vi ? <>{payouts.length} giao dịch giải ngân · Tổng <strong>{formatCurrency(totalPaidOut)}</strong></> : <>{payouts.length} payout transactions · Total <strong>{formatCurrency(totalPaidOut)}</strong></>}
+            {vi
+              ? <>{payoutOnly.length} khoản giải ngân Escrow (<strong>{formatCurrency(totalPaidOut)}</strong>) · {withdrawalOnly.length} lệnh rút ngân hàng (<strong>{formatCurrency(totalWithdrawn)}</strong>)</>
+              : <>{payoutOnly.length} escrow payouts (<strong>{formatCurrency(totalPaidOut)}</strong>) · {withdrawalOnly.length} bank withdrawals (<strong>{formatCurrency(totalWithdrawn)}</strong>)</>}
           </p>
           {payouts.length ? (
             <div className="overflow-x-auto">
@@ -246,6 +251,29 @@ export function AdminPayouts() {
                   <p className="text-muted-foreground mb-1">{vi ? 'Lý do của học viên' : "Student's reason"}</p>
                   <p className="whitespace-pre-wrap">{refundTarget.reason}</p>
                 </div>
+              )}
+              {refundTarget.mentorResponse ? (
+                <div className="rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-3 space-y-1.5">
+                  <p className="text-cyan-300 font-semibold text-xs">
+                    {vi ? 'Giải trình từ Mentor' : "Mentor's defense"}
+                  </p>
+                  <p className="whitespace-pre-wrap text-xs">{refundTarget.mentorResponse}</p>
+                  {refundTarget.mentorEvidenceUrl && /^https?:\/\//i.test(refundTarget.mentorEvidenceUrl) && (
+                    <a
+                      href={refundTarget.mentorEvidenceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:underline font-medium"
+                    >
+                      <ExternalLink className="size-3" />
+                      {vi ? 'Xem bằng chứng đính kèm' : 'View attached evidence'}
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  {vi ? 'Mentor chưa gửi giải trình cho khiếu nại này.' : 'Mentor has not submitted a defense response yet.'}
+                </p>
               )}
               <div className="flex items-start gap-2 rounded-xl bg-danger/5 border border-danger/20 p-3 text-danger">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" />

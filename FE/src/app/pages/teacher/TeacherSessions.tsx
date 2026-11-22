@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '../../components/ui/dialog';
 import { Textarea } from '../../components/ui/textarea';
+import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { StatusBadge, EmptyState } from '../../components/common';
 import { MeetRoomOverlay } from '../../components/MeetRoomOverlay';
@@ -24,10 +25,17 @@ import {
 import { useLanguage } from '../../context/LanguageContext';
 import { formatDate } from '../../lib/format';
 
-const tabs = ['All', 'Requests', 'Reschedule', 'Accepted', 'Taught', 'Completed', 'Cancelled'];
+const tabs = ['All', 'Requests', 'Reschedule', 'Accepted', 'Taught', 'Completed', 'Disputed', 'Pending Payment', 'Cancelled'];
 const TAB_LABELS_VI: Record<string, string> = {
-  All: 'Tất cả', Requests: 'Yêu cầu', Reschedule: 'Đổi lịch', Accepted: 'Đã nhận',
-  Taught: 'Đã dạy', Completed: 'Hoàn tất', Cancelled: 'Đã huỷ',
+  All: 'Tất cả',
+  Requests: 'Yêu cầu',
+  Reschedule: 'Đổi lịch',
+  Accepted: 'Đã nhận',
+  Taught: 'Đã dạy',
+  Completed: 'Hoàn tất',
+  Disputed: 'Khiếu nại',
+  'Pending Payment': 'Chờ thanh toán',
+  Cancelled: 'Đã huỷ',
 };
 
 function mentorStatusTab(status: BookingStatus): string {
@@ -57,6 +65,7 @@ export function TeacherSessions() {
   const [markDoneBooking, setMarkDoneBooking] = useState<BookingResponse | null>(null);
   const [disputeBooking, setDisputeBooking] = useState<BookingResponse | null>(null);
   const [disputeResponse, setDisputeResponse] = useState('');
+  const [disputeEvidenceUrl, setDisputeEvidenceUrl] = useState('');
   const [submittingDispute, setSubmittingDispute] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
 
@@ -106,10 +115,10 @@ export function TeacherSessions() {
     setActingId(b.id);
     try {
       await respondRescheduleBooking(b.id, true);
-      toast.success('Đã chấp nhận yêu cầu đổi lịch! Lịch dạy mới đã được cập nhật.');
+      toast.success(vi ? 'Đã chấp nhận yêu cầu đổi lịch! Lịch dạy mới đã được cập nhật.' : 'Reschedule approved! The new session time has been updated.');
       fetchBookings();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Chấp nhận đổi lịch thất bại.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Chấp nhận đổi lịch thất bại.' : 'Failed to approve reschedule.'));
     } finally {
       setActingId(null);
     }
@@ -119,10 +128,10 @@ export function TeacherSessions() {
     setActingId(b.id);
     try {
       await respondRescheduleBooking(b.id, false);
-      toast.info('Đã từ chối yêu cầu đổi lịch. Buổi học giữ nguyên lịch ban đầu.');
+      toast.info(vi ? 'Đã từ chối yêu cầu đổi lịch. Buổi học giữ nguyên lịch ban đầu.' : 'Reschedule declined. The original schedule remains unchanged.');
       fetchBookings();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Từ chối đổi lịch thất bại.');
+      toast.error(err?.response?.data?.message ?? (vi ? 'Từ chối đổi lịch thất bại.' : 'Failed to decline reschedule.'));
     } finally {
       setActingId(null);
     }
@@ -130,7 +139,11 @@ export function TeacherSessions() {
 
   const pendingRescheduleCount = bookings.filter((b) => !!b.pendingStartAt).length;
 
-  const withTab = bookings.map((b) => ({ ...b, tabStatus: mentorStatusTab(b.status) }));
+  const withTab = bookings.map((b) => ({
+    ...b,
+    tabStatus: mentorStatusTab(b.status),
+    displayStatus: b.status === 'ESCROW_HELD' ? 'In Escrow' : mapStatusToDisplay(b.status),
+  }));
   const filtered = tab === 'All'
     ? withTab
     : tab === 'Reschedule'
@@ -158,13 +171,22 @@ export function TeacherSessions() {
       toast.error(vi ? 'Vui lòng nhập nội dung phản hồi.' : 'Please enter your response.');
       return;
     }
+    const cleanEvidence = disputeEvidenceUrl.trim();
+    if (cleanEvidence && !/^https?:\/\//i.test(cleanEvidence)) {
+      toast.error(vi ? 'Link bằng chứng phải bắt đầu bằng http:// hoặc https://' : 'Evidence link must start with http:// or https://');
+      return;
+    }
     setSubmittingDispute(true);
     try {
-      await respondDispute(disputeBooking.id, { response: disputeResponse.trim() });
+      await respondDispute(disputeBooking.id, {
+        response: disputeResponse.trim(),
+        evidenceUrl: cleanEvidence || undefined,
+      });
       toast.success(vi ? 'Đã gửi phản hồi khiếu nại thành công tới DynForge!' : 'Dispute response submitted to DynForge successfully!');
       fetchBookings();
       setDisputeBooking(null);
       setDisputeResponse('');
+      setDisputeEvidenceUrl('');
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? (vi ? 'Không thể gửi phản hồi.' : 'Failed to submit dispute response.'));
     } finally {
@@ -254,7 +276,7 @@ export function TeacherSessions() {
                     <TableCell className="text-muted-foreground">{b.durationMin} {vi ? 'phút' : 'min'}</TableCell>
                     <TableCell className="text-muted-foreground">{b.format.replace('_', '-')}</TableCell>
                     <TableCell style={{ fontWeight: 600 }}>{formatCurrency(b.price)}</TableCell>
-                    <TableCell><StatusBadge status={b.tabStatus} /></TableCell>
+                    <TableCell><StatusBadge status={b.displayStatus} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1.5 items-center flex-wrap">
                         {b.pendingStartAt && (
@@ -402,10 +424,6 @@ export function TeacherSessions() {
                 <p style={{ fontWeight: 600 }}>{markDoneBooking.courseCode} · {markDoneBooking.durationMin} {vi ? 'phút' : 'min'}</p>
                 <p className="text-sm text-muted-foreground">{formatDate(markDoneBooking.startAt, lang, { weekday: 'long', day: '2-digit', month: 'short' })}</p>
               </div>
-              <div>
-                <Label className="mb-1.5 block">{vi ? 'Ghi chú buổi học' : 'Session notes'} <span className="text-muted-foreground">{vi ? '(tuỳ chọn)' : '(optional)'}</span></Label>
-                <Textarea placeholder={vi ? 'Thêm ghi chú về nội dung đã dạy, bài tập giao, hoặc việc cần theo dõi…' : 'Add notes about what was covered, homework given, or follow-up...'} rows={3} />
-              </div>
               <div className="flex items-start gap-2 rounded-xl bg-success/10 p-3 text-sm text-success">
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
                 {vi
@@ -423,7 +441,7 @@ export function TeacherSessions() {
 
       {/* Respond to dispute */}
       {disputeBooking && (
-        <Dialog open onOpenChange={() => { setDisputeBooking(null); setDisputeResponse(''); }}>
+        <Dialog open onOpenChange={() => { setDisputeBooking(null); setDisputeResponse(''); setDisputeEvidenceUrl(''); }}>
           <DialogContent className="max-w-md" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -450,8 +468,20 @@ export function TeacherSessions() {
                   required
                 />
               </div>
+              <div>
+                <Label className="mb-1.5 block">
+                  {vi ? 'Link bằng chứng (Google Drive, ảnh chụp màn hình...)' : 'Evidence link (Google Drive, screenshot...)'}
+                  <span className="ml-1 text-muted-foreground font-normal">{vi ? '(tuỳ chọn)' : '(optional)'}</span>
+                </Label>
+                <Input
+                  type="url"
+                  value={disputeEvidenceUrl}
+                  onChange={(e) => setDisputeEvidenceUrl(e.target.value)}
+                  placeholder="https://drive.google.com/..."
+                />
+              </div>
               <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => { setDisputeBooking(null); setDisputeResponse(''); }} disabled={submittingDispute}>
+                <Button type="button" variant="outline" onClick={() => { setDisputeBooking(null); setDisputeResponse(''); setDisputeEvidenceUrl(''); }} disabled={submittingDispute}>
                   {vi ? 'Huỷ' : 'Cancel'}
                 </Button>
                 <Button type="submit" disabled={submittingDispute || !disputeResponse.trim()}>

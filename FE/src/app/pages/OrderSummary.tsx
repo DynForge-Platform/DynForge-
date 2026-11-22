@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams, Link } from 'react-router';
 import {
-  ShieldCheck, ChevronRight, CheckCircle2, X, Loader2,
+  ShieldCheck, ChevronRight, CheckCircle2, Loader2,
   Wallet, Zap, RefreshCw, ExternalLink, AlertCircle, Building2,
   ArrowRight, AlertTriangle, LayoutDashboard
 } from 'lucide-react';
@@ -28,35 +28,19 @@ import { toast } from 'sonner';
 
 interface BookingState {
   duration: number;
-  mode: string;
+  mode?: string;
   bookingFormat?: 'ONE_ON_ONE' | 'GROUP';
   displayMode?: string;
-  format: string;
+  format?: string;
+  sessionFormat?: string;
   day: number;
   month?: number;
   year?: number;
   slot: string;
   price: number;
   courseCode?: string;
+  courseName?: string;
   mentorId?: string;
-}
-
-const VALID_VOUCHERS: Record<string, { type: 'percentage' | 'fixed'; value: number; minOrder: number; label: string }> = {
-  'DYNFORGE20': { type: 'percentage', value: 20, minOrder: 100000, label: '20% off' },
-  'GRADORA20': { type: 'percentage', value: 20, minOrder: 100000, label: '20% off' },
-  'GROUPDEAL': { type: 'fixed', value: 30000, minOrder: 55000, label: '30.000₫ off' },
-  'LINH15': { type: 'percentage', value: 15, minOrder: 90000, label: "15% off (Linh's voucher)" },
-  'TRIAL30K': { type: 'fixed', value: 30000, minOrder: 100000, label: '30.000₫ off (Trial)' },
-  'WELCOME50K': { type: 'fixed', value: 50000, minOrder: 80000, label: '50.000₫ off (Welcome)' },
-};
-
-function calcDiscount(
-  voucher: typeof VALID_VOUCHERS[string] | null,
-  sessionFee: number
-): number {
-  if (!voucher) return 0;
-  if (voucher.type === 'percentage') return Math.round(sessionFee * (voucher.value / 100));
-  return voucher.value;
 }
 
 // ── Quick Top-Up Modal (PayOS VietQR) ────────────────────────
@@ -399,16 +383,25 @@ export function OrderSummary() {
 
   const [mentor, setMentor] = useState<Mentor | undefined>(() => getMentor(id));
   const [mentorLoading, setMentorLoading] = useState(isObjectId(id ?? ''));
-  const [voucherInput, setVoucherInput] = useState('');
-  const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; data: typeof VALID_VOUCHERS[string] } | null>(null);
-  const [voucherError, setVoucherError] = useState('');
-  const [applying, setApplying] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
 
   // Wallet State
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [showTopUpModal, setShowTopUpModal] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      navigate(id ? `/login?redirect=/mentors/${id}/order` : '/login');
+    }
+  }, [user, navigate, id]);
+
+  useEffect(() => {
+    if (user && !location.state && !searchParams.get('orderCode')) {
+      navigate(id ? `/mentors/${id}/schedule` : '/mentors', { replace: true });
+    }
+  }, [user, location.state, searchParams, navigate, id]);
 
   useEffect(() => {
     if (!id || !isObjectId(id)) return;
@@ -448,20 +441,17 @@ export function OrderSummary() {
     const status = searchParams.get('status');
     const cancelled = searchParams.get('cancel') === 'true' || status === 'CANCELLED';
 
-    // Clear PayOS params from URL
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete('orderCode');
-    newParams.delete('status');
-    newParams.delete('cancel');
-    setSearchParams(newParams, { replace: true });
-
-    if (cancelled) {
-      toast.info(lang === 'vi' ? 'Giao dịch nạp tiền đã hủy.' : 'Top-up was cancelled.');
-      return;
-    }
+    const clearPayosParams = () => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('orderCode');
+      newParams.delete('status');
+      newParams.delete('cancel');
+      setSearchParams(newParams, { replace: true });
+    };
 
     confirmPayos(orderCode)
       .then((txn) => {
+        clearPayosParams();
         if (txn.status === 'COMPLETED') {
           toast.success(
             lang === 'vi'
@@ -469,20 +459,24 @@ export function OrderSummary() {
               : `Top-up of ${formatCurrency(txn.amount)} successful!`
           );
           fetchWalletBalance();
-        } else if (txn.status === 'FAILED') {
-          toast.error(lang === 'vi' ? 'Thanh toán thất bại hoặc đã hủy.' : 'Payment failed or was cancelled.');
+        } else if (cancelled || txn.status === 'FAILED') {
+          toast.info(lang === 'vi' ? 'Giao dịch nạp tiền đã hủy hoặc thất bại.' : 'Top-up was cancelled or failed.');
         } else {
           toast.info(lang === 'vi' ? 'Thanh toán đang xử lý. Số dư sẽ cập nhật sớm.' : 'Payment is still processing.');
           fetchWalletBalance();
         }
       })
       .catch((err: any) => {
-        toast.error(err?.response?.data?.message ?? 'Could not confirm payment.');
+        clearPayosParams();
+        if (cancelled) {
+          toast.info(lang === 'vi' ? 'Giao dịch nạp tiền đã hủy.' : 'Top-up was cancelled.');
+        } else {
+          toast.error(err?.response?.data?.message ?? 'Could not confirm payment.');
+        }
       });
   }, [searchParams, user?.id, lang, fetchWalletBalance, setSearchParams]);
 
   if (!user) {
-    navigate(`/login?redirect=/mentors/${id}/order`);
     return null;
   }
 
@@ -503,22 +497,14 @@ export function OrderSummary() {
   }
 
   const now = new Date();
-  const state = (location.state as BookingState) ?? {
-    duration: 60,
-    mode: '1-on-1',
-    bookingFormat: 'ONE_ON_ONE' as const,
-    format: 'Online',
-    day: now.getDate() + 1,
-    month: now.getMonth(),
-    year: now.getFullYear(),
-    slot: '09:00',
-    price: mentor.hourlyRate,
-  };
+  const locState = location.state as BookingState | null;
+  if (!locState) {
+    return null;
+  }
+  const state = locState;
 
   const sessionFee = state.price;
   // In DynForge Escrow, 15% platform commission is deducted from mentor payout. Student platform fee is 0₫.
-  const serviceFee = 0;
-  const discount = 0;
   const total = sessionFee;
   const isInsufficient = walletBalance !== null && walletBalance < total;
   const shortfall = Math.max(0, total - (walletBalance ?? 0));
@@ -531,53 +517,6 @@ export function OrderSummary() {
       (state?.mentorId && user.id === state.mentorId)
     )
   );
-
-  const applyVoucher = () => {
-    const code = voucherInput.trim().toUpperCase();
-    if (!code) return;
-    setApplying(true);
-    setVoucherError('');
-
-    setTimeout(() => {
-      let found = VALID_VOUCHERS[code];
-      if (!found) {
-        try {
-          const adminV = JSON.parse(localStorage.getItem('dynforge_admin_vouchers') || '[]');
-          const mentorV = JSON.parse(localStorage.getItem('dynforge_mentor_vouchers') || '[]');
-          const all = [...adminV, ...mentorV];
-          const matched = all.find((v: any) => v.code === code && v.status === 'Active');
-          if (matched) {
-            found = {
-              type: matched.type,
-              value: matched.value,
-              minOrder: matched.minOrder || 0,
-              label: matched.type === 'percentage' ? `${matched.value}% off` : `${formatCurrency(matched.value)} off`,
-            };
-          }
-        } catch {}
-      }
-
-      if (!found) {
-        setVoucherError(lang === 'vi' ? 'Mã voucher không hợp lệ. Vui lòng kiểm tra lại.' : 'Invalid voucher code. Please check and try again.');
-      } else if (sessionFee < found.minOrder) {
-        setVoucherError(
-          lang === 'vi'
-            ? `Cần đơn hàng tối thiểu ${formatCurrency(found.minOrder)} để áp dụng voucher này.`
-            : `Minimum order ${formatCurrency(found.minOrder)} required for this voucher.`
-        );
-      } else {
-        setAppliedVoucher({ code, data: found });
-        setVoucherInput('');
-        setVoucherError('');
-      }
-      setApplying(false);
-    }, 300);
-  };
-
-  const removeVoucher = () => {
-    setAppliedVoucher(null);
-    setVoucherError('');
-  };
 
   const confirm = async () => {
     if (isSelfBooking) {
@@ -626,24 +565,37 @@ export function OrderSummary() {
         const startAt = new Date(yr, mo, state.day, h, m).toISOString();
 
         const format = state.bookingFormat ?? 'ONE_ON_ONE';
-        const booking = await createBooking({
-          mentorId: state.mentorId,
-          courseCode: state.courseCode,
-          format,
-          startAt,
-          durationMin: state.duration,
-        });
+        let bookingIdToPay = pendingBookingId;
+        if (!bookingIdToPay) {
+          const created = await createBooking({
+            mentorId: state.mentorId,
+            courseCode: state.courseCode,
+            format,
+            startAt,
+            durationMin: state.duration,
+          });
+          bookingIdToPay = created.id;
+          setPendingBookingId(created.id);
+        }
 
-        const paid = await payBooking(booking.id);
+        const paid = await payBooking(bookingIdToPay);
+        setPendingBookingId(null);
 
         navigate('/escrow', {
           state: {
             mentor: mentor.name,
             amount: paid.price,
             day: state.day,
+            month: yr === now.getFullYear() && mo === now.getMonth() ? mo : state.month ?? mo,
+            year: yr,
             slot: state.slot,
             duration: state.duration,
             bookingId: paid.id,
+            roomId: paid.roomId,
+            courseCode: paid.courseCode,
+            courseName: state.courseName || paid.courseCode,
+            mentorAvatar: mentor.avatar,
+            mentorUniversity: mentor.university,
           },
         });
       } catch (err: any) {
@@ -657,7 +609,7 @@ export function OrderSummary() {
           errMsg.toLowerCase().includes('insufficient') ||
           errMsg.toLowerCase().includes('không đủ')
         ) {
-          setWalletBalance(0);
+          fetchWalletBalance(true);
           setShowTopUpModal(true);
           toast.error(
             lang === 'vi'
@@ -678,9 +630,8 @@ export function OrderSummary() {
         setPaying(false);
       }
     } else {
-      navigate('/escrow', {
-        state: { mentor: mentor.name, amount: total, day: state.day, month: state.month, year: state.year, slot: state.slot, duration: state.duration },
-      });
+      toast.error(lang === 'vi' ? 'Thiếu thông tin buổi học. Vui lòng chọn lại lịch.' : 'Missing booking information. Please re-select your slot.');
+      navigate(id ? `/mentors/${id}/schedule` : '/mentors');
     }
   };
 
@@ -784,8 +735,8 @@ export function OrderSummary() {
               </div>
 
               <div className="mt-5 space-y-3 text-sm">
-                <Row label="Learning Format" value={state.displayMode ?? state.mode} />
-                <Row label="Session Format" value={state.format} />
+                <Row label="Learning Format" value={state.displayMode ?? state.mode ?? '1-on-1'} />
+                <Row label="Session Format" value={state.sessionFormat ?? state.format ?? 'Online'} />
                 <Row label="Duration" value={`${state.duration} minutes`} />
                 <Row label="Date" value={formattedDate} />
                 <Row label="Time Slot" value={state.slot} />
@@ -793,37 +744,21 @@ export function OrderSummary() {
               </div>
             </Card>
 
-            {/* Voucher input */}
+            {/* Voucher notice (upcoming feature — kept disabled to avoid misleading 0₫ discounts) */}
             <Card className="border border-white/10 bg-[#090f1e]/90 backdrop-blur-xl p-4 sm:p-6 text-slate-100 shadow-2xl rounded-2xl">
-              <h2 className="mb-2 text-xl font-bold text-white tracking-tight">
-                Apply Voucher
-              </h2>
-              <p className="mb-4 text-xs text-slate-400">Enter a platform or mentor promo code to get discounts.</p>
-
-              {appliedVoucher ? (
-                <div className="flex items-center justify-between rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3.5 text-sm text-cyan-300">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-cyan-400" />
-                    <span>Voucher <strong>{appliedVoucher.code}</strong> applied ({appliedVoucher.data.label})</span>
-                  </div>
-                  <button onClick={removeVoucher} className="text-slate-400 hover:text-white">
-                    <X className="size-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Input
-                    value={voucherInput}
-                    onChange={(e) => setVoucherInput(e.target.value)}
-                    placeholder="Enter code (e.g. DYNFORGE20)"
-                    className="bg-[#020b18] border-white/10 text-white uppercase placeholder:normal-case placeholder:text-slate-500 text-base sm:text-sm"
-                  />
-                  <Button onClick={applyVoucher} disabled={applying || !voucherInput.trim()} className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-5 rounded-xl">
-                    {applying ? <Loader2 className="size-4 animate-spin" /> : 'Apply'}
-                  </Button>
-                </div>
-              )}
-              {voucherError && <p className="mt-2 text-xs text-rose-400 font-medium">{voucherError}</p>}
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h2 className="text-xl font-bold text-white tracking-tight">
+                  {lang === 'vi' ? 'Mã giảm giá (Voucher)' : 'Promo Voucher'}
+                </h2>
+                <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-300">
+                  {lang === 'vi' ? 'Sắp ra mắt' : 'Coming soon'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                {lang === 'vi'
+                  ? 'Hệ thống mã giảm giá trực tiếp đang được hoàn thiện và sẽ sớm kích hoạt ở phiên bản tiếp theo.'
+                  : 'Server-verified promo codes are currently under development and will be enabled soon.'}
+              </p>
             </Card>
           </div>
 
@@ -838,14 +773,14 @@ export function OrderSummary() {
               <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="size-8 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-xs shrink-0 border border-cyan-500/30">
-                    {(user.fullName || user.email || 'U')[0].toUpperCase()}
+                    {(user.name || user.email || 'U')[0].toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <p className="text-[11px] text-slate-400 font-medium truncate">
                       {lang === 'vi' ? 'Tài khoản thanh toán' : 'Paying account'}
                     </p>
                     <p className="text-sm font-semibold text-white truncate">
-                      {user.fullName || user.email}
+                      {user.name || user.email}
                     </p>
                   </div>
                 </div>
@@ -929,12 +864,6 @@ export function OrderSummary() {
               <div className="space-y-3 text-sm border-b border-white/10 pb-4">
                 <Row label="Session Fee" value={formatCurrency(sessionFee)} />
                 <Row label="Platform Service Fee" value={lang === 'vi' ? '0₫ (Miễn phí học viên)' : '0₫ (Waived for students)'} />
-                {appliedVoucher && (
-                  <div className="flex justify-between text-cyan-300 font-medium">
-                    <span>Promo Code ({appliedVoucher.code})</span>
-                    <span className="text-emerald-400 font-semibold">{lang === 'vi' ? 'Đã áp dụng ưu đãi' : 'Promo Active'}</span>
-                  </div>
-                )}
               </div>
 
               <div className="mt-4 flex items-center justify-between text-lg font-bold text-white">

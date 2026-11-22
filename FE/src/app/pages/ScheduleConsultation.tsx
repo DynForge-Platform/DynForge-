@@ -60,10 +60,12 @@ export function ScheduleConsultation() {
   const mockMentor = getMentor(id);
   const mentor = backendMentor ?? mockMentor;
 
+  const hasVerifiedCourses = Boolean(mentor?.courses?.some((c) => c.verified));
+
   useEffect(() => {
     if (mentor && mentor.courses && mentor.courses.length > 0 && !selectedCourse) {
-      const firstCode = mentor.courses[0]?.code;
-      if (firstCode) setSelectedCourse(firstCode);
+      const preferred = mentor.courses.find((c) => c.verified) ?? mentor.courses[0];
+      if (preferred?.code) setSelectedCourse(preferred.code);
     }
   }, [mentor, selectedCourse]);
 
@@ -76,7 +78,10 @@ export function ScheduleConsultation() {
   ];
 
   const now = new Date();
+  const maxBookDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   const base = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const nextMonthStart = new Date(base.getFullYear(), base.getMonth() + 1, 1);
+  const canGoNextMonth = nextMonthStart.getTime() <= maxBookDate.getTime();
   const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
   const firstWeekday = new Date(base.getFullYear(), base.getMonth(), 1).getDay();
   const todayDay = monthOffset === 0 ? now.getDate() : 0;
@@ -154,10 +159,10 @@ export function ScheduleConsultation() {
   const chosenCourse = (mentor?.courses || []).find(
     (c) => (c?.code || '').toLowerCase() === (selectedCourse || '').toLowerCase()
   );
-  const courseHourlyRate = Number(chosenCourse?.ratePrivate) || Number(mentor?.hourlyRate) || 100000;
-  const courseGroupRate = Number(chosenCourse?.rateGroup) || Number(mentor?.groupRate) || 60000;
+  const courseHourlyRate = chosenCourse ? Number(chosenCourse.ratePrivate) : (Number(mentor?.hourlyRate) || 100000);
+  const courseGroupRate = chosenCourse ? Number(chosenCourse.rateGroup) : (Number(mentor?.groupRate) || 60000);
   const activeRate = bookingFormat === 'GROUP' ? courseGroupRate : courseHourlyRate;
-  const price = Math.round((activeRate * (duration || 60)) / 60);
+  const price = Math.ceil((activeRate * (duration || 60)) / 60);
 
   const isSelfBooking = Boolean(
     user && (
@@ -184,6 +189,7 @@ export function ScheduleConsultation() {
         duration,
         displayMode,
         bookingFormat,
+        format: sessionFormat,
         sessionFormat,
         day: selectedDay,
         month: base.getMonth(),
@@ -191,6 +197,7 @@ export function ScheduleConsultation() {
         slot: selectedSlot,
         price,
         courseCode: selectedCourse,
+        courseName: chosenCourse?.name || selectedCourse,
         mentorId,
       },
     });
@@ -329,22 +336,36 @@ export function ScheduleConsultation() {
                 {/* Course selector */}
                 {mentor.courses && mentor.courses.length > 0 && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Course</p>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      {lang === 'vi' ? 'Môn học' : 'Course'}
+                    </p>
                     <div className="flex flex-wrap gap-2">
-                      {mentor.courses.map((c) => (
-                        <button
-                          key={c.code || c.name}
-                          onClick={() => c.code && setSelectedCourse(c.code)}
-                          className={cn(
-                            'rounded-xl border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer',
-                            selectedCourse === c.code
-                              ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                              : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-500/30 hover:bg-white/10'
-                          )}
-                        >
-                          {c.name}
-                        </button>
-                      ))}
+                      {mentor.courses.map((c) => {
+                        const courseUnverified = hasVerifiedCourses && !c.verified;
+                        return (
+                          <button
+                            key={c.code || c.name}
+                            disabled={courseUnverified}
+                            onClick={() => !courseUnverified && c.code && setSelectedCourse(c.code)}
+                            title={courseUnverified ? (lang === 'vi' ? 'Môn học đang chờ Admin duyệt' : 'Course pending admin verification') : undefined}
+                            className={cn(
+                              'rounded-xl border px-3 py-1.5 text-xs font-medium transition-all',
+                              courseUnverified
+                                ? 'border-white/5 bg-white/[0.02] text-slate-500 cursor-not-allowed opacity-60'
+                                : selectedCourse === c.code
+                                ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold shadow-[0_0_12px_rgba(6,182,212,0.25)] cursor-pointer'
+                                : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-500/30 hover:bg-white/10 cursor-pointer'
+                            )}
+                          >
+                            {c.name}
+                            {courseUnverified && (
+                              <span className="ml-1 text-[10px] opacity-80">
+                                ({lang === 'vi' ? 'Chờ duyệt' : 'Pending'})
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -505,7 +526,7 @@ export function ScheduleConsultation() {
                   <Button
                     variant="outline"
                     size="icon"
-                    disabled={monthOffset === 2}
+                    disabled={!canGoNextMonth}
                     onClick={() => { setMonthOffset((m) => m + 1); setSelectedDay(null); }}
                     className="size-9 rounded-xl border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:border-white/20 shrink-0"
                   >
@@ -528,9 +549,11 @@ export function ScheduleConsultation() {
 
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1;
-                  const isPast = day < todayDay;
+                  const cellStart = new Date(base.getFullYear(), base.getMonth(), day, 0, 0, 0, 0);
+                  const isPast = monthOffset === 0 && day < todayDay;
+                  const isBeyond30Days = cellStart.getTime() > maxBookDate.getTime();
                   const available = isDayAvailable(day);
-                  const disabled = isPast || !available;
+                  const disabled = isPast || isBeyond30Days || !available;
                   const selected = selectedDay === day;
                   return (
                     <button
@@ -545,10 +568,10 @@ export function ScheduleConsultation() {
                           ? 'border border-cyan-400 bg-cyan-500 text-white font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)] scale-105 z-10'
                           : 'border border-white/10 bg-white/5 text-slate-200 hover:border-cyan-400/40 hover:bg-white/10 hover:text-white cursor-pointer'
                       )}
-                      title={!available ? T.mentorNoSlotsDay : undefined}
+                      title={isBeyond30Days ? (lang === 'vi' ? 'Chỉ hỗ trợ đặt lịch tối đa 30 ngày' : 'Bookings are limited to 30 days ahead') : !available ? T.mentorNoSlotsDay : undefined}
                     >
                       <span>{day}</span>
-                      {available && !isPast && (
+                      {available && !isPast && !isBeyond30Days && (
                         <span className={cn('size-1 rounded-full mt-0.5', selected ? 'bg-white' : 'bg-cyan-400')} />
                       )}
                     </button>

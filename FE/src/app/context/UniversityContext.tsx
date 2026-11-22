@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { listUniversities, type UniversityResponse } from '../services/universityService';
 import { getMe } from '../services/userService';
-import { useAuth } from './AuthContext';
+import { useAuth, hasJwtToken } from './AuthContext';
 
 const STORAGE_KEY = 'dynforge_university';
 
@@ -57,7 +57,7 @@ export function UniversityProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // If user already chose a specific school or explicitly chose "All" ('ALL'), do not override.
     if (localStorage.getItem(STORAGE_KEY) !== null) return;
-    if (!user) return;
+    if (!user || !hasJwtToken()) return;
     let cancelled = false;
     getMe()
       .then((me) => {

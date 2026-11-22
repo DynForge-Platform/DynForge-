@@ -48,8 +48,18 @@ export function DashboardSettings() {
             <Lock className="size-5 text-muted-foreground" /> {vi ? 'Cài đặt tài khoản' : 'Account settings'}
           </h2>
           <div className="space-y-3">
-            <SettingRow label={vi ? 'Họ và tên' : 'Full name'} value={user?.name ?? '—'} action={vi ? 'Sửa' : 'Edit'} onClick={() => navigate('/dashboard/profile')} />
-            <SettingRow label={vi ? 'Địa chỉ email' : 'Email address'} value={user?.email ?? '—'} action={vi ? 'Quản lý' : 'Manage'} onClick={() => navigate('/dashboard/profile')} />
+            <SettingRow
+              label={vi ? 'Họ và tên' : 'Full name'}
+              value={user?.name ?? '—'}
+              action={user?.role === 'admin' ? undefined : (vi ? 'Sửa' : 'Edit')}
+              onClick={user?.role === 'admin' ? undefined : () => navigate(user?.role === 'mentor' ? '/mentor/profile' : '/dashboard/profile')}
+            />
+            <SettingRow
+              label={vi ? 'Địa chỉ email' : 'Email address'}
+              value={user?.email ?? '—'}
+              action={user?.role === 'admin' ? undefined : (vi ? 'Quản lý' : 'Manage')}
+              onClick={user?.role === 'admin' ? undefined : () => navigate(user?.role === 'mentor' ? '/mentor/profile' : '/dashboard/profile')}
+            />
             <SettingRow label={vi ? 'Ngôn ngữ tài khoản' : 'Account language'} value={vi ? 'Tiếng Việt' : 'English'} action={vi ? 'Đổi' : 'Change'} />
           </div>
         </Card>
@@ -143,14 +153,16 @@ export function DashboardSettings() {
   );
 }
 
-function SettingRow({ label, value, action, onClick }: { label: string; value: string; action: string; onClick?: () => void }) {
+function SettingRow({ label, value, action, onClick }: { label: string; value: string; action?: string; onClick?: () => void }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-border p-3">
       <div>
         <p className="text-sm text-muted-foreground">{label}</p>
         <p style={{ fontWeight: 500 }}>{value}</p>
       </div>
-      <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10 cursor-pointer" onClick={onClick}>{action}</Button>
+      {action && (
+        <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10 cursor-pointer" onClick={onClick}>{action}</Button>
+      )}
     </div>
   );
 }

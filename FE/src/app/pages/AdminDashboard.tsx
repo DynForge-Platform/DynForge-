@@ -25,9 +25,10 @@ import { formatDate } from '../lib/format';
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTHS_VI = ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'];
 
-function buildTrend(txns: AdminTransaction[], vi: boolean) {
+function buildTrend(txns: AdminTransaction[], vi: boolean, commissionRate = 0.15) {
   const MONTHS = vi ? MONTHS_VI : MONTHS_EN;
   const now = new Date();
+  const safeRate = commissionRate > 0 && commissionRate < 1 ? commissionRate : 0.15;
   const buckets: { key: string; month: string; revenue: number; commission: number }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -40,7 +41,12 @@ function buildTrend(txns: AdminTransaction[], vi: boolean) {
     if (!idx.has(k)) return;
     const b = buckets[idx.get(k)!];
     if (t.type === 'PAYMENT') b.revenue += t.amount;
-    if (t.type === 'PAYOUT') b.commission += 0; // commission tracked separately
+    if (t.type === 'COMMISSION') {
+      b.commission += t.amount;
+    } else if (t.type === 'PAYOUT') {
+      // Standard session payouts credit mentor (1 - safeRate) * total; derive platform fee when not logged separately
+      b.commission += Math.round((t.amount * safeRate) / (1 - safeRate));
+    }
   });
   return buckets;
 }
@@ -60,7 +66,7 @@ export function AdminDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const trend = useMemo(() => buildTrend(txns, vi), [txns, vi]);
+  const trend = useMemo(() => buildTrend(txns, vi, report?.commissionRate ?? 0.15), [txns, vi, report?.commissionRate]);
   const filtered = useMemo(
     () => txns.filter((t) =>
       !query || t.id.toLowerCase().includes(query.toLowerCase())

@@ -22,14 +22,16 @@ import {
   listMyVerifications, submitVerification, uploadVerificationDocument, type VerificationItem,
 } from '../../services/verificationService';
 import {
-  getMyMentorProfile, updateMyMentorProfile, type BackendCourse,
+  getMyMentorProfile, updateMyMentorProfile, type BackendCourse, type MentorProfileResponse,
 } from '../../services/mentorService';
+import { getMe } from '../../services/userService';
 import { requestSchoolEmail, verifySchoolEmail } from '../../services/schoolEmailService';
 
 // Must match the mentee search filter options (MentorListing).
 const TEACHING_ROLES = ['Senior Student', 'Alumni Mentor', 'Lecturer', 'Research Advisor'];
 
 interface UploadedFile {
+  id: string;
   name: string;
   size: number;
   type: string;
@@ -54,7 +56,7 @@ function UploadZone({
   certKey: string; accept: string;
   files: UploadedFile[];
   onAdd: (key: string, files: UploadedFile[]) => void;
-  onRemove: (key: string, name: string) => void;
+  onRemove: (key: string, id: string) => void;
   vi: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +64,7 @@ function UploadZone({
 
   const processFiles = (fileList: FileList) => {
     const newFiles: UploadedFile[] = Array.from(fileList).map((f) => ({
+      id: `${f.name}-${f.size}-${f.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
       name: f.name, size: f.size, type: f.type,
       preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
       file: f,
@@ -108,7 +111,7 @@ function UploadZone({
       {files.length > 0 && (
         <ul className="space-y-2">
           {files.map((f) => (
-            <li key={f.name} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+            <li key={f.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               {f.preview
                 ? <img src={f.preview} alt={f.name} className="size-10 rounded-lg object-cover" />
                 : <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><FileText className="size-5" /></span>}
@@ -117,7 +120,7 @@ function UploadZone({
                 <p className="text-xs text-muted-foreground">{formatSize(f.size)}</p>
               </div>
               <CheckCircle2 className="size-4 shrink-0 text-success" />
-              <button type="button" onClick={() => onRemove(certKey, f.name)} className="rounded-lg p-1 text-muted-foreground hover:bg-accent hover:text-danger">
+              <button type="button" onClick={() => onRemove(certKey, f.id)} className="rounded-lg p-1 text-muted-foreground hover:bg-accent hover:text-danger">
                 <X className="size-4" />
               </button>
             </li>
@@ -150,6 +153,7 @@ export function TeacherVerification() {
     { icon: Mic, title: vi ? 'Phỏng vấn xác minh' : 'Verification interview', description: vi ? 'Một cuộc gọi trực tuyến ngắn 15 phút với thành viên đội ngũ DynForge.' : 'A short 15-minute online call with a DynForge team member.' },
   ];
   const [existing, setExisting] = useState<VerificationItem | null>(null);
+  const [loadedProfile, setLoadedProfile] = useState<MentorProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -210,9 +214,19 @@ export function TeacherVerification() {
     Promise.all([
       listMyVerifications().catch(() => []),
       getMyMentorProfile().catch(() => null),
-    ]).then(([items, prof]) => {
-      setExisting(items[0] ?? null);
+      getMe().catch(() => null),
+    ]).then(([items, prof, me]) => {
+      const sorted = [...items].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setExisting(sorted[0] ?? null);
+      if (me) {
+        if (me.schoolVerified) setSchoolVerified(true);
+        if (me.universityCode) setUniversityCode(me.universityCode);
+        if (me.universityName) setUniversity(me.universityName);
+      }
       if (prof) {
+        setLoadedProfile(prof);
         setTitle(prof.title ?? '');
         setBio(prof.bio ?? '');
         if (prof.major) setMajor(prof.major);
@@ -237,11 +251,26 @@ export function TeacherVerification() {
     if (match) setUniversityCode(match.code);
   }, [universities, university, universityCode]);
 
+  const uploadedFilesRef = useRef(uploadedFiles);
+  uploadedFilesRef.current = uploadedFiles;
+  useEffect(() => {
+    return () => {
+      Object.values(uploadedFilesRef.current).flat().forEach((f) => {
+        if (f.preview) URL.revokeObjectURL(f.preview);
+      });
+    };
+  }, []);
+
   const addFiles = (key: string, files: UploadedFile[]) =>
     setUploadedFiles((prev) => ({ ...prev, [key]: [...(prev[key] ?? []), ...files] }));
 
-  const removeFile = (key: string, name: string) =>
-    setUploadedFiles((prev) => ({ ...prev, [key]: (prev[key] ?? []).filter((f) => f.name !== name) }));
+  const removeFile = (key: string, id: string) =>
+    setUploadedFiles((prev) => {
+      const list = prev[key] ?? [];
+      const target = list.find((f) => f.id === id);
+      if (target?.preview) URL.revokeObjectURL(target.preview);
+      return { ...prev, [key]: list.filter((f) => f.id !== id) };
+    });
 
   const updateCourse = (i: number, patch: Partial<CourseRow>) =>
     setCourses((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
@@ -249,20 +278,27 @@ export function TeacherVerification() {
   const addCourse = () => setCourses((prev) => [...prev, emptyCourse()]);
   const removeCourse = (i: number) => setCourses((prev) => prev.filter((_, idx) => idx !== i));
 
-  const isApproved = existing?.status === 'APPROVED';
+  const isApproved = existing?.status === 'APPROVED' || Boolean(loadedProfile?.verified);
 
   const handleSubmit = async () => {
+    const existingCourseMap = new Map(
+      (loadedProfile?.courses ?? []).map((c) => [c.code.trim().toUpperCase(), c])
+    );
     const valid = courses
       .filter((c) => c.code.trim() && c.name.trim())
-      .map<BackendCourse>((c) => ({
-        code: c.code.trim().toUpperCase(),
-        name: c.name.trim(),
-        grade: c.grade,
-        ratePrivate: Number(c.ratePrivate) || 0,
-        rateGroup: Number(c.rateGroup) || 0,
-        generalEducation: false,
-        verified: false,
-      }));
+      .map<BackendCourse>((c) => {
+        const code = c.code.trim().toUpperCase();
+        const prev = existingCourseMap.get(code);
+        return {
+          code,
+          name: c.name.trim(),
+          grade: c.grade,
+          ratePrivate: Number(c.ratePrivate) || 0,
+          rateGroup: Number(c.rateGroup) || 0,
+          generalEducation: prev?.generalEducation ?? false,
+          verified: prev?.verified ?? false,
+        };
+      });
 
     if (!major) { toast.error(vi ? 'Vui lòng chọn ngành học.' : 'Please select your major.'); return; }
     if (valid.length === 0) { toast.error(vi ? 'Vui lòng thêm ít nhất một môn học có mã và tên.' : 'Please add at least one course with a code and name.'); return; }
@@ -270,8 +306,8 @@ export function TeacherVerification() {
 
     setSubmitting(true);
     try {
-      // Create/update the mentor profile with all courses so mentees can see them.
-      await updateMyMentorProfile({
+      // Create/update the mentor profile while preserving verified flags, availability & formats.
+      const savedProf = await updateMyMentorProfile({
         title: title.trim(),
         bio: bio.trim(),
         major: major || undefined,
@@ -280,12 +316,14 @@ export function TeacherVerification() {
         courses: valid,
         skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
         languages: languages.split(',').map((s) => s.trim()).filter(Boolean),
-        formats: ['Online', 'Offline'],
+        formats: loadedProfile?.formats?.length ? loadedProfile.formats : ['Online', 'Offline'],
+        availability: loadedProfile?.availability,
       });
+      setLoadedProfile(savedProf);
 
       if (isApproved) {
         // Already verified — just save the updated courses.
-        toast.success(vi ? 'Đã cập nhật môn học. Học viên đã có thể nhìn thấy.' : 'Courses updated. They are now visible to students.');
+        toast.success(vi ? 'Đã cập nhật môn học. Các môn đã duyệt vẫn giữ trạng thái hoạt động.' : 'Courses updated. Approved courses remain active.');
       } else {
         // Submit a verification request (representative course) for admin review.
         const allUploaded = Object.values(uploadedFiles).flat();
@@ -327,10 +365,10 @@ export function TeacherVerification() {
     );
   }
 
-  const currentStep = existing?.status === 'APPROVED' ? 4
-    : existing?.status === 'PENDING' ? 3
-    : existing?.status === 'REJECTED' ? 2
-    : 2;
+  const currentStep = isApproved ? 4
+    : existing?.status === 'PENDING' ? 2
+    : schoolVerified ? 1
+    : 0;
 
   // Profile/course editor is available unless an application is pending review.
   // Approved mentors can still add/manage the courses they teach.
@@ -458,7 +496,7 @@ export function TeacherVerification() {
                             type="email"
                             value={schoolEmail}
                             onChange={(e) => setSchoolEmail(e.target.value)}
-                            placeholder={lang === 'vi' ? 'email@gmail.com hoặc email trường' : 'you@gmail.com or school email'}
+                            placeholder={lang === 'vi' ? 'ten@fpt.edu.vn hoặc email trường đại học' : 'you@university.edu.vn'}
                             className="bg-input-background"
                           />
                           <Button type="button" onClick={requestSchool} disabled={schoolBusy}>
@@ -618,7 +656,7 @@ export function TeacherVerification() {
         </>
       )}
 
-      {existing?.status !== 'APPROVED' && (
+      {!isApproved && (
         <div className="space-y-4">
           {baseDocuments.map((doc) => {
             const Icon = doc.icon;

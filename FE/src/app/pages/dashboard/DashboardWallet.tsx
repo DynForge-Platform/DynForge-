@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../../data/mockData';
 import { getWallet, topUp, confirmPayos, withdraw, type TransactionResponse } from '../../services/walletService';
+import { getMyBookings, type BookingResponse } from '../../services/bookingService';
 import { useAuth } from '../../context/AuthContext';
 import { getMe, type UserProfile } from '../../services/userService';
 import { Button } from '../../components/ui/button';
@@ -27,8 +28,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { formatDate } from '../../lib/format';
 
 // ── Add Funds modal (PayOS) ──────────────
-function AddFundsModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
-  const [amount, setAmount] = useState('200000');
+function AddFundsModal({ onClose, initialAmount = 200000 }: { onClose: () => void; initialAmount?: number }) {
+  const [amount, setAmount] = useState(String(initialAmount));
   const [loading, setLoading] = useState(false);
   const num = parseInt(amount.replace(/\D/g, '')) || 0;
 
@@ -481,18 +482,25 @@ export function DashboardWallet() {
 
   const [tab, setTab] = useState('All');
   const [showAddFunds, setShowAddFunds] = useState(false);
+  const [addFundsPreset, setAddFundsPreset] = useState(200000);
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [receiptTxn, setReceiptTxn] = useState<TransactionResponse | null>(null);
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
+  const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchWallet = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const data = await getWallet();
+      const [data, myBookings] = await Promise.all([
+        getWallet(),
+        getMyBookings().catch(() => [] as BookingResponse[]),
+      ]);
       setBalance(data.balance);
       setTransactions(data.transactions ?? []);
+      setBookings(myBookings.filter((b) => b.menteeId === user.id));
     } catch {
       // keep defaults
     } finally {
@@ -512,29 +520,34 @@ export function DashboardWallet() {
     const status = searchParams.get('status');
     const cancelled = searchParams.get('cancel') === 'true' || status === 'CANCELLED';
 
-    setSearchParams({}, { replace: true });
-
-    if (cancelled) {
-      toast.info('Giao dịch nạp tiền đã bị hủy.');
-      return;
-    }
     confirmPayos(orderCode)
       .then((txn) => {
+        setSearchParams({}, { replace: true });
         if (txn.status === 'COMPLETED') {
           toast.success(`Nạp thành công ${formatCurrency(txn.amount)} vào ví!`);
           fetchWallet();
           getMe().then(setProfile).catch(() => {});
-        } else if (txn.status === 'FAILED') {
-          toast.error('Giao dịch nạp tiền thất bại.');
+        } else if (cancelled || txn.status === 'FAILED') {
+          toast.info('Giao dịch nạp tiền đã bị hủy hoặc thất bại.');
+          fetchWallet();
         } else {
           toast.info('Giao dịch đang xử lý. Số dư sẽ cập nhật trong giây lát.');
         }
       })
-      .catch((err: any) => toast.error(err?.response?.data?.message ?? 'Không thể xác nhận giao dịch.'));
+      .catch((err: any) => {
+        setSearchParams({}, { replace: true });
+        if (cancelled) {
+          toast.info('Giao dịch nạp tiền đã bị hủy.');
+        } else {
+          toast.error(err?.response?.data?.message ?? 'Không thể xác nhận giao dịch.');
+        }
+      });
   }, [user?.id, searchParams, setSearchParams, fetchWallet]);
 
-  // Stats
-  const escrowHeld = transactions.filter((t) => t.type === 'PAYMENT' && t.status === 'COMPLETED').reduce((s, t) => s + t.amount, 0);
+  // Stats — escrowHeld sums active unpaid/unreleased mentee bookings in ESCROW_HELD/ACCEPTED/TAUGHT
+  const escrowHeld = bookings
+    .filter((b) => b.status === 'ESCROW_HELD' || b.status === 'ACCEPTED' || b.status === 'TAUGHT')
+    .reduce((s, b) => s + b.price, 0);
   const totalSpent = transactions.filter((t) => t.type === 'PAYMENT').reduce((s, t) => s + t.amount, 0);
   const totalRefunded = transactions.filter((t) => t.type === 'REFUND').reduce((s, t) => s + t.amount, 0);
 
@@ -655,8 +668,8 @@ export function DashboardWallet() {
               ].map((item) => (
                 <button
                   key={item.val}
-                  onClick={() => setShowAddFunds(true)}
-                  className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3 text-center transition-all hover:border-cyan-500/40 hover:bg-slate-900 hover:scale-[1.02] group"
+                  onClick={() => { setAddFundsPreset(item.val); setShowAddFunds(true); }}
+                  className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3 text-center transition-all hover:border-cyan-500/40 hover:bg-slate-900 hover:scale-[1.02] group cursor-pointer"
                 >
                   <p className="text-sm font-bold text-white group-hover:text-cyan-300">{item.label}</p>
                   <span className="text-[10px] text-cyan-400 font-semibold flex items-center justify-center gap-0.5 mt-0.5">
@@ -732,7 +745,7 @@ export function DashboardWallet() {
               { key: 'PAYMENT', label: 'Thanh toán' },
               { key: 'TOPUP', label: 'Nạp tiền' },
               { key: 'REFUND', label: 'Hoàn tiền' },
-              { key: 'PAYOUT', label: 'Rút tiền' },
+              { key: 'WITHDRAWAL', label: 'Rút tiền' },
             ].map((t) => (
               <button
                 key={t.key}
@@ -786,10 +799,20 @@ export function DashboardWallet() {
                         'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
                         t.type === 'TOPUP' ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/30' :
                         t.type === 'PAYMENT' ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/30' :
-                        t.type === 'REFUND' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' :
+                        t.type === 'REFUND' || t.type === 'PAYOUT' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' :
                         'bg-slate-800 text-slate-300'
                       )}>
-                        {t.type === 'TOPUP' ? 'Nạp tiền' : t.type === 'PAYMENT' ? 'Ký quỹ học' : t.type === 'REFUND' ? 'Hoàn tiền' : t.type}
+                        {t.type === 'TOPUP'
+                          ? 'Nạp tiền'
+                          : t.type === 'PAYMENT'
+                          ? 'Ký quỹ học'
+                          : t.type === 'REFUND'
+                          ? 'Hoàn tiền'
+                          : t.type === 'PAYOUT'
+                          ? 'Thù lao dạy'
+                          : t.type === 'WITHDRAWAL'
+                          ? 'Rút tiền'
+                          : t.type}
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-slate-200 max-w-[220px] truncate">
@@ -797,16 +820,22 @@ export function DashboardWallet() {
                     </TableCell>
                     <TableCell className="text-xs font-bold whitespace-nowrap">
                       <span className={cn(
-                        t.type === 'TOPUP' || t.type === 'REFUND' ? 'text-emerald-400' : 'text-slate-100'
+                        t.type === 'TOPUP' || t.type === 'REFUND' || t.type === 'PAYOUT' ? 'text-emerald-400' : 'text-slate-100'
                       )}>
-                        {t.type === 'TOPUP' || t.type === 'REFUND' ? '+' : '-'}{formatCurrency(t.amount)}
+                        {t.type === 'TOPUP' || t.type === 'REFUND' || t.type === 'PAYOUT' ? '+' : '-'}{formatCurrency(t.amount)}
                       </span>
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={t.status} />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/20 size-8 p-0" title="Chi tiết">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setReceiptTxn(t)}
+                        className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/20 size-8 p-0"
+                        title="Chi tiết"
+                      >
                         <Receipt className="size-4" />
                       </Button>
                     </TableCell>
@@ -818,8 +847,48 @@ export function DashboardWallet() {
         )}
       </div>
 
-      {showAddFunds && <AddFundsModal onClose={() => setShowAddFunds(false)} onSuccess={fetchWallet} />}
+      {showAddFunds && <AddFundsModal initialAmount={addFundsPreset} onClose={() => setShowAddFunds(false)} />}
       {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} balance={balance} onSuccess={fetchWallet} />}
+      {receiptTxn && (
+        <Dialog open onOpenChange={() => setReceiptTxn(null)}>
+          <DialogContent className="max-w-md bg-slate-950 border border-slate-800 text-slate-100" aria-describedby={undefined}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base font-bold text-white">
+                <Receipt className="size-4 text-cyan-400" />
+                {lang === 'vi' ? 'Biên lai giao dịch' : 'Transaction Receipt'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 text-sm pt-2">
+              <div className="flex justify-between border-b border-slate-800 pb-2">
+                <span className="text-slate-400">{lang === 'vi' ? 'Mã giao dịch' : 'Transaction ID'}</span>
+                <span className="font-mono text-xs text-slate-200">{receiptTxn.id}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-2">
+                <span className="text-slate-400">{lang === 'vi' ? 'Loại' : 'Type'}</span>
+                <span className="font-semibold text-white">{receiptTxn.type}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-2">
+                <span className="text-slate-400">{lang === 'vi' ? 'Số tiền' : 'Amount'}</span>
+                <span className="font-bold text-cyan-300">{formatCurrency(receiptTxn.amount)}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-2">
+                <span className="text-slate-400">{lang === 'vi' ? 'Trạng thái' : 'Status'}</span>
+                <StatusBadge status={receiptTxn.status} />
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-2">
+                <span className="text-slate-400">{lang === 'vi' ? 'Thời gian' : 'Timestamp'}</span>
+                <span className="text-xs text-slate-300">{new Date(receiptTxn.createdAt).toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-GB')}</span>
+              </div>
+              {receiptTxn.description && (
+                <div>
+                  <span className="text-xs text-slate-400 block mb-1">{lang === 'vi' ? 'Nội dung' : 'Description'}</span>
+                  <p className="text-xs text-slate-200 bg-slate-900/70 rounded-xl p-2.5 border border-slate-800">{receiptTxn.description}</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

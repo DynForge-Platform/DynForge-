@@ -55,7 +55,7 @@ public class VerificationService {
     }
 
     public List<VerificationResponse> getMine(User user) {
-        return verificationRepository.findByUserId(new ObjectId(user.getId()))
+        return verificationRepository.findByUserIdOrderByCreatedAtDesc(new ObjectId(user.getId()))
                 .stream().map(verificationMapper::toResponse).toList();
     }
 

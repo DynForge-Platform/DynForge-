@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 import { Search, Sparkles, SlidersHorizontal, Loader2, RotateCcw, GraduationCap, Globe2 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -31,16 +31,41 @@ const PAGE_SIZE = 24;
 export function MentorListing() {
   const { T, lang } = useLanguage();
   const { code: routeCode } = useParams();
+  const [searchParams] = useSearchParams();
   const { universities, selectedCode, setSelectedCode } = useUniversity();
 
   // The university filter actually in effect: locked to the route param when present.
   const activeCode = routeCode ?? selectedCode;
 
-  const [query, setQuery] = useState('');
+  const initialSearch = (searchParams.get('q') || searchParams.get('subject') || '').trim();
+  const [query, setQuery] = useState(initialSearch);
   const [sort, setSort] = useState('rating');
   const [selectedMajor, setSelectedMajor] = useState<string>('all');
   const [selectedRole, setSelectedRole] = useState<string>('all');
-  const [maxPrice, setMaxPrice] = useState(150000);
+  const [maxPrice, setMaxPrice] = useState(250000);
+
+  // Sync query / university params if navigated from Home search bar
+  useEffect(() => {
+    const qParam = (searchParams.get('q') || searchParams.get('subject') || '').trim();
+    if (qParam) setQuery(qParam);
+    const levelParam = searchParams.get('level');
+    if (levelParam && roles.includes(levelParam)) setSelectedRole(levelParam);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const uniParam = searchParams.get('university');
+    if (!uniParam || routeCode || !universities.length) return;
+    const lower = uniParam.trim().toLowerCase();
+    const match = universities.find(
+      (u) =>
+        u.code.toLowerCase() === lower ||
+        u.name.toLowerCase() === lower ||
+        (u.shortName && u.shortName.toLowerCase() === lower)
+    );
+    if (match && selectedCode !== match.code) {
+      setSelectedCode(match.code);
+    }
+  }, [searchParams, routeCode, universities, selectedCode, setSelectedCode]);
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -110,7 +135,7 @@ export function MentorListing() {
   const reset = () => {
     setSelectedMajor('all');
     setSelectedRole('all');
-    setMaxPrice(150000);
+    setMaxPrice(250000);
     setQuery('');
   };
 
@@ -464,7 +489,7 @@ export function MentorListing() {
             <div className="mt-5 pt-5 border-t border-white/10 text-xs text-slate-300 space-y-3">
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <p className="font-semibold text-cyan-300 mb-1">{lang === 'vi' ? 'Gợi ý từ AI:' : 'AI Advice:'}</p>
-                <p className="leading-relaxed"><FormattedText text={aiResult.advice} /></p>
+                <div className="leading-relaxed"><FormattedText text={aiResult.advice} /></div>
               </div>
             </div>
           )}

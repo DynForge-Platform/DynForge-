@@ -97,6 +97,13 @@ function GoogleButton() {
   const [clientId, setClientId] = useState<string | null>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
 
+  const viRef = useRef(vi);
+  viRef.current = vi;
+  const redirectRef = useRef(redirectTo);
+  redirectRef.current = redirectTo;
+  const loginWithGoogleRef = useRef(loginWithGoogle);
+  loginWithGoogleRef.current = loginWithGoogle;
+
   useEffect(() => {
     getGoogleClientId().then(setClientId).catch(() => setClientId(''));
   }, []);
@@ -109,12 +116,13 @@ function GoogleButton() {
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: async (response: { credential: string }) => {
+          const isVi = viRef.current;
           try {
-            const u = await loginWithGoogle(response.credential);
-            toast.success(vi ? 'Đã đăng nhập bằng Google. Chào mừng bạn!' : 'Signed in with Google. Welcome!');
-            navigate(redirectTo ?? u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
+            const u = await loginWithGoogleRef.current(response.credential);
+            toast.success(isVi ? 'Đã đăng nhập bằng Google. Chào mừng bạn!' : 'Signed in with Google. Welcome!');
+            navigate(redirectRef.current ?? u.dashboardPath ?? DASHBOARD_PATHS[u.role]);
           } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? (vi ? 'Đăng nhập Google thất bại. Vui lòng thử lại.' : 'Google sign-in failed. Please try again.'));
+            toast.error(err?.response?.data?.message ?? (isVi ? 'Đăng nhập Google thất bại. Vui lòng thử lại.' : 'Google sign-in failed. Please try again.'));
           }
         },
       });
@@ -135,7 +143,7 @@ function GoogleButton() {
     }
     script.addEventListener('load', init);
     return () => script?.removeEventListener('load', init);
-  }, [clientId, loginWithGoogle, navigate, redirectTo]);
+  }, [clientId, navigate]);
 
   if (clientId === '') {
     return (

@@ -13,7 +13,7 @@ import { Logo } from '../Logo';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { useLanguage } from '../../context/LanguageContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, hasJwtToken } from '../../context/AuthContext';
 import { getMe, type UserProfile } from '../../services/userService';
 import { formatCurrency } from '../../data/mockData';
 import { toast } from 'sonner';
@@ -96,23 +96,34 @@ export function DashboardLayout({ role = 'student' }: { role?: Role }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const { T, lang } = useLanguage();
-  const { user, logout } = useAuth();
+  const { user, logout, syncUserFromProfile } = useAuth();
   const navigate = useNavigate();
   const nav = roleNavMap[role];
 
   useEffect(() => {
+    if (!hasJwtToken()) return;
     let mounted = true;
     getMe()
       .then((data) => {
-        if (mounted) setProfile(data);
+        if (!mounted) return;
+        setProfile(data);
+        if (
+          user &&
+          data.mentorVerified !== undefined &&
+          data.mentorVerified !== user.mentorVerified
+        ) {
+          syncUserFromProfile(data);
+        }
       })
       .catch(() => {
         // Fallback or unauthenticated
       });
     return () => { mounted = false; };
-  }, [user?.id]);
+  }, [user?.id, syncUserFromProfile]);
 
-  const userLabel = profile?.fullName || user?.name || 'Học viên';
+  const roleFallbackLabel =
+    role === 'admin' ? 'Admin' : role === 'teacher' ? 'Mentor' : (lang === 'vi' ? 'Học viên' : 'Student');
+  const userLabel = profile?.fullName || user?.name || roleFallbackLabel;
   const avatar = profile?.avatarUrl || user?.avatar || fallbackAvatar[role];
   const walletBalance = profile?.walletBalance ?? 0;
 

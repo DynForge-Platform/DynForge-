@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import {
   loginApi,
   registerApi,
@@ -8,7 +8,13 @@ import {
   googleLoginApi,
   type AuthTokens
 } from '../services/authService';
-import { getMe } from '../services/userService';
+import { getMe, type UserProfile } from '../services/userService';
+
+export function hasJwtToken(): boolean {
+  return Boolean(
+    localStorage.getItem('dynforge_access_token') || localStorage.getItem('gradora_access_token')
+  );
+}
 
 export type AuthRole = 'mentee' | 'mentor' | 'admin';
 
@@ -38,6 +44,7 @@ interface AuthCtx {
   ) => Promise<string>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  syncUserFromProfile: (me: UserProfile) => void;
 }
 
 // Quick-access demo profiles (no real JWT)
@@ -141,6 +148,7 @@ const AuthContext = createContext<AuthCtx>({
   registerWithCredentials: async () => '',
   logout: async () => {},
   refreshUser: async () => {},
+  syncUserFromProfile: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -203,12 +211,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let password = '';
     let role: 'MENTEE' | 'MENTOR' = 'MENTEE';
 
+    let universityCode: string | undefined;
+
     if (typeof fullNameOrPayload === 'object' && fullNameOrPayload !== null) {
       fullName = (fullNameOrPayload.fullName || fullNameOrPayload.name || '').trim();
       email = (fullNameOrPayload.email || '').trim();
       password = fullNameOrPayload.password || '';
       const r = (fullNameOrPayload.role || '').toUpperCase();
       role = r === 'MENTOR' ? 'MENTOR' : 'MENTEE';
+      universityCode = fullNameOrPayload.university;
     } else {
       fullName = (fullNameOrPayload || '').trim();
       email = (emailArg || '').trim();
@@ -217,37 +228,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role = r === 'MENTOR' ? 'MENTOR' : 'MENTEE';
     }
 
-    return await initiateRegister(fullName, email, password, role);
+    return await initiateRegister(fullName, email, password, role, universityCode);
   };
 
   const logout = async () => {
     const refreshToken = localStorage.getItem('dynforge_refresh_token') || localStorage.getItem('gradora_refresh_token');
-    if (refreshToken) {
-      try { await logoutApi(refreshToken); } catch { /* ignore — still clear locally */ }
-    }
+    // Clear local session immediately so rapid re-login isn't wiped by async server revocation.
     clearTokens();
     setUser(null);
+    if (refreshToken) {
+      try { await logoutApi(refreshToken); } catch { /* ignore — already cleared locally */ }
+    }
   };
 
+  const syncUserFromProfile = useCallback((me: UserProfile) => {
+    const role = roleFromBackend(me.roles);
+    const mentorVerified = extractMentorVerified(me, role);
+    const u: AuthUser = {
+      id: me.id,
+      role,
+      name: me.fullName,
+      email: me.email,
+      avatar: me.avatarUrl ?? demoProfiles[role].avatar,
+      dashboardPath: dashboardPath(role, mentorVerified),
+      mentorVerified,
+    };
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
+    setUser(u);
+  }, []);
+
   // Re-fetch the current user (e.g. after a profile update) and refresh header/avatar.
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
+    if (!hasJwtToken()) return;
     try {
       const me = await getMe();
-      const role = roleFromBackend(me.roles);
-      const mentorVerified = extractMentorVerified(me, role);
-      const u: AuthUser = {
-        id: me.id,
-        role,
-        name: me.fullName,
-        email: me.email,
-        avatar: me.avatarUrl ?? demoProfiles[role].avatar,
-        dashboardPath: dashboardPath(role, mentorVerified),
-        mentorVerified,
-      };
-      localStorage.setItem(USER_KEY, JSON.stringify(u));
-      setUser(u);
+      syncUserFromProfile(me);
     } catch { /* keep current user on failure */ }
-  };
+  }, [syncUserFromProfile]);
 
   return (
     <AuthContext.Provider value={{
@@ -260,7 +277,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resendRegisterOtp,
       registerWithCredentials,
       logout,
-      refreshUser
+      refreshUser,
+      syncUserFromProfile,
     }}>
       {children}
     </AuthContext.Provider>

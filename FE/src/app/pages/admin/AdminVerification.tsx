@@ -450,9 +450,8 @@ export function AdminVerification() {
                           variant="outline"
                           size="sm"
                           onClick={() => { setSelected(item); setRejectNote(item.note ?? ''); }}
-                          disabled={item.status !== 'PENDING'}
                         >
-                          {item.status === 'PENDING' ? (vi ? 'Xét duyệt' : 'Review') : (vi ? 'Đã xét' : 'Reviewed')}
+                          {item.status === 'PENDING' ? (vi ? 'Xét duyệt' : 'Review') : (vi ? 'Xem chi tiết' : 'View details')}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -514,10 +513,15 @@ export function AdminVerification() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">{vi ? 'Ghi chú từ chối (bắt buộc khi từ chối hồ sơ)' : 'Rejection note (required when rejecting)'}</Label>
+                    <Label className="text-xs font-semibold">
+                      {selected.status === 'PENDING'
+                        ? (vi ? 'Ghi chú từ chối (bắt buộc khi từ chối hồ sơ)' : 'Rejection note (required when rejecting)')
+                        : (vi ? 'Ghi chú xét duyệt' : 'Review note')}
+                    </Label>
                     <Textarea
                       value={rejectNote}
                       onChange={(e) => setRejectNote(e.target.value)}
+                      readOnly={selected.status !== 'PENDING'}
                       placeholder={vi ? 'Nhập lý do chi tiết vì sao hồ sơ hoặc minh chứng bị từ chối…' : 'Explain specifically why the transcript or application was rejected…'}
                       rows={4}
                       className="text-xs"
@@ -559,14 +563,24 @@ export function AdminVerification() {
 
             <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 border-t border-border pt-4">
               <Button variant="ghost" size="sm" onClick={() => setSelected(null)} className="text-xs">
-                {vi ? 'Hủy' : 'Cancel'}
+                {selected.status === 'PENDING' ? (vi ? 'Hủy' : 'Cancel') : (vi ? 'Đóng' : 'Close')}
               </Button>
-              <Button variant="destructive" size="sm" onClick={() => handleDecide('REJECTED')} disabled={deciding} className="text-xs">
-                {deciding ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Từ chối' : 'Reject')}
-              </Button>
-              <Button size="sm" onClick={() => handleDecide('APPROVED')} disabled={deciding} className="text-xs">
-                {deciding ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Duyệt hồ sơ' : 'Approve')}
-              </Button>
+              {selected.status === 'PENDING' && (
+                <>
+                  <Button variant="destructive" size="sm" onClick={() => handleDecide('REJECTED')} disabled={deciding} className="text-xs">
+                    {deciding ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Từ chối' : 'Reject')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleDecide('APPROVED')}
+                    disabled={deciding || isDeletedAccount(selected)}
+                    title={isDeletedAccount(selected) ? (vi ? 'Không thể duyệt tài khoản đã bị xóa' : 'Cannot approve a deleted account') : undefined}
+                    className="text-xs"
+                  >
+                    {deciding ? <Loader2 className="size-4 animate-spin" /> : (vi ? 'Duyệt hồ sơ' : 'Approve')}
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

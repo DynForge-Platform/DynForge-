@@ -31,7 +31,8 @@ import { MouseFollowLight } from '../components/MouseFollowLight';
 import { DynForgeEmblem } from '../components/Logo';
 import { formatDate } from '../lib/format';
 import { toast } from 'sonner';
-import { getMyBookings, type BookingResponse } from '../services/bookingService';
+import { getMyBookings, getBookingById, type BookingResponse } from '../services/bookingService';
+import { isObjectId } from '../services/mentorService';
 
 interface EscrowLocationState {
   mentor?: string;
@@ -56,59 +57,75 @@ export function EscrowStatus() {
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [latestBooking, setLatestBooking] = useState<BookingResponse | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const isVi = lang === 'vi';
 
-  useEffect(() => {
-    if (!location.state && user?.id) {
-      getMyBookings()
-        .then((list) => {
-          if (list && list.length > 0) {
-            setLatestBooking(list[0]);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [location.state, user?.id]);
-
-  const now = new Date();
   const locState = location.state as EscrowLocationState | undefined;
 
-  const state: EscrowLocationState = locState ?? (latestBooking ? {
-    mentor: latestBooking.mentorName ?? 'Mentor DynForge',
-    amount: latestBooking.price,
-    day: new Date(latestBooking.startAt).getDate(),
-    month: new Date(latestBooking.startAt).getMonth(),
-    year: new Date(latestBooking.startAt).getFullYear(),
-    slot: new Date(latestBooking.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }),
-    duration: latestBooking.durationMin,
-    bookingId: latestBooking.id,
-    courseCode: latestBooking.courseCode,
-    courseName: latestBooking.courseCode,
-    mentorUniversity: 'DynForge Academic Partner',
-  } : {
-    mentor: 'TS. Trần Anh Tuấn',
-    amount: 350000,
-    day: now.getDate() + 2,
-    month: now.getMonth(),
-    year: now.getFullYear(),
-    slot: '08:00',
-    duration: 90,
-    bookingId: 'DF-2026-8866',
-    courseCode: 'CS501',
-    courseName: 'Thuật Toán Nâng Cao & Tối Ưu Hóa',
-    mentorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    mentorUniversity: '',
-  });
+  useEffect(() => {
+    if (!user?.id) return;
+    if (locState?.bookingId && isObjectId(locState.bookingId) && (!locState.roomId || !locState.courseCode)) {
+      setBookingLoading(true);
+      getBookingById(locState.bookingId)
+        .then(setLatestBooking)
+        .catch(() => {})
+        .finally(() => setBookingLoading(false));
+    } else if (!locState) {
+      setBookingLoading(true);
+      getMyBookings()
+        .then((list) => {
+          const mine = (list ?? [])
+            .filter((b) => b.menteeId === user.id && b.status !== 'PENDING_PAYMENT')
+            .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+          if (mine.length > 0) {
+            setLatestBooking(mine[0]);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setBookingLoading(false));
+    }
+  }, [locState, user?.id]);
 
-  const bookingId = state.bookingId || 'DF-2026-8866';
-  const escrowId = 'ESC-' + (state.bookingId ? state.bookingId.replace(/[^0-9]/g, '') : '998842');
-  const mentorName = state.mentor || 'TS. Trần Anh Tuấn';
-  const courseCode = state.courseCode || 'CS501';
-  const courseName = state.courseName || 'Thuật Toán Nâng Cao & Tối Ưu Hóa';
-  const durationMin = state.duration || 90;
-  const amount = state.amount || 350000;
-  const meetingUrl = `https://meet.jit.si/${state.roomId?.trim() ? state.roomId.trim() : `DynForge-${bookingId}`}`;
-  const studentEmail = user?.email || 'student@dynforge.tech';
+  const now = new Date();
+  const hasRealData = Boolean(locState || latestBooking);
+
+  const state: EscrowLocationState = locState
+    ? {
+        ...locState,
+        roomId: locState.roomId || latestBooking?.roomId,
+        courseCode: locState.courseCode || latestBooking?.courseCode,
+        courseName: locState.courseName || latestBooking?.courseCode,
+      }
+    : latestBooking
+      ? {
+          mentor: latestBooking.mentorName ?? 'Mentor DynForge',
+          amount: latestBooking.price,
+          day: new Date(latestBooking.startAt).getDate(),
+          month: new Date(latestBooking.startAt).getMonth(),
+          year: new Date(latestBooking.startAt).getFullYear(),
+          slot: new Date(latestBooking.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+          duration: latestBooking.durationMin,
+          bookingId: latestBooking.id,
+          roomId: latestBooking.roomId,
+          courseCode: latestBooking.courseCode,
+          courseName: latestBooking.courseCode,
+          mentorUniversity: '',
+        }
+      : {};
+
+  const bookingId = state.bookingId || '';
+  const escrowId = bookingId ? 'ESC-' + bookingId.slice(-8).toUpperCase() : '—';
+  const mentorName = state.mentor || 'Mentor DynForge';
+  const courseCode = state.courseCode || '—';
+  const courseName = state.courseName || state.courseCode || '—';
+  const durationMin = state.duration || 60;
+  const amount = state.amount || 0;
+  const meetingUrl = state.roomId?.trim()
+    ? `https://meet.jit.si/${state.roomId.trim()}`
+    : bookingId
+      ? `https://meet.jit.si/DynForge-${bookingId}`
+      : '';
+  const studentEmail = user?.email || '';
 
   // Compute session date display
   const sessionYear = state.year ?? now.getFullYear();
@@ -168,6 +185,33 @@ export function EscrowStatus() {
     const endIso = `${sessionYear}${String(sessionMonth + 1).padStart(2, '0')}${String(sessionDay).padStart(2, '0')}T${String(eHour).padStart(2, '0')}${String(eMin).padStart(2, '0')}00`;
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${encodeURIComponent(meetingUrl)}&dates=${startIso}/${endIso}`;
   };
+
+  if (!bookingLoading && !hasRealData) {
+    return (
+      <div className="relative min-h-screen flex flex-col items-center justify-center px-4 text-center text-slate-100">
+        <MouseFollowLight size={260} />
+        <div className="max-w-md rounded-3xl border border-white/10 bg-[#090f1e]/80 p-8 backdrop-blur-xl space-y-4">
+          <Wallet className="mx-auto size-12 text-cyan-400" />
+          <h2 className="text-xl font-bold text-white">
+            {isVi ? 'Chưa có giao dịch ký quỹ nào' : 'No recent escrow payment found'}
+          </h2>
+          <p className="text-sm text-slate-400">
+            {isVi
+              ? 'Hãy tìm mentor phù hợp và đặt lịch học để được bảo vệ thanh toán qua hệ thống Ký Quỹ Escrow.'
+              : 'Browse mentors and book a session to protect your payment with DynForge Escrow.'}
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            <Button onClick={() => navigate('/mentors')} className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl">
+              {isVi ? 'Tìm Mentor' : 'Find Mentors'}
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/dashboard')} className="border-white/10 text-slate-200 rounded-xl">
+              {isVi ? 'Về bảng điều khiển' : 'Go to Dashboard'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-transparent text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200 py-12 px-4 sm:px-6 lg:px-8">

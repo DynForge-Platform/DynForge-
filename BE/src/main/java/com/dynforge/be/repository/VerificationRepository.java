@@ -13,5 +13,7 @@ public interface VerificationRepository extends MongoRepository<VerificationRequ
 
     List<VerificationRequest> findByUserId(ObjectId userId);
 
+    List<VerificationRequest> findByUserIdOrderByCreatedAtDesc(ObjectId userId);
+
     List<VerificationRequest> findByUniversityIdIsNull();
 }

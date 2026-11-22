@@ -14,7 +14,7 @@ import { useLanguage } from '../../context/LanguageContext';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 // Bookings that count as a real session on the calendar.
-const ACTIVE = ['ESCROW_HELD', 'ACCEPTED', 'TAUGHT', 'COMPLETED'];
+const ACTIVE = ['ESCROW_HELD', 'ACCEPTED', 'TAUGHT', 'COMPLETED', 'DISPUTED'];
 const UPCOMING = ['ESCROW_HELD', 'ACCEPTED', 'TAUGHT'];
 
 export function TeacherCalendar() {
@@ -32,7 +32,7 @@ export function TeacherCalendar() {
       getMyMentorProfile().catch(() => null),
     ]).then(([sched, prof]) => {
       setBookings(sched);
-      setAvailDays(new Set(Object.keys(prof?.availability ?? {})));
+      setAvailDays(new Set(Object.keys(prof?.availability ?? {}).map((k) => k.trim().toLowerCase())));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -57,8 +57,10 @@ export function TeacherCalendar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookings, monthOffset]);
 
-  const isAvailableWeekday = (day: number) =>
-    availDays.has(WEEKDAYS[new Date(base.getFullYear(), base.getMonth(), day).getDay()]);
+  const isAvailableWeekday = (day: number) => {
+    const dayName = WEEKDAYS[new Date(base.getFullYear(), base.getMonth(), day).getDay()].toLowerCase();
+    return availDays.has(dayName) || availDays.has(dayName.slice(0, 3));
+  };
 
   const sessionsOnDay = (day: number) =>
     bookings
@@ -77,10 +79,10 @@ export function TeacherCalendar() {
   );
 
   function dayStyle(day: number) {
-    const past = monthOffset === 0 && day < todayDay;
+    const past = monthOffset < 0 || (monthOffset === 0 && day < todayDay);
     if (selectedDay === day) return 'bg-cyan-500 text-white font-bold shadow-lg ring-2 ring-cyan-400/40';
-    if (past) return 'text-muted-foreground/40 cursor-default';
-    if (bookedDays.has(day)) return 'bg-primary text-primary-foreground';
+    if (bookedDays.has(day)) return past ? 'bg-primary/60 text-primary-foreground/90 hover:bg-primary/80' : 'bg-primary text-primary-foreground';
+    if (past) return 'text-muted-foreground/50 hover:bg-accent/50';
     if (isAvailableWeekday(day)) return 'bg-success/15 text-success hover:bg-success/30';
     return 'text-muted-foreground hover:bg-accent';
   }
@@ -121,7 +123,7 @@ export function TeacherCalendar() {
           <div className="mb-4 flex items-center justify-between">
             <p style={{ fontWeight: 600 }}>{monthLabel}</p>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" onClick={() => { setMonthOffset((v) => Math.max(0, v - 1)); setSelectedDay(null); }} disabled={monthOffset === 0}>
+              <Button variant="outline" size="icon" onClick={() => { setMonthOffset((v) => v - 1); setSelectedDay(null); }}>
                 <ChevronLeft className="size-4" />
               </Button>
               <Button variant="outline" size="icon" onClick={() => { setMonthOffset((v) => v + 1); setSelectedDay(null); }}>
@@ -137,13 +139,11 @@ export function TeacherCalendar() {
             {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
-              const past = monthOffset === 0 && day < todayDay;
               return (
                 <button
                   key={day}
-                  disabled={past}
                   onClick={() => setSelectedDay(day)}
-                  className={cn('flex aspect-square items-center justify-center rounded-lg text-sm transition-colors', dayStyle(day))}
+                  className={cn('flex aspect-square items-center justify-center rounded-lg text-sm transition-colors cursor-pointer', dayStyle(day))}
                   style={{ fontWeight: bookedDays.has(day) ? 700 : 400 }}
                 >
                   {day}

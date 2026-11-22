@@ -13,12 +13,13 @@ import { toast } from 'sonner';
 import {
   getMyMentorProfile, updateMyMentorProfile, type MentorProfileResponse,
 } from '../../services/mentorService';
-import { getMe, updateProfile } from '../../services/userService';
+import { getMe, updateProfile, type UserProfile } from '../../services/userService';
 
 export function TeacherProfile() {
   const { refreshUser } = useAuth();
   const { lang } = useLanguage();
   const vi = lang === 'vi';
+  const [accountInfo, setAccountInfo] = useState<UserProfile | null>(null);
   const [profile, setProfile] = useState<MentorProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,7 +36,11 @@ export function TeacherProfile() {
       getMe().catch(() => null),
       getMyMentorProfile().catch(() => null),
     ]).then(([me, prof]) => {
-      if (me) { setDisplayName(me.fullName ?? ''); setAvatarUrl(me.avatarUrl ?? ''); }
+      if (me) {
+        setAccountInfo(me);
+        setDisplayName(me.fullName ?? '');
+        setAvatarUrl(me.avatarUrl ?? '');
+      }
       if (prof) {
         setProfile(prof);
         setTitle(prof.title ?? '');
@@ -51,12 +56,22 @@ export function TeacherProfile() {
     if (!displayName.trim()) { toast.error(vi ? 'Vui lòng nhập tên hiển thị.' : 'Display name is required.'); return; }
     setSaving(true);
     try {
-      // User-level fields (name, avatar)
-      await updateProfile({ fullName: displayName.trim(), avatarUrl: avatarUrl.trim() || undefined });
-      // Mentor-level fields — preserve existing courses/availability/formats so they aren't wiped
+      // User-level fields (preserve phone/studentId/major/year so BE does not overwrite them with null)
+      await updateProfile({
+        fullName: displayName.trim(),
+        phone: accountInfo?.phone,
+        studentId: accountInfo?.studentId,
+        major: accountInfo?.major,
+        year: accountInfo?.year,
+        avatarUrl: avatarUrl.trim() || undefined,
+      });
+      // Mentor-level fields — preserve existing major/university/teachingRole/courses/availability/formats
       await updateMyMentorProfile({
         title: title.trim(),
         bio: bio.trim(),
+        major: profile?.major,
+        university: profile?.university,
+        teachingRole: profile?.teachingRole,
         skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
         languages: languages.split(',').map((s) => s.trim()).filter(Boolean),
         courses: profile?.courses ?? [],

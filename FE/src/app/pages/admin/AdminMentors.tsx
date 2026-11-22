@@ -89,7 +89,6 @@ const bookingStatusConfig: Record<string, { labelVi: string; labelEn: string; co
   PENDING_PAYMENT: { labelVi: 'Chờ thanh toán', labelEn: 'Pending Payment', color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30' },
   CANCELLED: { labelVi: 'Đã hủy', labelEn: 'Cancelled', color: 'bg-muted text-muted-foreground border-border' },
   DISPUTED: { labelVi: 'Khiếu nại', labelEn: 'Disputed', color: 'bg-destructive/10 text-destructive border-destructive/30' },
-  DECLINED: { labelVi: 'Bị từ chối', labelEn: 'Declined', color: 'bg-destructive/10 text-destructive border-destructive/30' },
   REFUNDED: { labelVi: 'Đã hoàn tiền', labelEn: 'Refunded', color: 'bg-muted text-muted-foreground border-border' },
 };
 
@@ -252,7 +251,7 @@ export function AdminMentors() {
       } else if (scheduleFilter === 'COMPLETED') {
         matchStatus = s.status === 'COMPLETED';
       } else if (scheduleFilter === 'CANCELLED') {
-        matchStatus = ['CANCELLED', 'DISPUTED', 'DECLINED', 'REFUNDED'].includes(s.status);
+        matchStatus = ['CANCELLED', 'DISPUTED', 'REFUNDED'].includes(s.status);
       }
 
       return matchSearch && matchStatus;
@@ -289,10 +288,10 @@ export function AdminMentors() {
 
         <button
           type="button"
-          onClick={() => { setStatusFilter('ACTIVE'); }}
+          onClick={() => { setStatusFilter('ACTIVE'); setVerifyFilter('ALL'); }}
           className={cn(
             'flex flex-col items-start rounded-2xl border p-4 text-left transition-all',
-            statusFilter === 'ACTIVE'
+            statusFilter === 'ACTIVE' && verifyFilter === 'ALL'
               ? 'border-emerald-500/60 bg-emerald-500/10 shadow-sm ring-1 ring-emerald-500/40'
               : 'border-border bg-card/60 hover:border-border/80 hover:bg-card'
           )}
@@ -306,10 +305,10 @@ export function AdminMentors() {
 
         <button
           type="button"
-          onClick={() => { setVerifyFilter('VERIFIED'); }}
+          onClick={() => { setVerifyFilter('VERIFIED'); setStatusFilter('ALL'); }}
           className={cn(
             'flex flex-col items-start rounded-2xl border p-4 text-left transition-all',
-            verifyFilter === 'VERIFIED'
+            verifyFilter === 'VERIFIED' && statusFilter === 'ALL'
               ? 'border-blue-500/60 bg-blue-500/10 shadow-sm ring-1 ring-blue-500/40'
               : 'border-border bg-card/60 hover:border-border/80 hover:bg-card'
           )}
@@ -323,10 +322,10 @@ export function AdminMentors() {
 
         <button
           type="button"
-          onClick={() => { setStatusFilter('SUSPENDED'); }}
+          onClick={() => { setStatusFilter('SUSPENDED'); setVerifyFilter('ALL'); }}
           className={cn(
             'flex flex-col items-start rounded-2xl border p-4 text-left transition-all',
-            statusFilter === 'SUSPENDED'
+            statusFilter === 'SUSPENDED' && verifyFilter === 'ALL'
               ? 'border-destructive/60 bg-destructive/10 shadow-sm ring-1 ring-destructive/40'
               : 'border-border bg-card/60 hover:border-border/80 hover:bg-card'
           )}

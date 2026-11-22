@@ -162,14 +162,26 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
   const [notesOpen, setNotesOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const uploadPromiseRef = useRef<Promise<void> | null>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
     const start = Date.now();
     const id = setInterval(() => {
       const s = Math.floor((Date.now() - start) / 1000);
       setElapsed(`${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`);
     }, 1000);
-    return () => clearInterval(id);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(id);
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        try { recorderRef.current.stop(); } catch { /* ignore */ }
+      }
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
   }, []);
 
   // Both participants join the same per-booking room, so they meet each other.
@@ -178,46 +190,83 @@ export function MeetRoomOverlay({ bookingId, roomId, course, partnerName, durati
   const jitsiUrl = `https://meet.jit.si/${room}#userInfo.displayName=%22${name}%22&config.prejoinPageEnabled=false&config.disableDeepLinking=true`;
 
   const startRecording = async () => {
+    let stream: MediaStream | null = null;
     try {
       // Capture the screen/tab (the meeting) + audio.
-      const stream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      stream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: true });
+      streamRef.current = stream;
+
+      const candidates = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+      const mimeType = typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function'
+        ? candidates.find((m) => MediaRecorder.isTypeSupported(m))
+        : undefined;
+
+      const recorder = mimeType ? new MediaRecorder(stream!, { mimeType }) : new MediaRecorder(stream!);
       const chunks: BlobPart[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        setUploading(true);
+
+      const finishUpload = async () => {
+        stream?.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+        if (streamRef.current === stream) streamRef.current = null;
+        if (chunks.length === 0) return;
+        const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+        if (mountedRef.current) setUploading(true);
         try {
           await uploadRecording(bookingId, blob);
           toast.success(vi ? 'Đã lưu bản ghi — admin có thể dùng làm bằng chứng tranh chấp.' : 'Recording saved — available to admins as dispute evidence.');
         } catch (err: any) {
           toast.error(err?.response?.data?.message ?? (vi ? 'Không tải lên được bản ghi.' : 'Could not upload recording.'));
         } finally {
-          setUploading(false);
+          if (mountedRef.current) setUploading(false);
         }
       };
+
+      recorder.onstop = () => {
+        uploadPromiseRef.current = finishUpload();
+      };
+
       // If the user stops sharing from the browser UI, stop the recorder too.
-      stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+      stream!.getVideoTracks()[0]?.addEventListener('ended', () => {
         if (recorder.state !== 'inactive') recorder.stop();
-        setRecording(false);
+        if (mountedRef.current) setRecording(false);
       });
+
       recorder.start();
       recorderRef.current = recorder;
       setRecording(true);
       toast.info(vi ? 'Đã bắt đầu ghi — chọn tab/cửa sổ buổi học để ghi lại.' : 'Recording started — pick the meeting tab/window to capture.');
     } catch {
-      toast.error(vi ? 'Ghi màn hình đã bị huỷ hoặc bị chặn.' : 'Screen recording was cancelled or blocked.');
+      stream?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      toast.error(vi ? 'Ghi màn hình đã bị huỷ hoặc trình duyệt không hỗ trợ định dạng ghi.' : 'Screen recording was cancelled or unsupported by this browser.');
     }
   };
 
   const stopRecording = () => {
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') recorderRef.current.stop();
-    setRecording(false);
+    const rec = recorderRef.current;
+    if (!rec || rec.state === 'inactive') {
+      setRecording(false);
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      const origOnStop = rec.onstop;
+      rec.onstop = (ev) => {
+        if (typeof origOnStop === 'function') {
+          origOnStop.call(rec, ev);
+        }
+        Promise.resolve(uploadPromiseRef.current).finally(resolve);
+      };
+      rec.stop();
+      setRecording(false);
+    });
   };
 
-  const end = () => {
-    if (recording) stopRecording();
+  const end = async () => {
+    if (recording) {
+      await stopRecording();
+    } else if (uploadPromiseRef.current) {
+      await uploadPromiseRef.current;
+    }
     toast.success(vi ? 'Đã kết thúc buổi học. Vui lòng đánh dấu hoàn thành.' : 'Session ended. Please mark it as completed.');
     onClose();
   };

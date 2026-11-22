@@ -87,7 +87,7 @@ export function TeacherDashboard() {
     );
   }
 
-  const firstName = (user?.fullName ?? '').split(' ').pop() ?? 'Mentor';
+  const firstName = (user?.name ?? '').trim().split(' ').pop() || 'Mentor';
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 pb-16">
@@ -171,7 +171,9 @@ export function TeacherDashboard() {
             <span>Đánh giá trung bình</span>
             <Star className="size-4 text-amber-400 fill-amber-400" />
           </div>
-          <p className="mt-3 text-3xl font-extrabold text-amber-300 tracking-tight">{rating != null ? `${rating.toFixed(1)} / 5` : '5.0'}</p>
+          <p className="mt-3 text-3xl font-extrabold text-amber-300 tracking-tight">
+            {rating && rating > 0 ? `${rating.toFixed(1)} / 5` : 'Chưa có'}
+          </p>
           <p className="mt-1 text-[11px] text-amber-400/90 font-medium">Từ nhận xét của học viên</p>
         </div>
       </div>

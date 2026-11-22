@@ -21,6 +21,7 @@ import {
   getMyBookings, disputeBooking, mapStatusToDisplay, type BookingResponse,
 } from '../../services/bookingService';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import { formatDate } from '../../lib/format';
 
 const issueTypes = [
@@ -43,6 +44,7 @@ const issueTypeLabelsVi: Record<string, string> = {
 
 export function DashboardDisputes() {
   const { lang } = useLanguage();
+  const { user } = useAuth();
   const vi = lang === 'vi';
   const issueLabel = (t: string) => (vi ? issueTypeLabelsVi[t] ?? t : t);
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
@@ -54,15 +56,17 @@ export function DashboardDisputes() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchBookings = useCallback(async () => {
+    if (!user?.id) return;
     setLoading(true);
     try {
-      setBookings(await getMyBookings());
+      const list = await getMyBookings();
+      setBookings(list.filter((b) => b.menteeId === user.id));
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? (vi ? 'Không tải được danh sách tranh chấp.' : 'Failed to load disputes.'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.id, vi]);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 

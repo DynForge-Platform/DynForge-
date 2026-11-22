@@ -3,6 +3,9 @@ import { Video, Download, Play, Loader2 } from 'lucide-react';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '../../components/ui/dialog';
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../../components/ui/table';
 import { EmptyState } from '../../components/common';
@@ -22,6 +25,7 @@ export function AdminRecordings() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [previewRec, setPreviewRec] = useState<{ id: string; url: string; courseCode: string } | null>(null);
 
   useEffect(() => {
     listRecordings()
@@ -30,26 +34,43 @@ export function AdminRecordings() {
       .finally(() => setLoading(false));
   }, []);
 
-  const withBlob = async (id: string, fn: (url: string) => void) => {
+  useEffect(() => {
+    return () => {
+      if (previewRec?.url) URL.revokeObjectURL(previewRec.url);
+    };
+  }, [previewRec]);
+
+  const fetchBlobUrl = async (id: string): Promise<string | null> => {
     setBusyId(id);
     try {
       const blob = await downloadRecording(id);
-      const url = URL.createObjectURL(blob);
-      fn(url);
+      return URL.createObjectURL(blob);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? (vi ? 'Không tải được bản ghi.' : 'Could not load recording.'));
+      return null;
     } finally {
       setBusyId(null);
     }
   };
 
-  const play = (id: string) => withBlob(id, (url) => window.open(url, '_blank'));
-  const download = (id: string) => withBlob(id, (url) => {
+  const play = async (rec: Recording) => {
+    const url = await fetchBlobUrl(rec.id);
+    if (!url) return;
+    setPreviewRec((prev) => {
+      if (prev?.url) URL.revokeObjectURL(prev.url);
+      return { id: rec.id, url, courseCode: rec.courseCode };
+    });
+  };
+
+  const download = async (id: string) => {
+    const url = await fetchBlobUrl(id);
+    if (!url) return;
     const a = document.createElement('a');
     a.href = url;
     a.download = `session-${id}.webm`;
     a.click();
-  });
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   return (
     <div className="mx-auto max-w-[1200px]">
@@ -90,7 +111,7 @@ export function AdminRecordings() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => play(r.id)}>
+                        <Button size="sm" variant="outline" disabled={busyId === r.id} onClick={() => play(r)}>
                           {busyId === r.id ? <Loader2 className="size-4 animate-spin" /> : <><Play className="size-3.5" /> {vi ? 'Phát' : 'Play'}</>}
                         </Button>
                         <Button size="sm" variant="ghost" className="text-primary" disabled={busyId === r.id} onClick={() => download(r.id)}>
@@ -111,6 +132,26 @@ export function AdminRecordings() {
           />
         )}
       </Card>
+
+      {previewRec && (
+        <Dialog
+          open
+          onOpenChange={() => {
+            URL.revokeObjectURL(previewRec.url);
+            setPreviewRec(null);
+          }}
+        >
+          <DialogContent className="max-w-3xl bg-slate-950 border border-slate-800 text-slate-100" aria-describedby={undefined}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base font-bold text-white">
+                <Video className="size-4 text-cyan-400" />
+                {vi ? 'Phát lại bằng chứng buổi học' : 'Session Evidence Playback'} · {previewRec.courseCode}
+              </DialogTitle>
+            </DialogHeader>
+            <video src={previewRec.url} controls autoPlay className="w-full max-h-[70vh] rounded-xl bg-black" />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

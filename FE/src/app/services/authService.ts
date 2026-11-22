@@ -7,6 +7,11 @@ export interface BackendUser {
   avatarUrl?: string;
   roles: string[];
   walletBalance: number;
+  universityId?: string;
+  universityName?: string;
+  universityCode?: string;
+  schoolVerified?: boolean;
+  mentorVerified?: boolean;
 }
 
 export interface AuthTokens {

@@ -123,18 +123,26 @@ function titleToRole(title: string): MentorRole {
   return 'Senior Student';
 }
 
+function formatLocalYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function nextAvailableDate(availability: Record<string, string[]>): string {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const availDays = new Set(Object.keys(availability));
+  const availDays = new Set(Object.keys(availability).map((k) => k.trim().toLowerCase()));
   const base = new Date();
   for (let i = 1; i <= 7; i++) {
     const d = new Date(base);
     d.setDate(base.getDate() + i);
-    if (availDays.has(dayNames[d.getDay()])) return d.toISOString().split('T')[0];
+    const full = dayNames[d.getDay()].toLowerCase();
+    if (availDays.has(full) || availDays.has(full.slice(0, 3))) return formatLocalYmd(d);
   }
   const tomorrow = new Date(base);
   tomorrow.setDate(base.getDate() + 1);
-  return tomorrow.toISOString().split('T')[0];
+  return formatLocalYmd(tomorrow);
 }
 
 /**
@@ -143,9 +151,13 @@ function nextAvailableDate(availability: Record<string, string[]>): string {
  */
 export function backendToMentor(p: MentorProfileResponse): Mentor {
   const courses = p.courses ?? [];
+  const verifiedCourses = courses.filter((c) => c.verified);
+  const ratePool = verifiedCourses.length > 0 ? verifiedCourses : courses;
   const skills  = p.skills  ?? [];
-  const hourlyRate = courses.length > 0 ? Math.min(...courses.map((c) => c.ratePrivate)) : 0;
-  const groupRate  = courses.length > 0 ? Math.min(...courses.map((c) => c.rateGroup))   : 0;
+  const hourlyRate = ratePool.length > 0 ? Math.min(...ratePool.map((c) => c.ratePrivate)) : 0;
+  const groupRate  = ratePool.length > 0 ? Math.min(...ratePool.map((c) => c.rateGroup))   : 0;
+  const bioTrimmed = (p.bio ?? '').trim();
+  const firstSentence = bioTrimmed ? `${bioTrimmed.split('.')[0]}.` : '';
   return {
     id: p.id,
     userId: p.userId,
@@ -155,7 +167,7 @@ export function backendToMentor(p: MentorProfileResponse): Mentor {
     verified: p.verified,
     university: p.university?.trim() ? p.university : '',
     major: p.major ?? '',
-    headline: (p.bio ?? '').split('.')[0] + '.',
+    headline: firstSentence,
     about: p.bio ?? '',
     rating: p.ratingAvg,
     reviewsCount: p.ratingCount,

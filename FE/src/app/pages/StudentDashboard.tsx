@@ -30,7 +30,7 @@ import { StatusBadge, EmptyState } from '../components/common';
 import { cn } from '../components/ui/utils';
 import { toast } from 'sonner';
 import {
-  getMyBookings, confirmBooking, disputeBooking, rescheduleBooking, cancelBooking,
+  getMyBookings, payBooking, confirmBooking, disputeBooking, rescheduleBooking, cancelBooking,
   mapStatusToDisplay, type BookingResponse, type BookingStatus,
 } from '../services/bookingService';
 import { createReview } from '../services/reviewService';
@@ -67,7 +67,8 @@ function ConfirmModal({ booking, onClose, onConfirmed }: { booking: BookingRespo
     }
   };
 
-  const payout = Math.round(booking.price * 0.85);
+  const commissionRate = booking.commissionRate ?? 0.15;
+  const payout = Math.round(booking.price * (1 - commissionRate));
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -99,7 +100,7 @@ function ConfirmModal({ booking, onClose, onConfirmed }: { booking: BookingRespo
             <div>
               <p className="font-semibold text-emerald-200">Giải phóng học phí Escrow an toàn</p>
               <p className="mt-0.5 text-emerald-300/90">
-                Khi xác nhận, khoản tiền <strong className="text-white">{formatCurrency(payout)}</strong> (sau khi trừ 15% phí hệ thống) sẽ được giải phóng ngay lập tức vào ví của Mentor. Thao tác này không thể hoàn tác.
+                Khi xác nhận, khoản tiền <strong className="text-white">{formatCurrency(payout)}</strong> (sau khi trừ {Math.round(commissionRate * 100)}% phí hệ thống) sẽ được giải phóng ngay lập tức vào ví của Mentor. Thao tác này không thể hoàn tác.
               </p>
             </div>
           </div>
@@ -285,13 +286,18 @@ function ReviewModal({ booking, onClose, onReviewed }: { booking: BookingRespons
   );
 }
 
+// Local YYYY-MM-DD helper (avoids UTC shift around 00:00–06:59 GMT+7)
+function toLocalYmd(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 // ── Reschedule modal ──────────────────────────────────────────
 function RescheduleModal({ booking, onClose, onRescheduled }: { booking: BookingResponse; onClose: () => void; onRescheduled: () => void }) {
   const [loading, setLoading] = useState(false);
-  const [newDate, setNewDate] = useState(() => {
-    const d = new Date(Date.now() + 24 * 3600 * 1000);
-    return d.toISOString().split('T')[0];
-  });
+  const [newDate, setNewDate] = useState(() => toLocalYmd(new Date(Date.now() + 24 * 3600 * 1000)));
   const [newTime, setNewTime] = useState('14:00');
 
   const rescheduleCount = booking.rescheduleCount ?? 0;
@@ -393,7 +399,7 @@ function RescheduleModal({ booking, onClose, onRescheduled }: { booking: Booking
                   <Label className="mb-1.5 block text-xs font-semibold text-slate-300">Ngày mới</Label>
                   <Input
                     type="date"
-                    min={new Date().toISOString().split('T')[0]}
+                    min={toLocalYmd(new Date())}
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
                     className="bg-slate-900 border-slate-800 text-slate-200"
@@ -738,12 +744,15 @@ export function StudentDashboard() {
   const [rescheduleBookingItem, setRescheduleBookingItem] = useState<BookingResponse | null>(null);
   const [cancelBookingItem, setCancelBookingItem] = useState<BookingResponse | null>(null);
 
+  const [payingId, setPayingId] = useState<string | null>(null);
+
   const fetchBookings = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
       const data = await getMyBookings();
-      setBookings(data);
+      // Only include sessions where the current user is the mentee (prevents mixing teaching sessions in Student mode)
+      setBookings(data.filter((b) => b.menteeId === user.id));
     } catch (err: any) {
       console.error('fetchBookings error:', err);
       toast.error(err?.response?.data?.message ?? 'Không thể tải danh sách buổi học.');
@@ -751,6 +760,20 @@ export function StudentDashboard() {
       setLoading(false);
     }
   }, [user?.id]);
+
+  const handlePayPending = async (b: BookingResponse) => {
+    setPayingId(b.id);
+    try {
+      await payBooking(b.id);
+      toast.success('Thanh toán thành công! Học phí đã được giữ an toàn trong quỹ Escrow.');
+      fetchBookings();
+      getMe().then(setProfile).catch(() => {});
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Không thể thanh toán buổi học. Vui lòng kiểm tra số dư ví.');
+    } finally {
+      setPayingId(null);
+    }
+  };
 
   useEffect(() => {
     fetchBookings();
@@ -778,7 +801,11 @@ export function StudentDashboard() {
     return bookings.map((b) => ({
       ...b,
       displayStatus: mapStatusToDisplay(b.status),
-      tabStatus: b.status === 'ACCEPTED' ? 'In Escrow' : mapStatusToDisplay(b.status),
+      tabStatus: b.status === 'ACCEPTED'
+        ? 'In Escrow'
+        : b.status === 'REFUNDED'
+        ? 'Cancelled'
+        : mapStatusToDisplay(b.status),
     }));
   }, [bookings]);
 
@@ -809,6 +836,7 @@ export function StudentDashboard() {
     { value: 'Completed', label: 'Hoàn Thành', count: completedCount },
     { value: 'Pending Payment', label: 'Chờ Thanh Toán', count: bookings.filter((b) => b.status === 'PENDING_PAYMENT').length },
     { value: 'Disputed', label: 'Khiếu Nại', count: bookings.filter((b) => b.status === 'DISPUTED').length },
+    { value: 'Cancelled', label: 'Đã Hủy / Hoàn Tiền', count: bookings.filter((b) => b.status === 'CANCELLED' || b.status === 'REFUNDED').length },
   ];
 
   return (
@@ -1160,6 +1188,28 @@ export function StudentDashboard() {
 
                   <div className="flex items-center gap-1.5 ml-auto">
                     {/* Action buttons */}
+                    {b.status === 'PENDING_PAYMENT' && (
+                      <>
+                        <Button
+                          size="sm"
+                          disabled={payingId === b.id}
+                          onClick={() => handlePayPending(b)}
+                          className="h-8 gap-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 px-3 text-xs font-bold text-white"
+                        >
+                          {payingId === b.id ? <Loader2 className="size-3.5 animate-spin" /> : <CreditCard className="size-3.5" />}
+                          Thanh toán
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setCancelBookingItem(b)}
+                          className="h-8 px-2 text-slate-400 hover:text-red-400 hover:bg-red-950/20 text-xs"
+                        >
+                          Hủy
+                        </Button>
+                      </>
+                    )}
+
                     {b.status === 'ACCEPTED' && (
                       <Button
                         size="sm"
@@ -1306,6 +1356,28 @@ export function StudentDashboard() {
                         >
                           Chi tiết
                         </Button>
+
+                        {b.status === 'PENDING_PAYMENT' && (
+                          <>
+                            <Button
+                              size="sm"
+                              disabled={payingId === b.id}
+                              onClick={() => handlePayPending(b)}
+                              className="h-8 gap-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white"
+                            >
+                              {payingId === b.id ? <Loader2 className="size-3.5 animate-spin" /> : <CreditCard className="size-3.5" />}
+                              Thanh toán
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setCancelBookingItem(b)}
+                              className="h-8 px-2 text-slate-400 hover:text-red-400 hover:bg-red-950/20 text-xs"
+                            >
+                              Hủy
+                            </Button>
+                          </>
+                        )}
 
                         {b.status === 'ACCEPTED' && (
                           <Button

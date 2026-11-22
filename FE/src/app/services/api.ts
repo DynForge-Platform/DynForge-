@@ -13,30 +13,49 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Single-flight refresh promise prevents concurrent 401 responses from racing
+// against single-use refresh token rotation on the backend.
+let refreshPromise: Promise<string> | null = null;
+
+function clearAllAuthStorage() {
+  localStorage.removeItem('dynforge_access_token');
+  localStorage.removeItem('dynforge_refresh_token');
+  localStorage.removeItem('dynforge_user');
+  localStorage.removeItem('dynforge_role');
+  localStorage.removeItem('gradora_access_token');
+  localStorage.removeItem('gradora_refresh_token');
+  localStorage.removeItem('gradora_user');
+  localStorage.removeItem('gradora_role');
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
     const isAuthEndpoint = original?.url?.includes('/api/auth/');
 
-    if (err.response?.status === 401 && !original._retry && !isAuthEndpoint) {
+    if (err.response?.status === 401 && original && !original._retry && !isAuthEndpoint) {
       original._retry = true;
       try {
-        const refreshToken = localStorage.getItem('dynforge_refresh_token') || localStorage.getItem('gradora_refresh_token');
-        if (!refreshToken) throw new Error('no refresh token');
-        const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken });
-        const tokens = data.data;
-        localStorage.setItem('dynforge_access_token', tokens.accessToken);
-        localStorage.setItem('dynforge_refresh_token', tokens.refreshToken);
-        original.headers.Authorization = `Bearer ${tokens.accessToken}`;
+        if (!refreshPromise) {
+          refreshPromise = (async () => {
+            const refreshToken = localStorage.getItem('dynforge_refresh_token') || localStorage.getItem('gradora_refresh_token');
+            if (!refreshToken) throw new Error('no refresh token');
+            const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken });
+            const tokens = data.data;
+            localStorage.setItem('dynforge_access_token', tokens.accessToken);
+            localStorage.setItem('dynforge_refresh_token', tokens.refreshToken);
+            return tokens.accessToken as string;
+          })().finally(() => {
+            refreshPromise = null;
+          });
+        }
+        const newAccessToken = await refreshPromise;
+        original.headers = original.headers ?? {};
+        original.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(original);
       } catch {
-        localStorage.removeItem('dynforge_access_token');
-        localStorage.removeItem('dynforge_refresh_token');
-        localStorage.removeItem('dynforge_user');
-        localStorage.removeItem('gradora_access_token');
-        localStorage.removeItem('gradora_refresh_token');
-        localStorage.removeItem('gradora_user');
+        clearAllAuthStorage();
         if (!window.location.pathname.startsWith('/login')) {
           window.location.href = '/login';
         }
