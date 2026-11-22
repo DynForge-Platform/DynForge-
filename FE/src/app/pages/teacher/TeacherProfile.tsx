@@ -14,6 +14,7 @@ import {
   getMyMentorProfile, updateMyMentorProfile, type MentorProfileResponse,
 } from '../../services/mentorService';
 import { getMe, updateProfile } from '../../services/userService';
+import { AvatarUploadButton } from '../../components/AvatarUploadButton';
 
 export function TeacherProfile() {
   const { refreshUser } = useAuth();
@@ -119,8 +120,12 @@ export function TeacherProfile() {
               <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="bg-input-background" />
             </div>
             <div>
-              <Label className="mb-1.5 block">{vi ? 'Đường dẫn ảnh đại diện' : 'Avatar URL'}</Label>
-              <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" className="bg-input-background" />
+              <Label className="mb-1.5 block">{vi ? 'Ảnh đại diện' : 'Profile photo'}</Label>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <AvatarUploadButton onUploaded={setAvatarUrl} />
+                <span className="text-xs text-muted-foreground">{vi ? 'Chọn ảnh từ máy, lưu ngay' : 'Pick from your device, saved instantly'}</span>
+              </div>
+              <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder={vi ? 'hoặc dán link ảnh https://…' : 'or paste an image link https://…'} className="bg-input-background" />
             </div>
             <div className="sm:col-span-2">
               <Label className="mb-1.5 block">{vi ? 'Tiêu đề / chức danh' : 'Headline / title'}</Label>

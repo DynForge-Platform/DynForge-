@@ -1,4 +1,5 @@
 import api from './api';
+import { resizeImage } from '../lib/image';
 
 export interface UserProfile {
   id: string;
@@ -32,6 +33,17 @@ export interface UpdateProfilePayload {
   birthYear?: number;
   province?: string;
   universityCode?: string;
+}
+
+/** Shrinks the photo in the browser, uploads it and returns the updated profile (with the new avatarUrl). */
+export async function uploadAvatar(file: File): Promise<UserProfile> {
+  const blob = await resizeImage(file);
+  const form = new FormData();
+  form.append('file', blob, 'avatar.jpg');
+  const { data } = await api.post('/api/users/me/avatar', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.data as UserProfile;
 }
 
 export async function getMe(): Promise<UserProfile> {

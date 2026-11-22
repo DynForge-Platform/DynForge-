@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useUniversity } from '../../context/UniversityContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { toast } from 'sonner';
+import { AvatarUploadButton } from '../../components/AvatarUploadButton';
 import {
   getMe, updateProfile, changePassword, type UserProfile,
 } from '../../services/userService';
@@ -166,8 +167,11 @@ export function DashboardProfile() {
                 : <span className="text-2xl" style={{ fontWeight: 600 }}>{initials || '?'}</span>}
             </div>
             <div className="flex-1">
-              <Label className="mb-1.5 block">{vi ? 'Đường dẫn ảnh đại diện' : 'Avatar URL'}</Label>
-              <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://…" className="bg-input-background" />
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <AvatarUploadButton onUploaded={setAvatarUrl} />
+                <span className="text-xs text-muted-foreground">{vi ? 'Chọn ảnh từ máy, lưu ngay' : 'Pick from your device, saved instantly'}</span>
+              </div>
+              <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder={vi ? 'hoặc dán link ảnh https://…' : 'or paste an image link https://…'} className="bg-input-background" />
             </div>
           </div>
         </Card>
